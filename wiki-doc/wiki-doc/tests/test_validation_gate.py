@@ -20,37 +20,40 @@ def required():
 
 
 class PublicationDecisionTests(unittest.TestCase):
-    def test_complete_review_is_ready(self):
-        self.assertEqual(GATE.evaluate({"checks": required()})["decision"], "ready")
+    def test_three_general_checks_are_diagnostic_only(self):
+        result = GATE.evaluate({"checks": required()})
+        self.assertEqual(result["decision"], "blocked")
+        self.assertFalse(result["publication_authorized"])
+        self.assertEqual(GATE.evaluate({"checks": required()})["legacy_decision"], "ready")
 
     def test_unknowns_do_not_disappear_from_coverage(self):
         checks = required() + [check(f"unknown_{n}", "inconclusive") for n in range(99)]
         result = GATE.evaluate({"checks": checks})
         self.assertEqual(result["accuracy_percent"], 100)
         self.assertLess(result["coverage_percent"], 3)
-        self.assertEqual(result["decision"], "revise")
+        self.assertEqual(result["legacy_decision"], "revise")
 
     def test_blocking_error_cannot_be_offset_by_many_passes(self):
         checks = required() + [check(f"ok_{n}") for n in range(100)]
         checks += [check("wrong_type", "defect", True)]
-        self.assertEqual(GATE.evaluate({"checks": checks})["decision"], "revise")
+        self.assertEqual(GATE.evaluate({"checks": checks})["legacy_decision"], "revise")
 
     def test_missing_source_evidence_blocks(self):
         checks = required()
         checks[0]["status"] = "inconclusive"
-        self.assertEqual(GATE.evaluate({"checks": checks})["decision"], "blocked")
+        self.assertEqual(GATE.evaluate({"checks": checks})["legacy_decision"], "blocked")
 
     def test_editorial_defects_allowed_at_threshold(self):
         checks = required() + [check(f"ok_{n}") for n in range(14)]
         checks += [check(f"editorial_{n}", "defect") for n in range(3)]
         result = GATE.evaluate({"checks": checks})
         self.assertEqual(result["accuracy_percent"], 85)
-        self.assertEqual(result["decision"], "ready")
+        self.assertEqual(result["legacy_decision"], "ready")
 
     def test_below_threshold_needs_revision(self):
         checks = required() + [check(f"ok_{n}") for n in range(13)]
         checks += [check(f"editorial_{n}", "defect") for n in range(4)]
-        self.assertEqual(GATE.evaluate({"checks": checks})["decision"], "revise")
+        self.assertEqual(GATE.evaluate({"checks": checks})["legacy_decision"], "revise")
 
     def test_na_does_not_dilute_counts(self):
         result = GATE.evaluate({"checks": required() + [check("no_parameters", "not_applicable")]})

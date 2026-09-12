@@ -172,9 +172,10 @@ def _source_integrity(data, name):
     """Internal declarations only: filesystem existence and byte hashes are P0-04."""
     errors, inputs = [], {}
     for index, ref in enumerate(data.get('inputs', [])):
-        if ref['path'] in inputs:
+        key = (ref.get('root', 'project'), ref['path'])
+        if key in inputs:
             errors.append(f"{name}: inputs.{index}.path: duplicate source {ref['path']!r}")
-        inputs[ref['path']] = ref['sha256']
+        inputs[key] = ref['sha256']
 
     def visit(value, location):
         if isinstance(value, dict):
@@ -186,9 +187,10 @@ def _source_integrity(data, name):
                 if value['end_line'] < value['start_line']:
                     errors.append(f'{location}.end_line: precedes start_line')
                 if name in ('facts', 'inventory'):
-                    if value['path'] not in inputs:
+                    source_key = (value.get('root', 'project'), value['path'])
+                    if source_key not in inputs:
                         errors.append(f'{location}.path: source is absent from inputs')
-                    elif value['sha256'] != inputs[value['path']]:
+                    elif value['sha256'] != inputs[source_key]:
                         errors.append(f'{location}.sha256: differs from inputs')
             for key, child in value.items():
                 visit(child, f'{location}.{key}')
@@ -225,9 +227,11 @@ def _linked_artifacts(artifacts):
                     errors.append(f'validation_plan: required_checks.{index}.inventory_anchor: unknown source anchor')
     if report:
         plan_ids = {item['id'] for item in plan['required_checks']} if plan else set()
+        fact_ids = {item['id'] for group in FACT_ARRAYS for item in facts[group]} if facts else set()
         for index, check in enumerate(report['checks']):
             if 'plan_check_id' in check:
                 _reference(errors, check['plan_check_id'], plan_ids, f'validation: checks.{index}.plan_check_id')
+            _references(errors, check.get('fact_ids', []), fact_ids, f'validation: checks.{index}.fact_ids')
     if 'decision' in artifacts:
         decision = artifacts['decision']
         ids = {check['id'] for check in report['checks']} if report else set()
@@ -241,6 +245,8 @@ def _linked_artifacts(artifacts):
                 normalized = normalized[2:]
             if normalized != expected:
                 errors.append(f'manifest: artifacts.{name}.path: must reference {expected!r} in this run directory')
+            if ref.get('root', 'run') != 'run':
+                errors.append(f'manifest: artifacts.{name}.root: must reference the run root')
     return errors
 
 
@@ -271,7 +277,7 @@ def validate_artifacts(artifacts, required=None):
     for name, data in artifacts.items():
         for field in ('inputs', 'sql_files', 'context_files'):
             for index, ref in enumerate(data.get(field, [])):
-                previous = sources.setdefault(ref['path'], ref['sha256'])
+                previous = sources.setdefault((ref.get('root', 'project'), ref['path']), ref['sha256'])
                 if previous != ref['sha256']:
                     errors.append(f'{name}: {field}.{index}.sha256: conflicts with source in another artifact')
     return errors

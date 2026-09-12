@@ -28,6 +28,13 @@ def load_policy(path=None):
     if policy.get('schema_version') != 1:
         raise PolicyError(f"Unsupported check policy schema_version: {policy.get('schema_version')}")
     _validate_policy_structure(policy)
+    from artifact_schema import read_json, validate_schema, ArtifactInputError
+    try:
+        errors = validate_schema(policy, read_json(POLICY_PATH.parent.parent / 'schemas' / 'check_policy.schema.json'), 'policy')
+    except ArtifactInputError as exc:
+        raise PolicyError(str(exc)) from exc
+    if errors:
+        raise PolicyError('\n'.join(errors))
     return policy
 
 
@@ -84,10 +91,14 @@ def _evaluate_condition(condition, context):
 
     for key, expected in condition.items():
         if key == '_or':
-            if not any(_evaluate_condition(sub, context) for sub in expected.values() if isinstance(sub, dict)):
-                # Handle non-dict values in _or (like boolean literals)
-                if not any(v for k, v in expected.items() if not isinstance(v, dict) and k != '_or'):
-                    return False
+            choices = expected if isinstance(expected, list) else [{k: v} for k, v in expected.items()]
+            if not any(_evaluate_condition(sub, context) for sub in choices):
+                return False
+            continue
+
+        if key.endswith('_gte'):
+            if context.get(key[:-4], 0) < expected:
+                return False
             continue
 
         actual = context.get(key)
@@ -240,24 +251,32 @@ def derive_inventory_checks(policy, inventory_items, object_key=''):
         counters[kind] = counters.get(kind, 0) + 1
         ordinal = counters[kind]
 
-        if kind in ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'DDL', 'PERFORM', 'CALL', 'EXECUTE', 'OTHER'):
-            rule_id = 'operation'
-            subject = f'{object_key}/{kind}/{ordinal}'
+        rule_ids = []
+        if kind in ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'DDL', 'PERFORM', 'CALL', 'EXECUTE', 'OTHER', 'CTE', 'TEMP_TABLE'):
+            rule_ids.append('operation')
+        details = item.get('details', {})
+        for feature, rule in (('has_formula', 'formula'), ('has_condition', 'condition'), ('dynamic', 'unknown')):
+            if details.get(feature):
+                rule_ids.append(rule)
+        for rule_id in rule_ids:
             anchor = item.get('anchor', {})
+            path = item.get('source_ref', {}).get('path', anchor.get('path', ''))
+            subject = f'{path}/{anchor.get("object_or_scope", object_key)}/{kind}/{anchor.get("ordinal", ordinal)}/{rule_id}'
+            rule = get_rule(policy, rule_id)
             checks.append({
                 'id': f'{rule_id}:{kind}:{ordinal}',
                 'rule_id': rule_id,
                 'subject': subject,
                 'source': 'inventory',
                 'inventory_anchor': {
-                    'path': anchor.get('path', ''),
+                    'path': path,
                     'object_or_scope': anchor.get('object_or_scope', object_key),
                     'construct': kind,
-                    'ordinal': ordinal,
+                    'ordinal': anchor.get('ordinal', ordinal),
                 },
                 'applicable': True,
-                'blocking': True,
-                'category': 'technical',
+                'blocking': rule['blocking_default'],
+                'category': rule['category'],
             })
 
     return checks

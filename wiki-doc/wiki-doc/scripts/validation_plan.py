@@ -82,12 +82,12 @@ def _build_context(inventory, object_kind, object_key=''):
         'has_conditions': has_conditions,
         'has_dynamic_sql': has_dynamic_sql,
         'has_unknowns': has_unknowns,
-        'source_count': len(inventory.get('inputs', [])),
+        'source_count': len({ref for item in items for ref in item.get('reads', [])}),
     }
 
 
 def generate_plan(inventory, policy, page_id=None, object_kind=None,
-                  documented_subjects=None, object_key=None):
+                  documented_subjects=None, object_key=None, profile_active=False):
     """Generate validation_plan.json from inventory and policy.
 
     Args:
@@ -118,9 +118,20 @@ def generate_plan(inventory, policy, page_id=None, object_kind=None,
 
     # Build context
     context = _build_context(inventory, object_kind, object_key)
+    context['profile_active'] = profile_active
 
     # Derive checks from policy
-    policy_checks = derive_required_checks(policy, object_kind, context)
+    policy_checks = [c for c in derive_required_checks(policy, object_kind, context)
+                     if c['source'] not in ('inventory', 'profile') and c['rule_id'] != 'section']
+    if profile_active:
+        for ordinal, item in enumerate(inventory.get('items', []), 1):
+            subjects = [f'{field}/{name}' for field in ('reads', 'writes', 'calls') for name in item.get(field, [])]
+            subjects += ['feature/' + name for name in item.get('details', {}).get('profile_features', [])]
+            for subject in sorted(set(subjects)):
+                policy_checks.append({'id': f'profile_check:{ordinal}:{subject}', 'rule_id': 'profile_check',
+                                      'subject': f'{object_key}/profile/{ordinal}/{subject}',
+                                      'source': 'profile', 'applicable': True, 'blocking': True,
+                                      'category': 'technical'})
 
     # Derive checks from inventory items
     inventory_checks = derive_inventory_checks(
@@ -155,8 +166,7 @@ def generate_plan(inventory, policy, page_id=None, object_kind=None,
         errors.extend(check_errors)
 
     if errors:
-        # Log errors but don't fail — they indicate policy gaps
-        pass
+        raise PolicyError('\n'.join(errors))
 
     # Get source hashes
     source_hashes = {}
@@ -182,6 +192,7 @@ def main():
                         help='Object kind override')
     parser.add_argument('--subjects', nargs='*', help='Documented subjects')
     parser.add_argument('--object-key', help='Canonical object key')
+    parser.add_argument('--profile-active', action='store_true', help='Include CKR_GP profile obligations')
 
     args = parser.parse_args()
 
@@ -195,6 +206,7 @@ def main():
             object_kind=args.kind,
             documented_subjects=args.subjects,
             object_key=args.object_key,
+            profile_active=args.profile_active,
         )
 
         print(json.dumps(plan, indent=2, ensure_ascii=False))

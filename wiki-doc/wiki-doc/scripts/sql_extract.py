@@ -39,11 +39,11 @@ DML_KEYWORDS = {'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE'}
 PLPGSQL_KEYWORDS = {'PERFORM', 'CALL', 'EXECUTE'}
 
 # Patterns for dollar-quoted strings
-DOLLAR_QUOTE_RE = re.compile(r'\$([a-zA-Z_]*)\$')
+DOLLAR_QUOTE_RE = re.compile(r'\$(?:[a-zA-Z_][a-zA-Z_0-9]*)?\$')
 
 # Pattern for CREATE statements
 CREATE_RE = re.compile(
-    r'CREATE\s+OR\s+REPLACE\s+'
+    r'CREATE\s+(?:OR\s+REPLACE\s+)?'
     r'(FUNCTION|PROCEDURE|VIEW|MATERIALIZED\s+VIEW|TABLE)\s+'
     r'([a-zA-Z_][\w]*(?:\.[a-zA-Z_][\w]*)?)',
     re.IGNORECASE
@@ -109,61 +109,65 @@ def _strip_dollar_quoted(text: str, quote_tag: str) -> str:
 
 
 def _strip_strings_and_comments(text: str) -> str:
-    """Remove string literals and comments for keyword scanning."""
-    result = []
+    """Mask literals/comments without changing any byte-independent text offsets."""
+    return _mask_sql(text)[0]
+
+
+def _mask_sql(text):
+    masked, ranges, issues = list(text), [], []
     i = 0
-    in_line_comment = False
-    in_block_comment = 0
-    in_string = False
-    string_char = None
-
     while i < len(text):
-        if in_line_comment:
-            if text[i] == '\n':
-                in_line_comment = False
-                result.append('\n')
-            i += 1
-            continue
-        if in_block_comment > 0:
-            if text[i:i+2] == '*/':
-                in_block_comment -= 1
-                i += 2
-                result.append('  ')
-            else:
-                if text[i] == '\n':
-                    result.append('\n')
-                i += 1
-            continue
-        if in_string:
-            if text[i] == string_char:
-                if i + 1 < len(text) and text[i+1] == string_char:
+        start, kind = i, None
+        if text.startswith('--', i):
+            kind = 'comment'
+            end = text.find('\n', i)
+            i = len(text) if end < 0 else end
+        elif text.startswith('/*', i):
+            kind, depth, i = 'comment', 1, i + 2
+            while i < len(text) and depth:
+                if text.startswith('/*', i):
+                    depth, i = depth + 1, i + 2
+                elif text.startswith('*/', i):
+                    depth, i = depth - 1, i + 2
+                else:
+                    i += 1
+            if depth:
+                issues.append((start, 'Unterminated block comment'))
+        elif text[i] in "'\"":
+            kind, quote, i = 'quoted', text[i], i + 1
+            escaped = start > 0 and text[start - 1] in 'eE' and (start < 2 or not text[start - 2].isalnum())
+            closed = False
+            while i < len(text):
+                if escaped and text[i] == '\\':
                     i += 2
-                    continue
-                in_string = False
-                result.append(string_char)
-            i += 1
-            continue
-
-        if text[i:i+2] == '--':
-            in_line_comment = True
-            i += 2
-            continue
-        if text[i:i+2] == '/*':
-            in_block_comment += 1
-            i += 2
-            result.append('/*')
-            continue
-        if text[i] in ("'",):
-            in_string = True
-            string_char = text[i]
-            result.append(text[i])
-            i += 1
-            continue
-
-        result.append(text[i])
-        i += 1
-
-    return ''.join(result)
+                elif text[i] == quote:
+                    if i + 1 < len(text) and text[i + 1] == quote:
+                        i += 2
+                    else:
+                        i += 1
+                        closed = True
+                        break
+                else:
+                    i += 1
+            i = min(i, len(text))
+            if not closed:
+                issues.append((start, 'Unterminated quoted token'))
+            if quote == '"':
+                issues.append((start, 'Quoted identifiers are outside the P0 subset'))
+        else:
+            tag = DOLLAR_QUOTE_RE.match(text, i)
+            if tag:
+                kind = 'dollar'
+                end = text.find(tag.group(), tag.end())
+                i = len(text) if end < 0 else end + len(tag.group())
+                if end < 0:
+                    issues.append((start, 'Unterminated dollar quote'))
+                ranges.append((start, i, tag.end(), end if end >= 0 else len(text)))
+            else:
+                i += 1
+        if kind:
+            masked[start:i] = ['\n' if ch == '\n' else ' ' for ch in text[start:i]]
+    return ''.join(masked), ranges, issues
 
 
 @dataclass
@@ -199,6 +203,10 @@ class ObjectInfo:
     signature: Optional[str] = None
     start_line: int = 0
     end_line: int = 0
+    start: int = 0
+    end: int = 0
+    body_start: int = 0
+    body_end: int = 0
 
 
 def _line_of(text: str, pos: int) -> int:
@@ -207,16 +215,7 @@ def _line_of(text: str, pos: int) -> int:
 
 def _find_dollar_quoted_ranges(text: str) -> list:
     """Find all dollar-quoted ranges in text."""
-    ranges = []
-    for m in DOLLAR_QUOTE_RE.finditer(text):
-        tag = m.group(1)
-        start = m.start()
-        # Find closing
-        closing_pattern = re.compile(r'\$' + re.escape(tag) + r'\$')
-        close_match = closing_pattern.search(text, m.end())
-        if close_match:
-            ranges.append((start, close_match.end()))
-    return ranges
+    return [(start, end) for start, end, _, _ in _mask_sql(text)[1]]
 
 
 def _is_in_dollar_quote(pos: int, ranges: list) -> bool:
@@ -231,61 +230,31 @@ def _counters():
 
 
 def extract_objects(sql_text: str, file_path: str, file_sha256: str) -> list:
-    """Extract CREATE objects from SQL text."""
+    """Read top-level declarations with literal-aware statement boundaries."""
+    cleaned, ranges, _ = _mask_sql(sql_text)
     objects = []
-    for m in CREATE_RE.finditer(sql_text):
-        kind_raw = m.group(1).strip().upper()
-        name = m.group(2)
-        schema = None
-        if '.' in name:
-            schema, name = name.rsplit('.', 1)
-
-        # Remove trailing parentheses from name
-        name = name.rstrip('(').rstrip()
-
-        kind_map = {
-            'FUNCTION': 'function',
-            'PROCEDURE': 'procedure',
-            'VIEW': 'view',
-            'MATERIALIZED VIEW': 'materialized_view',
-            'TABLE': 'ctas',  # CREATE TABLE AS
-        }
-        kind = kind_map.get(kind_raw, 'unknown')
-
-        start_line = _line_of(sql_text, m.start())
-
-        # Try to find signature for functions/procedures
+    for m in CREATE_RE.finditer(cleaned):
+        semi = cleaned.find(';', m.end())
+        end = semi + 1 if semi >= 0 else len(sql_text)
+        full_name = m.group(2).lower()
+        schema, name = full_name.rsplit('.', 1) if '.' in full_name else (None, full_name)
+        kind = m.group(1).lower().replace(' ', '_')
+        if kind == 'table' and re.search(r'\bAS\s+(?:SELECT|WITH)\b', cleaned[m.end():end], re.I):
+            kind = 'ctas'
+        body_start, body_end = m.start(), end
         signature = None
         if kind in ('function', 'procedure'):
-            sig_match = SIGNATURE_RE.search(sql_text, m.start())
-            if sig_match:
-                sig_name = sig_match.group(1)
-                if '.' in sig_name:
-                    sig_name = sig_name.rsplit('.', 1)[1]
-                sig_name = sig_name.rstrip('(').rstrip()
-                signature = f"{sig_name}({sig_match.group(2).strip()})"
-
-        # Find end of statement (simplified: look for $$; or next CREATE)
-        end_line = start_line
-        dollar_end = sql_text.find('$$;', m.end())
-        if dollar_end != -1:
-            end_line = _line_of(sql_text, dollar_end + 2)
-        else:
-            next_create = CREATE_RE.search(sql_text, m.end())
-            if next_create:
-                end_line = _line_of(sql_text, next_create.start()) - 1
-            else:
-                end_line = _line_of(sql_text, len(sql_text))
-
-        objects.append(ObjectInfo(
-            name=name,
-            kind=kind,
-            schema=schema,
-            signature=signature,
-            start_line=start_line,
-            end_line=end_line,
-        ))
-
+            sig = SIGNATURE_RE.match(cleaned, m.start())
+            if sig:
+                signature = name + '(' + sql_text[sig.start(2):sig.end(2)].strip() + ')'
+            bodies = [(bs, be) for ds, de, bs, be in ranges if m.end() <= ds < end
+                      and re.search(r'\bAS\s*$', cleaned[m.end():ds], re.I)]
+            if bodies:
+                body_start, body_end = bodies[0]
+        objects.append(ObjectInfo(name, kind, schema, signature,
+                                  _line_of(sql_text, m.start()),
+                                  _line_of(sql_text, max(m.start(), end - 1)),
+                                  m.start(), end, body_start, body_end))
     return objects
 
 
@@ -452,12 +421,52 @@ def extract_operations(sql_text: str, file_path: str, file_sha256: str,
             details={'table_name': table_name},
         ))
 
+    # Keep source spans and statement features independent of writer-created IDs.
+    for item in items:
+        # Locate the occurrence by its line and construct, then stop at this statement.
+        matches = list(re.finditer(r'\b' + re.escape(item.kind.replace('_TABLE', '')) + r'\b', cleaned, re.I))
+        match = next((m for m in matches if _line_of(sql_text, m.start()) == item.source_ref.start_line), None)
+        if match:
+            stop = cleaned.find(';', match.start())
+            stop = len(cleaned) if stop < 0 else stop + 1
+            segment = cleaned[match.start():stop]
+            item.details['profile_features'] = sorted(set(re.findall(
+                r'\b(?:ckr_uup_queue|ckr_uup_products_contract_val|ckr_uup_org_st|product_group|coef_up|consent|row_number|init_type_oper|start_oper|add_log|end_oper)\b', segment, re.I)))
+            item.source_ref.end_line = _line_of(sql_text, max(match.start(), stop - 1))
+            if item.kind in DML_KEYWORDS:
+                item.details['has_formula'] = bool(re.search(r'[+/-]|[\w.)]\s*\*\s*[\w.(]|\b(?:SUM|AVG|COUNT|MIN|MAX|CASE|OVER)\b', segment, re.I))
+                item.details['has_condition'] = bool(re.search(r'\b(?:WHERE|ON|CASE|HAVING)\b', segment, re.I))
+                item.calls = list(dict.fromkeys(re.findall(r'\b([a-zA-Z_]\w*\.[a-zA-Z_]\w*)\s*\(', segment)))
+                # INSERT target(column-list) is not a function invocation.
+                item.calls = [name for name in item.calls if name not in item.writes]
+            # Bare EXECUTE variables cannot establish the operation template.
+            if item.kind == 'EXECUTE':
+                raw = sql_text[match.start():stop]
+                if not re.match(r"EXECUTE\s+(?:format\s*\(\s*)?'(?:SELECT|INSERT|UPDATE|DELETE|TRUNCATE)\b", raw, re.I):
+                    notes.append(CoverageNote(item.source_ref, 'Unanalyzed dynamic SQL expression'))
+
+    for pos, reason in _mask_sql(sql_text)[2]:
+        notes.append(CoverageNote(SourceRef(file_path, _line_of(sql_text, pos),
+                                           _line_of(sql_text, pos), file_sha256), reason))
+    # This is a deliberately bounded scanner. Complex grammar remains a blocking gap.
+    for match in re.finditer(r'\b(?:MERGE|WITH|TRIGGER|INDEX|CONSTRAINT|GRANT|REVOKE|ALTER|DROP|TRUNCATE|IF|LOOP|EXCEPTION|DECLARE|COPY|DO)\b', cleaned, re.I):
+        line = _line_of(sql_text, match.start())
+        notes.append(CoverageNote(SourceRef(file_path, line, line, file_sha256),
+                                  f'{match.group().upper()} requires analysis beyond the P0 subset'))
+    for match in re.finditer(r'[^;]+(?:;|$)', cleaned):
+        fragment = re.sub(r'^\s*(?:BEGIN\b\s*)?', '', match.group(), flags=re.I).strip()
+        if not fragment or re.fullmatch(r'END\s*;?', fragment, re.I):
+            continue
+        if not re.match(r'(?:SELECT|INSERT|UPDATE|DELETE|MERGE|PERFORM|CALL|EXECUTE|CREATE|WITH|RETURN)\b', fragment, re.I):
+            line = _line_of(sql_text, match.start())
+            notes.append(CoverageNote(SourceRef(file_path, line, line, file_sha256),
+                                      f'Unanalyzed executable fragment: {fragment[:60]}'))
     return items, notes
 
 
 def _normalize_ref(ref: str) -> str:
     """Normalize a table/function reference."""
-    ref = ref.strip()
+    ref = ref.strip().rstrip(';,')
     # Remove trailing parenthesis and everything after it
     if '(' in ref:
         ref = ref[:ref.index('(')]
@@ -472,7 +481,8 @@ def _extract_from_joins(text: str, start_pos: int) -> list:
     """Extract FROM and JOIN references after a given position (within same statement)."""
     refs = []
     # Look ahead within a reasonable range
-    end_pos = min(start_pos + 2000, len(text))
+    semi = text.find(';', start_pos)
+    end_pos = len(text) if semi < 0 else semi
     segment = text[start_pos:end_pos]
 
     for m in FROM_RE.finditer(segment):
@@ -486,79 +496,81 @@ def _extract_from_joins(text: str, start_pos: int) -> list:
     return refs
 
 
+def object_scope(obj):
+    return f"{obj.kind}+{obj.schema or '?'}+{obj.signature or obj.name}"
+
+
 def extract_inventory(sql_text: str, file_path: str, file_sha256: str,
                       dialect: str = 'postgres', version: str = 'unknown',
                       documented_subjects: list = None) -> dict:
-    """Full inventory extraction from SQL text.
-
-    Returns dict matching inventory.schema.json v2.
-    """
     objects = extract_objects(sql_text, file_path, file_sha256)
-    all_items = []
-    all_notes = []
-    counters = _counters()
+    all_items, all_notes = [], []
+    selected = objects
+    if documented_subjects:
+        selected = []
+        for subject in documented_subjects:
+            matches = [o for o in objects if subject in
+                       (o.name, f'{o.schema}.{o.name}', object_scope(o))]
+            if len(matches) != 1:
+                raise ValueError(f'Subject {subject!r}: expected one declaration, found {len(matches)}')
+            if matches[0] not in selected:
+                selected.append(matches[0])
 
-    for obj in objects:
-        # Find the body of this object by searching for the CREATE statement
-        # Use a flexible pattern that matches the object name with optional schema
-        if obj.schema:
-            name_pattern = re.escape(obj.schema) + r'\.' + re.escape(obj.name)
-        else:
-            name_pattern = r'(?:\w+\.)?' + re.escape(obj.name)
-        
-        create_pattern = re.compile(
-            r'CREATE\s+(?:OR\s+REPLACE\s+)?(?:FUNCTION|PROCEDURE|VIEW|MATERIALIZED\s+VIEW|TABLE)\s+'
-            + name_pattern + r'[\s\(]',
-            re.IGNORECASE
-        )
-        create_match = create_pattern.search(sql_text)
-        if create_match:
-            dollar_tag = '$$'
-            body_start = sql_text.find(dollar_tag, create_match.end())
-            if body_start != -1:
-                body_end = sql_text.find(dollar_tag + ';', body_start + 2)
-                if body_end != -1:
-                    body = sql_text[body_start + 2:body_end]
-                else:
-                    body = sql_text[body_start + 2:]
-            else:
-                # No dollar-quoted body (e.g., view) — use until next CREATE or end
-                next_create = CREATE_RE.search(sql_text, create_match.end())
-                if next_create:
-                    body = sql_text[create_match.start():next_create.start()]
-                else:
-                    body = sql_text[create_match.start():]
-        else:
-            body = sql_text
+    def note(start, end, reason):
+        all_notes.append(CoverageNote(SourceRef(file_path, _line_of(sql_text, start),
+                         _line_of(sql_text, max(start, end - 1)), file_sha256), reason))
 
-        scope = f"{obj.kind}+{obj.schema or 'public'}+{obj.name}"
-        if obj.signature:
-            scope = f"{obj.kind}+{obj.schema or 'public'}+{obj.signature}"
-
-        items, notes = extract_operations(body, file_path, file_sha256, scope, counters)
+    cleaned, _, lexical_issues = _mask_sql(sql_text)
+    for pos, reason in lexical_issues:
+        if not documented_subjects or any(o.start <= pos < o.end for o in selected):
+            note(pos, pos + 1, reason)
+    if dialect.lower() not in ('postgres', 'postgresql'):
+        note(0, len(sql_text), f'Unsupported dialect: {dialect}')
+    for obj in selected:
+        scope = object_scope(obj)
+        ref = SourceRef(file_path, obj.start_line, obj.end_line, file_sha256)
+        all_items.append(InventoryItem(
+            {'object_or_scope': scope, 'construct': 'DECLARATION', 'ordinal': 1},
+            'DECLARATION', ref, details={'object_kind': obj.kind, 'name': obj.name,
+                                      'schema': obj.schema, 'signature': obj.signature}))
+        if obj.schema is None:
+            note(obj.start, obj.end, 'Unresolved schema/search_path for declaration')
+        if obj.kind == 'table':
+            note(obj.start, obj.end, 'CREATE TABLE column/constraint analysis is outside the P0 subset')
+            continue
+        if obj.kind in ('function', 'procedure') and obj.body_start == obj.start:
+            note(obj.start, obj.end, 'Routine requires an AS dollar-quoted body in the P0 subset')
+            continue
+        body = sql_text[obj.body_start:obj.body_end]
+        items, notes = extract_operations(body, file_path, file_sha256, scope)
+        offset = _line_of(sql_text, obj.body_start) - 1
+        for item in items + notes:
+            item.source_ref.start_line += offset
+            item.source_ref.end_line += offset
         all_items.extend(items)
         all_notes.extend(notes)
-
-    # Detect unsupported constructs
-    upper_text = sql_text.upper()
-    for keyword in ('TRIGGER', 'INDEX', 'CONSTRAINT', 'GRANT', 'REVOKE'):
-        if re.search(r'\b' + keyword + r'\b', upper_text):
-            all_notes.append(CoverageNote(
-                source_ref=SourceRef(file_path, 1, _line_of(sql_text, len(sql_text)), file_sha256),
-                reason=f'{keyword} found but not fully supported by extractor',
-            ))
-
-    result = {
+        if not items:
+            note(obj.body_start, obj.body_end, 'No supported executable operation found')
+    if not objects:
+        items, notes = extract_operations(sql_text, file_path, file_sha256, file_path)
+        all_items.extend(items)
+        all_notes.extend(notes)
+        note(0, len(sql_text), 'No supported object declaration; migration/raw statement scope requires further analysis')
+    elif not documented_subjects:
+        remainder = list(cleaned)
+        for obj in objects:
+            remainder[obj.start:obj.end] = ' ' * (obj.end - obj.start)
+        if ''.join(remainder).strip(' ;\r\n\t'):
+            note(0, len(sql_text), 'Unanalyzed top-level statements outside declarations')
+    return {
         'schema_version': 2,
-        'run_id': '00000000-0000-0000-0000-000000000000',  # placeholder
+        'run_id': '00000000-0000-0000-0000-000000000000',
         'dialect': {'name': dialect, 'version': version},
         'items': [_item_to_dict(i) for i in all_items],
         'coverage_notes': [_note_to_dict(n) for n in all_notes],
         'inputs': [{'path': file_path, 'sha256': file_sha256}],
-        'documented_subjects': documented_subjects or [o.name for o in objects],
+        'documented_subjects': [object_scope(o) for o in selected] or [file_path],
     }
-
-    return result
 
 
 def _item_to_dict(item: InventoryItem) -> dict:
@@ -594,16 +606,18 @@ def main():
     parser.add_argument('--version', default='unknown', help='DB version')
     parser.add_argument('--subjects', nargs='*', help='Documented subjects (object names)')
     parser.add_argument('--run-id', help='UUID for this run')
+    parser.add_argument('--project-root', type=Path, help='Store paths relative to the SQL project root')
 
     args = parser.parse_args()
 
     try:
         path = Path(args.sql_file)
-        sql_text = path.read_text(encoding='utf-8')
+        sql_text = path.read_text(encoding='utf-8-sig')
         sha = sha256_file(path)
 
+        source_path = path.resolve().relative_to(args.project_root.resolve()).as_posix() if args.project_root else str(path)
         result = extract_inventory(
-            sql_text, str(path), sha,
+            sql_text, source_path, sha,
             dialect=args.dialect,
             version=args.version,
             documented_subjects=args.subjects,

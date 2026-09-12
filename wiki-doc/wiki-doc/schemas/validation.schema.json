@@ -74,15 +74,69 @@
         "evidence": {
           "type": "array",
           "items": {
-            "type": "string",
-            "minLength": 1,
-            "pattern": "\\S"
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "root",
+                  "path",
+                  "start_line",
+                  "end_line",
+                  "sha256"
+                ],
+                "properties": {
+                  "root": {
+                    "type": "string",
+                    "enum": [
+                      "project",
+                      "run",
+                      "wiki",
+                      "package"
+                    ]
+                  },
+                  "path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "start_line": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "end_line": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
           }
         },
         "plan_check_id": {
           "type": "string",
           "minLength": 1,
           "pattern": "\\S"
+        },
+        "defect_code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fact_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
         }
       },
       "additionalProperties": false,

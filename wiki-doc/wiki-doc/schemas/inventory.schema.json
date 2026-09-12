@@ -68,6 +68,15 @@
           "sha256": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
+          },
+          "root": {
+            "type": "string",
+            "enum": [
+              "project",
+              "run",
+              "wiki",
+              "package"
+            ]
           }
         },
         "additionalProperties": false
@@ -149,6 +158,15 @@
             "sha256": {
               "type": "string",
               "pattern": "^[0-9a-f]{64}$"
+            },
+            "root": {
+              "type": "string",
+              "enum": [
+                "project",
+                "run",
+                "wiki",
+                "package"
+              ]
             }
           },
           "additionalProperties": false
@@ -209,6 +227,15 @@
             "sha256": {
               "type": "string",
               "pattern": "^[0-9a-f]{64}$"
+            },
+            "root": {
+              "type": "string",
+              "enum": [
+                "project",
+                "run",
+                "wiki",
+                "package"
+              ]
             }
           },
           "additionalProperties": false

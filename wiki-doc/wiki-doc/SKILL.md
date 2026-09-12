@@ -51,7 +51,16 @@ CTE и алиас не являются самостоятельными физ�
 поиск по имени, обязательный поиск всех определений/изменений по содержимому,
 разрешение версии. Отдельного сокращённого fallback нет.
 
-### 2. Реестр фактов и идентификация
+### 2. Независимый план, реестр фактов и идентификация
+
+До написания фактов и страницы создай UUID запуска и отдельный каталог. Зафиксируй
+выбранное SQL-объявление, диалект и относительные пути от корня проекта. Выполни
+`sql_extract.py` с `--subjects`, `--project-root` и `--run-id`, сохрани `inventory.json`,
+затем получи `validation_plan.json` через `validation_plan.py`. Выбирай однозначное
+объявление (полное имя или scope из инвентаря); один run — одна страница.
+План выводится из SQL и политики до writer и не сокращается по составу facts.
+Неподдержанный фрагмент в `coverage_notes` блокирует допуск до расширения анализа.
+
 
 Построй реестр по контракту [references/facts.md](references/facts.md) версии 2.
 Схема: `schemas/facts.schema.json`. Каждый реестр содержит `schema_version: 2` и
@@ -112,7 +121,7 @@ doc-validator; процент сам по себе не разрешает пу�
 
 После сохранения отчёта проверь доступные артефакты версии 2:
 `python scripts/artifact_schema.py <run_dir> --artifacts facts coverage validation`.
-Если уже созданы план или другие артефакты, они тоже проверяются. Ошибки формы и
+Созданные план и инвентарь тоже проверяются. Ошибки формы и
 ссылок исправляются до публикации. Контракт и переход со старого формата — в
 [references/artifacts.md](references/artifacts.md).
 
@@ -123,9 +132,15 @@ doc-validator; процент сам по себе не разрешает пу�
 
 ### 5. Публикация в локальную wiki
 
-Только после содержательной проверки с результатом `ready` и успешной проверки
-структуры/связности доступных артефактов. `valid: true` от `artifact_schema.py`
-и `ready` от старого расчётчика по отдельному отчёту сами по себе недостаточны:
+После содержательной валидации создай manifest командой `bundle.py create` с тем же
+run_id, путями SQL и корнем проекта, затем выполни
+`validation_gate.py --bundle <run_dir> --root project <project_dir> --write-decision --json`.
+Для активного профиля передай одинаковый `--profile` в bundle create и gate;
+для иной политики передай одинаковый `--policy`. Полный `ready` и
+`publication_authorized: true` — обязательное условие публикации.
+Повторное использование решения требует нового вызова gate без `--write-decision`.
+Проверка одного отчёта и ручной расчёт процентов допуска не дают:
+
 
 1. Проверь, что SQL/DDL, основная страница и индекс не изменились с момента чтения.
    При изменении исходников обнови реестр и валидацию; при конфликте wiki согласуй
@@ -137,8 +152,10 @@ doc-validator; процент сам по себе не разрешает пу�
    общий индекс от одновременной записи. При невозможности исключить конфликт оставь черновик.
 4. Замени основную страницу подготовленным файлом, затем обнови индекс.
    При частичной ошибке восстанови изменённые этим запуском файлы из копий.
-5. Убедись, что страница и ссылка в индексе существуют. После успеха очисти только
-   свою директорию запуска; перед рекурсивным удалением проверь её абсолютный путь.
+5. Убедись, что страница и ссылка в индексе существуют. Сохрани проверенный комплект
+   через `bundle.save_bundle` в `.wiki-doc/runs/<run_id>/` и проверь архив повторным gate.
+   Архив содержит снимки исходников; при его чтении корень project — каталог архива.
+   Только после этого очищай свою временную директорию; проверь её абсолютный путь.
 
 Запрос на обновление wiki разрешает обычную замену сгенерированной страницы:
 повторное подтверждение на каждую перезапись не требуется. Если ручной текст
@@ -199,42 +216,23 @@ python scripts/artifact_schema.py <artifacts_dir>
 Правила ссылок, отдельная проверка manifest миграций и ограничения P0-01 описаны
 в [references/artifacts.md](references/artifacts.md).
 
-### Независимый SQL-инвентарь и план проверок
+### Полный цикл P0
 
-Для независимого анализа SQL без чтения facts.json:
+Команды, формат доказательств, идентификаторы секций, хранение и ограничения
+поддержанного SQL описаны в [references/artifacts.md](references/artifacts.md).
 
 ```text
-python scripts/sql_extract.py <sql_file> --dialect postgres --subjects <names>
-python scripts/validation_plan.py <inventory.json> --kind function --policy references/check-policy.json
+python scripts/sql_extract.py <sql_file> --subjects <schema.name> --run-id <uuid> --project-root <project_dir>
+python scripts/validation_plan.py <run_dir>/inventory.json --page-id <page_id>
+python scripts/bundle.py create <run_dir> --page-id <page_id> --run-id <uuid> --sql <sql_file> --project-root <project_dir>
+python scripts/validation_gate.py --bundle <run_dir> --root project <project_dir> --write-decision --json
+python scripts/validation_gate.py --bundle <run_dir> --root project <project_dir> --json
+python scripts/evidence.py validate <evidence.json> --root project <project_dir>
 ```
 
-Экстрактор (`scripts/sql_extract.py`) извлекает:
-- CREATE FUNCTION/PROCEDURE/VIEW/MATERIALIZED VIEW/TABLE AS
-- DML: SELECT, INSERT, UPDATE, DELETE, MERGE
-- PL/pgSQL: PERFORM, CALL, EXECUTE
-- CTE, TEMP TABLE, FROM/JOIN зависимости
-- Dollar-quoted тела функций
-
-**Ограничения:** regex-based, не полный AST. Dynamic имена не разрешаются.
-Неподдержанный синтаксис фиксируется в `coverage_notes`. Подробнее — в
-заголовке `sql_extract.py`.
-
-Генератор плана (`scripts/validation_plan.py`) объединяет inventory с
-`check-policy.json` и формирует `validation_plan.json` с конкретными
-обязательными проверками.
-
-### Схемы артефактов (версия 2)
-
-| Артефакт | Схема | Описание |
-|----------|-------|----------|
-| facts.json | `schemas/facts.schema.json` | Реестр фактов с run_id |
-| coverage.json | `schemas/coverage.schema.json` | Карта покрытия (обёртка) |
-| validation.json | `schemas/validation.schema.json` | Отчёт валидации |
-| validation_plan.json | `schemas/validation_plan.schema.json` | План проверок |
-| manifest.json | `schemas/manifest.schema.json` | Манифест запуска |
-| inventory.json | `schemas/inventory.schema.json` | Независимый инвентарь SQL |
-| decision.json | `schemas/decision.schema.json` | Решение о публикации |
-
-Все артефакты v2 содержат `schema_version: 2` и `run_id` (UUID).
-Манифест миграций (`examples/migrations/manifest.json`) — отдельная схема
-`schemas/migration_manifest.schema.json`.
+Вывод первых двух команд сохрани в inventory.json и validation_plan.json.
+Между планом и manifest writer создаёт facts, page.draft.md, coverage и validation.
+Последний gate заново проверяет сохранённое решение; коды: 0 — полный ready,
+1 — revise/blocked, 2 — ошибка контракта/JSON/чтения/зависимостей.
+Legacy-вызов с одним validation.json возвращает только диагностические метрики
+и `publication_authorized: false`, никогда код 0.

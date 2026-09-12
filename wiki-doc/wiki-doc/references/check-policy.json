@@ -37,7 +37,10 @@
       "subject_pattern": "{object_key}/signature",
       "source": "object_type",
       "conditions": {
-        "object_kind": ["function", "procedure"]
+        "object_kind": [
+          "function",
+          "procedure"
+        ]
       }
     },
     {
@@ -48,7 +51,12 @@
       "subject_pattern": "{object_key}/columns",
       "source": "object_type",
       "conditions": {
-        "object_kind": ["table", "view", "materialized_view", "ctas"]
+        "object_kind": [
+          "table",
+          "view",
+          "materialized_view",
+          "ctas"
+        ]
       }
     },
     {
@@ -145,7 +153,9 @@
       "subject_pattern": "{object_key}/migration",
       "source": "object_type",
       "conditions": {
-        "object_kind": ["migration"]
+        "object_kind": [
+          "migration"
+        ]
       }
     },
     {
@@ -182,32 +192,124 @@
   ],
   "object_type_groups": {
     "table": {
-      "always_required": ["identity", "sql_registry", "registry_document", "columns"],
-      "conditional": ["reads", "writes", "formula", "condition", "unknown", "section", "profile_check"]
+      "always_required": [
+        "identity",
+        "sql_registry",
+        "registry_document",
+        "columns"
+      ],
+      "conditional": [
+        "reads",
+        "writes",
+        "formula",
+        "condition",
+        "unknown",
+        "section",
+        "profile_check"
+      ]
     },
     "view": {
-      "always_required": ["identity", "sql_registry", "registry_document", "columns", "reads"],
-      "conditional": ["formula", "condition", "unknown", "section", "profile_check"]
+      "always_required": [
+        "identity",
+        "sql_registry",
+        "registry_document",
+        "columns",
+        "reads"
+      ],
+      "conditional": [
+        "formula",
+        "condition",
+        "unknown",
+        "section",
+        "profile_check"
+      ]
     },
     "materialized_view": {
-      "always_required": ["identity", "sql_registry", "registry_document", "columns", "reads"],
-      "conditional": ["formula", "condition", "unknown", "section", "profile_check"]
+      "always_required": [
+        "identity",
+        "sql_registry",
+        "registry_document",
+        "columns",
+        "reads"
+      ],
+      "conditional": [
+        "formula",
+        "condition",
+        "unknown",
+        "section",
+        "profile_check"
+      ]
     },
     "ctas": {
-      "always_required": ["identity", "sql_registry", "registry_document", "columns", "reads"],
-      "conditional": ["formula", "condition", "unknown", "section", "profile_check"]
+      "always_required": [
+        "identity",
+        "sql_registry",
+        "registry_document",
+        "columns",
+        "reads"
+      ],
+      "conditional": [
+        "formula",
+        "condition",
+        "unknown",
+        "section",
+        "profile_check"
+      ]
     },
     "function": {
-      "always_required": ["identity", "sql_registry", "registry_document", "signature"],
-      "conditional": ["reads", "writes", "calls", "formula", "condition", "date_boundary", "dynamic_sql", "unknown", "section", "profile_check"]
+      "always_required": [
+        "identity",
+        "sql_registry",
+        "registry_document",
+        "signature"
+      ],
+      "conditional": [
+        "reads",
+        "writes",
+        "calls",
+        "formula",
+        "condition",
+        "date_boundary",
+        "dynamic_sql",
+        "unknown",
+        "section",
+        "profile_check"
+      ]
     },
     "procedure": {
-      "always_required": ["identity", "sql_registry", "registry_document", "signature"],
-      "conditional": ["reads", "writes", "calls", "formula", "condition", "date_boundary", "dynamic_sql", "unknown", "section", "profile_check"]
+      "always_required": [
+        "identity",
+        "sql_registry",
+        "registry_document",
+        "signature"
+      ],
+      "conditional": [
+        "reads",
+        "writes",
+        "calls",
+        "formula",
+        "condition",
+        "date_boundary",
+        "dynamic_sql",
+        "unknown",
+        "section",
+        "profile_check"
+      ]
     },
     "migration": {
-      "always_required": ["identity", "sql_registry", "registry_document", "migration_order"],
-      "conditional": ["reads", "writes", "unknown", "section", "profile_check"]
+      "always_required": [
+        "identity",
+        "sql_registry",
+        "registry_document",
+        "migration_order"
+      ],
+      "conditional": [
+        "reads",
+        "writes",
+        "unknown",
+        "section",
+        "profile_check"
+      ]
     }
   },
   "section_applicability": {
@@ -219,27 +321,28 @@
     "schema_signature": {
       "description": "Schema, signature, parameters, key points",
       "applicable_when": {
-        "object_kind": ["function", "procedure"]
+        "object_kind": [
+          "function",
+          "procedure"
+        ]
       },
       "block_id": "02"
     },
     "entities": {
       "description": "Structure, columns, reference data",
       "applicable_when": {
-        "object_kind": ["table", "view", "materialized_view", "ctas"]
+        "object_kind": [
+          "table",
+          "view",
+          "materialized_view",
+          "ctas"
+        ]
       },
       "block_id": "03"
     },
     "formulas_dependencies": {
-      "description": "Formulas, dependencies, CTE",
-      "applicable_when": {
-        "has_formulas": true,
-        "_or": {
-          "has_reads": true,
-          "has_writes": true,
-          "has_calls": true
-        }
-      },
+      "description": "Dependencies for every object; formulas and CTE when present",
+      "always_applicable": true,
       "block_id": "04"
     },
     "dataflow_diagram": {

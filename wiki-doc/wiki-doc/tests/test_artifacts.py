@@ -272,7 +272,7 @@ class ValidationGateV2Tests(unittest.TestCase):
     def test_v2_validation_report_accepted(self):
         report = valid_validation()
         result = _gate.evaluate(report)
-        self.assertEqual(result["decision"], "ready")
+        self.assertEqual(result["legacy_decision"], "ready")
 
     def test_gate_requires_mandatory_checks(self):
         report = valid_validation()
@@ -284,13 +284,13 @@ class ValidationGateV2Tests(unittest.TestCase):
         report = valid_validation()
         report["checks"][0]["status"] = "defect"
         result = _gate.evaluate(report)
-        self.assertEqual(result["decision"], "revise")
+        self.assertEqual(result["legacy_decision"], "revise")
 
     def test_gate_blocks_on_inconclusive(self):
         report = valid_validation()
         report["checks"][0]["status"] = "inconclusive"
         result = _gate.evaluate(report)
-        self.assertEqual(result["decision"], "blocked")
+        self.assertEqual(result["legacy_decision"], "blocked")
 
 
 if __name__ == "__main__":

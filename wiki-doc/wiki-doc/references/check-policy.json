@@ -1,0 +1,288 @@
+{
+  "schema_version": 1,
+  "description": "Check catalog for wiki-doc validation. Rules define required checks per object type, applicability conditions, and blocking behavior.",
+  "rules": [
+    {
+      "id": "identity",
+      "description": "Object identity (kind + schema + name + signature) is correctly established",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}",
+      "source": "object_type",
+      "conditions": {}
+    },
+    {
+      "id": "sql_registry",
+      "description": "All SQL operations are captured in the facts registry",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}",
+      "source": "object_type",
+      "conditions": {}
+    },
+    {
+      "id": "registry_document",
+      "description": "Registry facts are correctly reflected in the documentation",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}",
+      "source": "object_type",
+      "conditions": {}
+    },
+    {
+      "id": "signature",
+      "description": "Function/procedure signature (parameters, types, return) is correct",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/signature",
+      "source": "object_type",
+      "conditions": {
+        "object_kind": ["function", "procedure"]
+      }
+    },
+    {
+      "id": "columns",
+      "description": "All columns are documented with correct types and descriptions",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/columns",
+      "source": "object_type",
+      "conditions": {
+        "object_kind": ["table", "view", "materialized_view", "ctas"]
+      }
+    },
+    {
+      "id": "operation",
+      "description": "Individual SQL operation is documented correctly",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/{operation_kind}/{ordinal}",
+      "source": "inventory",
+      "conditions": {}
+    },
+    {
+      "id": "reads",
+      "description": "Read dependencies (FROM, JOIN, subqueries) are documented",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/reads",
+      "source": "object_type",
+      "conditions": {
+        "has_reads": true
+      }
+    },
+    {
+      "id": "writes",
+      "description": "Write targets (INSERT, UPDATE, DELETE, MERGE) are documented",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/writes",
+      "source": "object_type",
+      "conditions": {
+        "has_writes": true
+      }
+    },
+    {
+      "id": "calls",
+      "description": "Function/procedure calls are documented",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/calls",
+      "source": "object_type",
+      "conditions": {
+        "has_calls": true
+      }
+    },
+    {
+      "id": "formula",
+      "description": "Calculation formula (arithmetic, aggregate, window) is documented",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/formula/{formula_id}",
+      "source": "inventory",
+      "conditions": {
+        "has_formulas": true
+      }
+    },
+    {
+      "id": "condition",
+      "description": "Conditional logic (IF, CASE, WHERE) is documented",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/condition/{condition_id}",
+      "source": "inventory",
+      "conditions": {
+        "has_conditions": true
+      }
+    },
+    {
+      "id": "date_boundary",
+      "description": "Date boundaries and temporal logic are documented",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/dates",
+      "source": "object_type",
+      "conditions": {
+        "has_date_boundaries": true
+      }
+    },
+    {
+      "id": "dynamic_sql",
+      "description": "Dynamic SQL (EXECUTE) boundaries and unresolved parts are documented",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/dynamic",
+      "source": "object_type",
+      "conditions": {
+        "has_dynamic_sql": true
+      }
+    },
+    {
+      "id": "migration_order",
+      "description": "Migration ordering and DDL reconstruction are documented",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/migration",
+      "source": "object_type",
+      "conditions": {
+        "object_kind": ["migration"]
+      }
+    },
+    {
+      "id": "unknown",
+      "description": "Unknown/uncertain facts are explicitly documented",
+      "category": "technical",
+      "blocking_default": false,
+      "subject_pattern": "{object_key}/unknown/{unknown_id}",
+      "source": "inventory",
+      "conditions": {
+        "has_unknowns": true
+      }
+    },
+    {
+      "id": "section",
+      "description": "Template section is present and non-empty when applicable",
+      "category": "editorial",
+      "blocking_default": false,
+      "subject_pattern": "{object_key}/section/{section_id}",
+      "source": "section",
+      "conditions": {}
+    },
+    {
+      "id": "profile_check",
+      "description": "Profile-specific requirement is met",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/profile/{check_name}",
+      "source": "profile",
+      "conditions": {
+        "profile_active": true
+      }
+    }
+  ],
+  "object_type_groups": {
+    "table": {
+      "always_required": ["identity", "sql_registry", "registry_document", "columns"],
+      "conditional": ["reads", "writes", "formula", "condition", "unknown", "section", "profile_check"]
+    },
+    "view": {
+      "always_required": ["identity", "sql_registry", "registry_document", "columns", "reads"],
+      "conditional": ["formula", "condition", "unknown", "section", "profile_check"]
+    },
+    "materialized_view": {
+      "always_required": ["identity", "sql_registry", "registry_document", "columns", "reads"],
+      "conditional": ["formula", "condition", "unknown", "section", "profile_check"]
+    },
+    "ctas": {
+      "always_required": ["identity", "sql_registry", "registry_document", "columns", "reads"],
+      "conditional": ["formula", "condition", "unknown", "section", "profile_check"]
+    },
+    "function": {
+      "always_required": ["identity", "sql_registry", "registry_document", "signature"],
+      "conditional": ["reads", "writes", "calls", "formula", "condition", "date_boundary", "dynamic_sql", "unknown", "section", "profile_check"]
+    },
+    "procedure": {
+      "always_required": ["identity", "sql_registry", "registry_document", "signature"],
+      "conditional": ["reads", "writes", "calls", "formula", "condition", "date_boundary", "dynamic_sql", "unknown", "section", "profile_check"]
+    },
+    "migration": {
+      "always_required": ["identity", "sql_registry", "registry_document", "migration_order"],
+      "conditional": ["reads", "writes", "unknown", "section", "profile_check"]
+    }
+  },
+  "section_applicability": {
+    "header_purpose": {
+      "description": "Header and purpose",
+      "always_applicable": true,
+      "block_id": "01"
+    },
+    "schema_signature": {
+      "description": "Schema, signature, parameters, key points",
+      "applicable_when": {
+        "object_kind": ["function", "procedure"]
+      },
+      "block_id": "02"
+    },
+    "entities": {
+      "description": "Structure, columns, reference data",
+      "applicable_when": {
+        "object_kind": ["table", "view", "materialized_view", "ctas"]
+      },
+      "block_id": "03"
+    },
+    "formulas_dependencies": {
+      "description": "Formulas, dependencies, CTE",
+      "applicable_when": {
+        "has_formulas": true,
+        "_or": {
+          "has_reads": true,
+          "has_writes": true,
+          "has_calls": true
+        }
+      },
+      "block_id": "04"
+    },
+    "dataflow_diagram": {
+      "description": "Data flow diagram",
+      "applicable_when": {
+        "source_count_gte": 2
+      },
+      "block_id": "05"
+    },
+    "misc": {
+      "description": "Dates, errors, semantics, examples, uncertainties, notes, related objects",
+      "always_applicable": false,
+      "conditional": true,
+      "block_id": "06"
+    }
+  },
+  "blocking_override_rules": {
+    "description": "Rules that cannot be overridden by agent-declared blocking:false",
+    "cannot_be_editorial": [
+      "wrong_identity",
+      "wrong_signature",
+      "wrong_type",
+      "wrong_formula",
+      "missing_operation",
+      "invented_operation",
+      "wrong_dependency",
+      "wrong_date_boundary",
+      "wrong_access_rule",
+      "unsupported_technical_claim",
+      "unresolved_object_identity"
+    ],
+    "always_blocking_defect_codes": [
+      "identity_mismatch",
+      "signature_mismatch",
+      "type_mismatch",
+      "formula_mismatch",
+      "operation_missing",
+      "operation_invented",
+      "dependency_mismatch",
+      "date_boundary_mismatch",
+      "access_rule_violation",
+      "unsupported_claim",
+      "identity_unresolved"
+    ]
+  }
+}

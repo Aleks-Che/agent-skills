@@ -199,6 +199,30 @@ python scripts/artifact_schema.py <artifacts_dir>
 Правила ссылок, отдельная проверка manifest миграций и ограничения P0-01 описаны
 в [references/artifacts.md](references/artifacts.md).
 
+### Независимый SQL-инвентарь и план проверок
+
+Для независимого анализа SQL без чтения facts.json:
+
+```text
+python scripts/sql_extract.py <sql_file> --dialect postgres --subjects <names>
+python scripts/validation_plan.py <inventory.json> --kind function --policy references/check-policy.json
+```
+
+Экстрактор (`scripts/sql_extract.py`) извлекает:
+- CREATE FUNCTION/PROCEDURE/VIEW/MATERIALIZED VIEW/TABLE AS
+- DML: SELECT, INSERT, UPDATE, DELETE, MERGE
+- PL/pgSQL: PERFORM, CALL, EXECUTE
+- CTE, TEMP TABLE, FROM/JOIN зависимости
+- Dollar-quoted тела функций
+
+**Ограничения:** regex-based, не полный AST. Dynamic имена не разрешаются.
+Неподдержанный синтаксис фиксируется в `coverage_notes`. Подробнее — в
+заголовке `sql_extract.py`.
+
+Генератор плана (`scripts/validation_plan.py`) объединяет inventory с
+`check-policy.json` и формирует `validation_plan.json` с конкретными
+обязательными проверками.
+
 ### Схемы артефактов (версия 2)
 
 | Артефакт | Схема | Описание |

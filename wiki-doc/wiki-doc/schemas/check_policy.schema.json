@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Check policy v1",
+  "description": "Validation check catalog defining rules, applicability, and blocking behavior",
+  "type": "object",
+  "required": ["schema_version", "rules", "object_type_groups", "section_applicability", "blocking_override_rules"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rule"
+      },
+      "minItems": 1
+    },
+    "object_type_groups": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/object_type_group"
+      }
+    },
+    "section_applicability": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/section_rule"
+      }
+    },
+    "blocking_override_rules": {
+      "$ref": "#/$defs/blocking_override"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "rule": {
+      "type": "object",
+      "required": ["id", "description", "category", "blocking_default", "subject_pattern", "source"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "type": "string",
+          "enum": ["technical", "editorial"]
+        },
+        "blocking_default": {
+          "type": "boolean"
+        },
+        "subject_pattern": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "enum": ["inventory", "object_type", "section", "profile"]
+        },
+        "conditions": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    "object_type_group": {
+      "type": "object",
+      "required": ["always_required", "conditional"],
+      "properties": {
+        "always_required": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "conditional": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "section_rule": {
+      "type": "object",
+      "required": ["description", "block_id"],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "always_applicable": {
+          "type": "boolean"
+        },
+        "applicable_when": {
+          "type": "object"
+        },
+        "conditional": {
+          "type": "boolean"
+        },
+        "block_id": {
+          "type": "string",
+          "pattern": "^\\d{2}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "blocking_override": {
+      "type": "object",
+      "required": ["cannot_be_editorial", "always_blocking_defect_codes"],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "cannot_be_editorial": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "always_blocking_defect_codes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

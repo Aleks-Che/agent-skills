@@ -1,0 +1,4 @@
+# Tested dependency for the P0-01 Draft 2020-12 artifact validator.
+jsonschema==4.26.0
+# jsonschema treats date-time as unchecked unless this optional checker is installed.
+rfc3339-validator==0.1.4

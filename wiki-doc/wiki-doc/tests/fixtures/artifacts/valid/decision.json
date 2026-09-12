@@ -1,0 +1,20 @@
+{
+  "schema_version": 2,
+  "run_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "page_id": "function+core+calc",
+  "decision": "ready",
+  "manifest_sha256": "2d4b2e043d7adf76b3ee5ac1ee261288fa9ff1129a5dd31261eeadb78a6ecd04",
+  "validation_sha256": "e772110232208f49bef572d8ba3e6e20043deacc6a90b2942185a964d108c606",
+  "metrics": {
+    "coverage_percent": 100.0,
+    "accuracy_percent": 100.0,
+    "total_checks": 4,
+    "ok_count": 4,
+    "defect_count": 0,
+    "inconclusive_count": 0,
+    "not_applicable_count": 0
+  },
+  "blocking_defects": [],
+  "blocking_inconclusive": [],
+  "timestamp": "2026-09-12T12:00:00Z"
+}

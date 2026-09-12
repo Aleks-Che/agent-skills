@@ -1,0 +1,22 @@
+{
+  "schema_version": 2,
+  "run_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "page_id": "function+core+calc",
+  "entries": {
+    "op_001": [
+      {
+        "section_id": "dependencies"
+      }
+    ],
+    "formula_001": [
+      {
+        "section_id": "formulas"
+      }
+    ],
+    "unknown_001": [
+      {
+        "section_id": "uncertainties"
+      }
+    ]
+  }
+}

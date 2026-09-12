@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Coverage map v2",
+  "description": "Maps fact IDs to sections/fragments in the generated wiki page",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "run_id",
+    "page_id",
+    "entries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 2
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "page_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "entries": {
+      "type": "object",
+      "description": "Map of fact_id to array of section/fragment references",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/coverage_entry"
+        },
+        "minItems": 1,
+        "uniqueItems": true
+      },
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "\\S"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "coverage_entry": {
+      "type": "object",
+      "required": [
+        "section_id"
+      ],
+      "properties": {
+        "section_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "fragment_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

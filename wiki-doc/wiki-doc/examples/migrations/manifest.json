@@ -1,0 +1,11 @@
+{
+  "dialect": "postgres",
+  "version": "15",
+  "target_revision": "043",
+  "ordered_files": [
+    "../baseline/orders.sql",
+    "../08_alter_migration.sql",
+    "043_amount.sql"
+  ]
+}
+

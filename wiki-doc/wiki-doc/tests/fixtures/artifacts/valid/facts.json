@@ -1,0 +1,174 @@
+{
+  "schema_version": 2,
+  "run_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "dialect": {
+    "name": "postgres",
+    "version": "15"
+  },
+  "profile": null,
+  "documented_object_ids": [
+    "obj_1"
+  ],
+  "inputs": [
+    {
+      "path": "source.sql",
+      "sha256": "390240bdc8066e326ec2829282453aaa158f017282b90a1bd28616efa45b2b03"
+    }
+  ],
+  "objects": [
+    {
+      "id": "obj_1",
+      "kind": "function",
+      "schema": "core",
+      "name": "calc",
+      "signature": "()",
+      "page_id": "function+core+calc",
+      "source_refs": [
+        {
+          "path": "source.sql",
+          "start_line": 2,
+          "end_line": 6,
+          "sha256": "390240bdc8066e326ec2829282453aaa158f017282b90a1bd28616efa45b2b03"
+        }
+      ]
+    },
+    {
+      "id": "orders",
+      "kind": "table",
+      "schema": "demo",
+      "name": "orders",
+      "page_id": null,
+      "source_refs": [
+        {
+          "path": "source.sql",
+          "start_line": 1,
+          "end_line": 1,
+          "sha256": "390240bdc8066e326ec2829282453aaa158f017282b90a1bd28616efa45b2b03"
+        }
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def_1",
+      "object_id": "obj_1",
+      "status": "resolved",
+      "source_refs": [
+        {
+          "path": "source.sql",
+          "start_line": 2,
+          "end_line": 6,
+          "sha256": "390240bdc8066e326ec2829282453aaa158f017282b90a1bd28616efa45b2b03"
+        }
+      ]
+    }
+  ],
+  "operations": [
+    {
+      "id": "op_001",
+      "kind": "SELECT",
+      "reads": [
+        "orders"
+      ],
+      "source_refs": [
+        {
+          "path": "source.sql",
+          "start_line": 3,
+          "end_line": 5,
+          "sha256": "390240bdc8066e326ec2829282453aaa158f017282b90a1bd28616efa45b2b03"
+        }
+      ],
+      "writes": [],
+      "calls": [],
+      "scope": "obj_1",
+      "order": 1,
+      "condition_ids": [
+        "cond_001"
+      ],
+      "dynamic": false
+    }
+  ],
+  "columns": [
+    {
+      "id": "col_001",
+      "object_id": "orders",
+      "name": "amount",
+      "type_target": "numeric",
+      "type_evidence": {
+        "type_target": {
+          "kind": "declaration",
+          "source_refs": [
+            {
+              "path": "source.sql",
+              "start_line": 1,
+              "end_line": 1,
+              "sha256": "390240bdc8066e326ec2829282453aaa158f017282b90a1bd28616efa45b2b03"
+            }
+          ]
+        }
+      },
+      "source_refs": [
+        {
+          "path": "source.sql",
+          "start_line": 1,
+          "end_line": 1,
+          "sha256": "390240bdc8066e326ec2829282453aaa158f017282b90a1bd28616efa45b2b03"
+        }
+      ],
+      "type_expression": null
+    }
+  ],
+  "formulas": [
+    {
+      "id": "formula_001",
+      "expression": "sum(amount * 1.1)",
+      "used_fields": [
+        "amount"
+      ],
+      "source_refs": [
+        {
+          "path": "source.sql",
+          "start_line": 3,
+          "end_line": 3,
+          "sha256": "390240bdc8066e326ec2829282453aaa158f017282b90a1bd28616efa45b2b03"
+        }
+      ],
+      "operation_ids": [
+        "op_001"
+      ],
+      "condition_ids": [
+        "cond_001"
+      ],
+      "column_ids": [
+        "col_001"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "id": "cond_001",
+      "expression": "amount > 0",
+      "source_refs": [
+        {
+          "path": "source.sql",
+          "start_line": 5,
+          "end_line": 5,
+          "sha256": "390240bdc8066e326ec2829282453aaa158f017282b90a1bd28616efa45b2b03"
+        }
+      ],
+      "operation_ids": [
+        "op_001"
+      ]
+    }
+  ],
+  "unknowns": [
+    {
+      "id": "unknown_001",
+      "what": "Business rounding requirements",
+      "reason": "Not specified in SQL or comments",
+      "related_facts": [
+        "formula_001"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Validation plan v2",
+  "description": "Required checks derived from SQL analysis and check policy",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "run_id",
+    "page_id",
+    "required_checks"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 2
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "page_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "required_checks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/required_check"
+      },
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "required_check": {
+      "type": "object",
+      "required": [
+        "id",
+        "rule_id",
+        "subject",
+        "source",
+        "applicable",
+        "blocking"
+      ],
+      "properties": {
+        "rule_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "inventory",
+            "object_type",
+            "section",
+            "profile"
+          ]
+        },
+        "applicable": {
+          "type": "boolean"
+        },
+        "blocking": {
+          "type": "boolean"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "technical",
+            "editorial"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "inventory_anchor": {
+          "type": "object",
+          "required": [
+            "object_or_scope",
+            "construct",
+            "ordinal",
+            "path"
+          ],
+          "properties": {
+            "object_or_scope": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "construct": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "ordinal": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "source": {
+                "const": "inventory"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "inventory_anchor"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source": {
+                "enum": [
+                  "object_type",
+                  "section",
+                  "profile"
+                ]
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "inventory_anchor"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

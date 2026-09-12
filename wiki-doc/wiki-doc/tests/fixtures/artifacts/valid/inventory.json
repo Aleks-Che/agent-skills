@@ -1,0 +1,36 @@
+{
+  "schema_version": 2,
+  "run_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "dialect": {
+    "name": "postgres",
+    "version": "15"
+  },
+  "items": [
+    {
+      "anchor": {
+        "object_or_scope": "core.calc()",
+        "construct": "SELECT",
+        "ordinal": 1
+      },
+      "kind": "operation",
+      "source_ref": {
+        "path": "source.sql",
+        "start_line": 3,
+        "end_line": 5,
+        "sha256": "390240bdc8066e326ec2829282453aaa158f017282b90a1bd28616efa45b2b03"
+      },
+      "reads": [
+        "demo.orders"
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "path": "source.sql",
+      "sha256": "390240bdc8066e326ec2829282453aaa158f017282b90a1bd28616efa45b2b03"
+    }
+  ],
+  "documented_subjects": [
+    "core.calc()"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wiki-doc/schemas/migration_manifest.schema.json",
+  "title": "Migration manifest",
+  "description": "Defines migration file ordering (separate from run manifest)",
+  "type": "object",
+  "required": [
+    "dialect",
+    "version",
+    "ordered_files"
+  ],
+  "properties": {
+    "dialect": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Database dialect",
+      "pattern": "\\S"
+    },
+    "version": {
+      "type": "string",
+      "description": "Database version or 'unknown'"
+    },
+    "target_revision": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Target migration revision"
+    },
+    "ordered_files": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "\\S"
+      },
+      "description": "Migration files in application order, paths relative to this manifest",
+      "minItems": 1,
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false
+}

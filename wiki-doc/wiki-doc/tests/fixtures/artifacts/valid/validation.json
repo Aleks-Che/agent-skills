@@ -1,0 +1,50 @@
+{
+  "schema_version": 2,
+  "run_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "page_id": "function+core+calc",
+  "checks": [
+    {
+      "id": "identity",
+      "status": "ok",
+      "blocking": true,
+      "category": "technical",
+      "reason": "Object identity resolved",
+      "evidence": [
+        "source.sql:2-6"
+      ],
+      "plan_check_id": "identity"
+    },
+    {
+      "id": "sql_registry",
+      "status": "ok",
+      "blocking": true,
+      "category": "technical",
+      "reason": "Registry complete",
+      "evidence": [
+        "source.sql:2-6"
+      ],
+      "plan_check_id": "sql_registry"
+    },
+    {
+      "id": "registry_document",
+      "status": "ok",
+      "blocking": true,
+      "category": "technical",
+      "reason": "Document matches registry",
+      "evidence": [
+        "source.sql:2-6"
+      ],
+      "plan_check_id": "registry_document"
+    },
+    {
+      "id": "operation:select:1",
+      "plan_check_id": "operation:select:1",
+      "status": "ok",
+      "blocking": true,
+      "reason": "SELECT is represented",
+      "evidence": [
+        "source.sql:3-5"
+      ]
+    }
+  ]
+}

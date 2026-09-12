@@ -1,0 +1,44 @@
+{
+  "schema_version": 2,
+  "run_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "created_at": "2026-09-12T12:00:00Z",
+  "sql_files": [
+    {
+      "path": "source.sql",
+      "sha256": "390240bdc8066e326ec2829282453aaa158f017282b90a1bd28616efa45b2b03"
+    }
+  ],
+  "tool_versions": {
+    "scripts_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "skill_md_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "template_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "policy_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  "page_id": "function+core+calc",
+  "artifacts": {
+    "facts": {
+      "path": "facts.json",
+      "sha256": "8546b01fe80a000a2524d1d227b384404fb3ba489e7cd36e24958b5f7d561315"
+    },
+    "coverage": {
+      "path": "coverage.json",
+      "sha256": "6c8a00525b35867eb2fb05d2958ee62e6375087c10c086a638c99544a52b701c"
+    },
+    "validation": {
+      "path": "validation.json",
+      "sha256": "e772110232208f49bef572d8ba3e6e20043deacc6a90b2942185a964d108c606"
+    },
+    "validation_plan": {
+      "path": "validation_plan.json",
+      "sha256": "209dabbeb666c871186d36eb4dd7df6ff55b815810922d15666a53cf52da751f"
+    },
+    "inventory": {
+      "path": "inventory.json",
+      "sha256": "d1587576e02a266bcdb69c495bf79fa822f5bf5caf35af0dd7e0a8e3b8f86cfa"
+    },
+    "draft": {
+      "path": "page.draft.md",
+      "sha256": "c4b362c4f93572d6d438f444ef7259e3fab9e6a38b7e5fa7e01795a3f5e44742"
+    }
+  }
+}

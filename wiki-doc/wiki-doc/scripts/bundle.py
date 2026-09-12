@@ -208,6 +208,13 @@ def verify_manifest_hashes(
     roots = {'project': run, **(roots or {}), 'run': run}
     if not isinstance(manifest, dict):
         return ['manifest must be an object']
+    for key in ('sql_files', 'context_files'):
+        if not isinstance(manifest.get(key, []), list):
+            errors.append(f'{key}: expected an array')
+    if not isinstance(manifest.get('artifacts', {}), dict):
+        errors.append('artifacts: expected an object')
+    if errors:
+        return errors
 
     def verify(ref, location, default_root):
         try:
@@ -353,7 +360,10 @@ def reverify_bundle(
     if decision_path.exists():
         try:
             decision = read_json(decision_path)
-            errors.extend(verify_decision_against_manifest(decision, manifest, run))
+            schema_errors = validate_schema(decision, load_schemas()['decision'], 'decision')
+            errors.extend(schema_errors)
+            if not schema_errors:
+                errors.extend(verify_decision_against_manifest(decision, manifest, run))
         except ArtifactInputError as exc:
             errors.append(f'decision.json: {exc}')
     elif require_decision:

@@ -18,23 +18,23 @@ class PolicyError(ValueError):
 
 def load_policy(path=None):
     """Load and validate check-policy.json."""
+    from artifact_schema import read_json, validate_schema, ArtifactInputError
     policy_path = Path(path) if path else POLICY_PATH
     try:
-        policy = json.loads(policy_path.read_text(encoding='utf-8'))
-    except (OSError, json.JSONDecodeError) as exc:
+        policy = read_json(policy_path)
+    except ArtifactInputError as exc:
         raise PolicyError(f'Cannot load check policy: {exc}') from exc
     if not isinstance(policy, dict):
         raise PolicyError('Check policy must be an object')
     if policy.get('schema_version') != 1:
         raise PolicyError(f"Unsupported check policy schema_version: {policy.get('schema_version')}")
-    _validate_policy_structure(policy)
-    from artifact_schema import read_json, validate_schema, ArtifactInputError
     try:
         errors = validate_schema(policy, read_json(POLICY_PATH.parent.parent / 'schemas' / 'check_policy.schema.json'), 'policy')
     except ArtifactInputError as exc:
         raise PolicyError(str(exc)) from exc
     if errors:
         raise PolicyError('\n'.join(errors))
+    _validate_policy_structure(policy)
     return policy
 
 
@@ -252,7 +252,7 @@ def derive_inventory_checks(policy, inventory_items, object_key=''):
         ordinal = counters[kind]
 
         rule_ids = []
-        if kind in ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'DDL', 'PERFORM', 'CALL', 'EXECUTE', 'OTHER', 'CTE', 'TEMP_TABLE'):
+        if kind in ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'DDL', 'PERFORM', 'CALL', 'EXECUTE', 'RETURN', 'OTHER', 'CTE', 'TEMP_TABLE'):
             rule_ids.append('operation')
         details = item.get('details', {})
         for feature, rule in (('has_formula', 'formula'), ('has_condition', 'condition'), ('dynamic', 'unknown')):

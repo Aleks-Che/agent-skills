@@ -12,6 +12,8 @@ from evidence import validate_evidence, EvidenceError, sha256_file, extract_line
 from validation_gate import evaluate_bundle, evaluate_checks
 from check_policy import load_policy, _evaluate_condition
 from sql_extract import extract_inventory
+from bundle import save_bundle, create_manifest, compute_tool_versions, verify_manifest_hashes, BundleError
+from validation_plan import generate_plan
 
 
 class FullGateTests(unittest.TestCase):
@@ -80,6 +82,14 @@ class FullGateTests(unittest.TestCase):
         self.assertEqual(evaluate_bundle(self.run)['decision'], 'ready')
         result = evaluate_bundle(self.run, policy_path=self.run / 'missing-policy.json')
         self.assertTrue(result['input_error'])
+
+    def test_malformed_policy_is_a_structured_input_error(self):
+        path = self.run / 'policy.json'
+        for content in ('{"schema_version":1,"rules":null}',
+                        '{"schema_version":1,"schema_version":1}'):
+            path.write_text(content, encoding='utf-8')
+            result = evaluate_bundle(self.run, policy_path=path)
+            self.assertTrue(result['input_error'], result)
 
     def test_plan_severity_and_applicability_cannot_be_lowered(self):
         original = read_json(self.run / 'validation_plan.json')
@@ -159,6 +169,69 @@ class FullGateTests(unittest.TestCase):
         result = subprocess.run(command + ['--bundle', str(self.run), '--json'], capture_output=True, text=True)
         self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
 
+    def test_legacy_cli_never_authorizes_publication(self):
+        path = self.run / 'legacy.json'
+        path.write_text(json.dumps({'checks': [{'id': name, 'status': 'ok', 'blocking': True,
+                                              'reason': 'Historical check', 'evidence': ['source.sql:1']}
+                                             for name in ('identity', 'sql_registry', 'registry_document')]}), encoding='utf-8')
+        result = subprocess.run([sys.executable, '-B', str(PACKAGE / 'scripts' / 'validation_gate.py'), str(path)],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertFalse(json.loads(result.stdout)['publication_authorized'])
+
+    def test_checked_artifacts_cannot_be_redirected_to_project_root(self):
+        manifest = read_json(self.run / 'manifest.json')
+        manifest['artifacts']['validation']['root'] = 'project'
+        write_json(self.run, 'manifest', manifest)
+        self.assertTrue(evaluate_bundle(self.run)['input_error'])
+
+    def test_honest_missing_ddl_is_not_a_documentation_defect(self):
+        facts = read_json(self.run / 'facts.json')
+        facts['definitions'].append({'id': 'external-ddl', 'object_id': 'orders', 'status': 'not_found', 'source_refs': []})
+        write_json(self.run, 'facts', facts)
+        result = seal(self.run)
+        self.assertEqual(result['decision'], 'ready', result)
+
+    def test_external_project_snapshot_survives_archiving(self):
+        with tempfile.TemporaryDirectory() as temp:
+            parent = Path(temp)
+            project = parent / 'project'
+            project.mkdir()
+            (self.run / 'source.sql').replace(project / 'source.sql')
+            self.assertEqual(evaluate_bundle(self.run, roots={'project': project})['decision'], 'ready')
+            dest = parent / 'archive'
+            save_bundle(self.run, dest, roots={'project': project})
+            (project / 'source.sql').unlink()
+            self.assertEqual(evaluate_bundle(dest)['decision'], 'ready')
+            with self.assertRaises(BundleError): save_bundle(dest, dest / 'nested')
+
+    def test_profile_obligations_and_hash_are_enforced(self):
+        facts = read_json(self.run / 'facts.json')
+        facts['profile'] = 'CKR_GP'
+        write_json(self.run, 'facts', facts)
+        inv = read_json(self.run / 'inventory.json')
+        plan = generate_plan(inv, load_policy(), page_id='function+core+calc', profile_active=True)
+        self.assertTrue(any(c['subject'].endswith('reads/demo.orders') for c in plan['required_checks']))
+        write_json(self.run, 'validation_plan', plan)
+        report = read_json(self.run / 'validation.json')
+        for check in plan['required_checks']:
+            if check['source'] == 'profile':
+                report['checks'].append({**copy.deepcopy(report['checks'][0]), 'id': check['id'],
+                                         'plan_check_id': check['id']})
+        write_json(self.run, 'validation', report)
+        seal(self.run, issue=False)
+        manifest = read_json(self.run / 'manifest.json')
+        profile = PACKAGE / 'project-profile.md'
+        manifest['tool_versions'] = compute_tool_versions(PACKAGE, profile_path=profile)
+        write_json(self.run, 'manifest', manifest)
+        result = evaluate_bundle(self.run, profile_path=profile, write_decision=True)
+        self.assertEqual(result['decision'], 'ready', result)
+        self.assertEqual(evaluate_bundle(self.run)['decision'], 'blocked')
+
+    def test_duplicate_json_keys_are_an_input_error(self):
+        (self.run / 'manifest.json').write_text('{"schema_version":2,"schema_version":2}', encoding='utf-8')
+        self.assertTrue(evaluate_bundle(self.run)['input_error'])
+
 
 class PolicyMetricsTests(unittest.TestCase):
     def test_exact_85_and_extra_successes_do_not_change_denominator(self):
@@ -182,6 +255,12 @@ class PolicyMetricsTests(unittest.TestCase):
         self.assertTrue(_evaluate_condition({'_or': {'has_reads': True, 'has_calls': True}}, {'has_calls': True}))
         self.assertTrue(_evaluate_condition({'source_count_gte': 2}, {'source_count': 3}))
 
+    def test_template_block_ids_match_policy_sections(self):
+        import re
+        template = (PACKAGE / 'template.md').read_text(encoding='utf-8')
+        pairs = re.findall(r'\| `([a-z_]+)` \| \[(\d+)\]', template)
+        self.assertEqual(dict(pairs), {sid: rule['block_id'] for sid, rule in load_policy()['section_applicability'].items()})
+
 
 class ExtractorBoundaryTests(unittest.TestCase):
     def inventory(self, sql, subjects=None):
@@ -204,8 +283,45 @@ class ExtractorBoundaryTests(unittest.TestCase):
             inv = self.inventory('CREATE FUNCTION demo.f() RETURNS void AS $$BEGIN\n' + body + '\nEND;$$ LANGUAGE plpgsql;')
             self.assertTrue(inv['coverage_notes'])
 
+    def test_dollar_literals_and_nested_comments_do_not_invent_sql(self):
+        sql = "CREATE VIEW demo.v AS SELECT $tag$SELECT fake FROM nope;$tag$ AS text; /* outer /* SELECT nope */ still comment */"
+        inv = self.inventory(sql)
+        self.assertEqual(sum(i['kind'] == 'SELECT' for i in inv['items']), 1)
+
+    def test_dependency_scan_stops_at_statement_boundary_and_finds_calls(self):
+        sql = 'CREATE FUNCTION demo.f() RETURNS void AS $$BEGIN\nSELECT demo.a(1) FROM demo.x;\nSELECT 2 FROM demo.y;\nEND;$$ LANGUAGE plpgsql;'
+        items = [i for i in self.inventory(sql)['items'] if i['kind'] == 'SELECT']
+        self.assertEqual(items[0]['reads'], ['demo.x'])
+        self.assertEqual(items[0]['calls'], ['demo.a'])
+        self.assertEqual(items[1]['reads'], ['demo.y'])
+
+    def test_return_is_an_independent_operation_and_unknown_calls_block(self):
+        sql = 'CREATE FUNCTION demo.f() RETURNS int AS $$BEGIN RETURN demo.g(); END;$$ LANGUAGE plpgsql;'
+        inv = self.inventory(sql)
+        self.assertIn('RETURN', [i['kind'] for i in inv['items']])
+        self.assertEqual(next(i for i in inv['items'] if i['kind'] == 'RETURN')['calls'], ['demo.g'])
+        unknown = self.inventory(sql.replace('demo.g()', 'unknown_call()'))
+        self.assertTrue(any('Unresolved unqualified call' in n['reason'] for n in unknown['coverage_notes']))
+
 
 class EvidenceBoundaryTests(unittest.TestCase):
+    def test_tool_fingerprints_cover_schema_instructions_and_template_blocks(self):
+        import shutil
+        with tempfile.TemporaryDirectory() as temp:
+            package = Path(temp) / 'package'
+            shutil.copytree(PACKAGE, package, ignore=shutil.ignore_patterns('__pycache__'))
+            original = compute_tool_versions(package)
+            for relative, field in (('schemas/facts.schema.json', 'scripts_sha256'),
+                                    ('scripts/validation_gate.py', 'scripts_sha256'),
+                                    ('doc-validator.md', 'skill_md_sha256'),
+                                    ('template/01-header-purpose.md', 'template_sha256'),
+                                    ('references/check-policy.json', 'policy_sha256')):
+                path = package / relative
+                data = path.read_bytes()
+                path.write_bytes(data + b'\n')
+                self.assertNotEqual(compute_tool_versions(package)[field], original[field], relative)
+                path.write_bytes(data)
+
     def test_sibling_prefix_and_absolute_path_escape(self):
         with tempfile.TemporaryDirectory() as temp:
             parent = Path(temp)
@@ -223,6 +339,39 @@ class EvidenceBoundaryTests(unittest.TestCase):
     def test_lf_crlf_bom_line_contract(self):
         self.assertEqual(extract_lines_text(b'\xef\xbb\xbfa\r\nb\r\n', 1, 2), 'a\nb')
         with self.assertRaises(ValueError): extract_lines_text(b'a\n', 2, 2)
+
+    def test_migration_parent_reference_stays_inside_project_and_is_hashed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            run, migrations, baseline = root / 'run', root / 'migrations', root / 'baseline'
+            for directory in (run, migrations, baseline): directory.mkdir()
+            sql = baseline / 'schema.sql'
+            sql.write_bytes(b'CREATE TABLE demo.t(id int);\n')
+            mm = migrations / 'manifest.json'
+            mm.write_text(json.dumps({'dialect': 'postgres', 'version': '15', 'ordered_files': ['../baseline/schema.sql']}), encoding='utf-8')
+            manifest = create_manifest(page_id='migration', sql_files=[sql], artifacts_dir=run,
+                                       project_dir=root, migration_manifest=mm, tool_versions=compute_tool_versions(PACKAGE))
+            self.assertEqual(verify_manifest_hashes(manifest, run, roots={'project': root}), [])
+            sql.write_bytes(b'ALTER TABLE demo.t ADD x int;\n')
+            self.assertTrue(verify_manifest_hashes(manifest, run, roots={'project': root}))
+            with self.assertRaises(BundleError):
+                create_manifest(page_id='migration', sql_files=[sql], artifacts_dir=run,
+                                project_dir=root, migration_manifest=run / 'manifest.json', tool_versions={})
+
+    def test_symlink_escape_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            project = root / 'project'
+            project.mkdir()
+            source = root / 'outside.sql'
+            source.write_bytes(b'SELECT 1;\n')
+            link = project / 'link.sql'
+            try:
+                link.symlink_to(source)
+            except OSError as exc:
+                self.skipTest(f'Symlink creation unavailable: {exc}')
+            ref = {'root': 'project', 'path': 'link.sql', 'start_line': 1, 'end_line': 1, 'sha256': sha256_file(source)}
+            with self.assertRaises(EvidenceError): validate_evidence(ref, {'project': project})
 
 
 if __name__ == '__main__':

@@ -32,6 +32,7 @@ SUPPORTED_CONSTRUCTS = frozenset({
     'CREATE_MATERIALIZED_VIEW', 'CREATE_TABLE_AS',
     'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE',
     'PERFORM', 'CALL', 'EXECUTE',
+    'RETURN',
     'CTE', 'TEMP_TABLE',
 })
 
@@ -421,6 +422,12 @@ def extract_operations(sql_text: str, file_path: str, file_sha256: str,
             details={'table_name': table_name},
         ))
 
+    for m in re.finditer(r'\bRETURN\b', cleaned, re.I):
+        counters['RETURN'] = counters.get('RETURN', 0) + 1
+        line = _line_of(sql_text, m.start())
+        items.append(InventoryItem({'object_or_scope': scope, 'construct': 'RETURN', 'ordinal': counters['RETURN']},
+                                   'RETURN', SourceRef(file_path, line, line, file_sha256)))
+
     # Keep source spans and statement features independent of writer-created IDs.
     for item in items:
         # Locate the occurrence by its line and construct, then stop at this statement.
@@ -433,12 +440,25 @@ def extract_operations(sql_text: str, file_path: str, file_sha256: str,
             item.details['profile_features'] = sorted(set(re.findall(
                 r'\b(?:ckr_uup_queue|ckr_uup_products_contract_val|ckr_uup_org_st|product_group|coef_up|consent|row_number|init_type_oper|start_oper|add_log|end_oper)\b', segment, re.I)))
             item.source_ref.end_line = _line_of(sql_text, max(match.start(), stop - 1))
-            if item.kind in DML_KEYWORDS:
+            if item.kind in DML_KEYWORDS | {'RETURN', 'PERFORM', 'CALL'}:
                 item.details['has_formula'] = bool(re.search(r'[+/-]|[\w.)]\s*\*\s*[\w.(]|\b(?:SUM|AVG|COUNT|MIN|MAX|CASE|OVER)\b', segment, re.I))
                 item.details['has_condition'] = bool(re.search(r'\b(?:WHERE|ON|CASE|HAVING)\b', segment, re.I))
-                item.calls = list(dict.fromkeys(re.findall(r'\b([a-zA-Z_]\w*\.[a-zA-Z_]\w*)\s*\(', segment)))
+                item.calls = list(dict.fromkeys(item.calls + re.findall(r'\b([a-zA-Z_]\w*\.[a-zA-Z_]\w*)\s*\(', segment)))
                 # INSERT target(column-list) is not a function invocation.
                 item.calls = [name for name in item.calls if name not in item.writes]
+                builtins = {'sum', 'avg', 'count', 'min', 'max', 'now', 'coalesce', 'nullif',
+                            'greatest', 'least', 'round', 'abs', 'lower', 'upper', 'trim',
+                            'substring', 'extract', 'date_trunc', 'to_char', 'to_date',
+                            'row_number', 'cast', 'in', 'values', 'over', 'filter'}
+                for call in re.findall(r'(?<![\w.])([a-zA-Z_]\w*)\s*\(', segment):
+                    if call.lower() not in builtins and call not in item.writes:
+                        notes.append(CoverageNote(item.source_ref, f'Unresolved unqualified call: {call}'))
+                if re.search(r'(?<![\w.])(?:now|coalesce|nullif|greatest|least|round|abs|date_trunc|to_char|to_date)\s*\(', segment, re.I):
+                    item.details['has_formula'] = True
+            for field in ('reads', 'writes', 'calls'):
+                for target in getattr(item, field):
+                    if '.' not in target:
+                        notes.append(CoverageNote(item.source_ref, f'Unresolved {field} target/search_path: {target}'))
             # Bare EXECUTE variables cannot establish the operation template.
             if item.kind == 'EXECUTE':
                 raw = sql_text[match.start():stop]
@@ -453,6 +473,9 @@ def extract_operations(sql_text: str, file_path: str, file_sha256: str,
         line = _line_of(sql_text, match.start())
         notes.append(CoverageNote(SourceRef(file_path, line, line, file_sha256),
                                   f'{match.group().upper()} requires analysis beyond the P0 subset'))
+    for match in re.finditer(r'\(\s*SELECT\b|\b(?:UNION|INTERSECT|EXCEPT)\b', cleaned, re.I):
+        line = _line_of(sql_text, match.start())
+        notes.append(CoverageNote(SourceRef(file_path, line, line, file_sha256), 'Nested/set query requires scoped analysis beyond P0'))
     for match in re.finditer(r'[^;]+(?:;|$)', cleaned):
         fragment = re.sub(r'^\s*(?:BEGIN\b\s*)?', '', match.group(), flags=re.I).strip()
         if not fragment or re.fullmatch(r'END\s*;?', fragment, re.I):

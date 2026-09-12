@@ -158,7 +158,7 @@ def evaluate_checks(checks, required, policy):
 def _section_bodies(draft):
     """P0 Markdown subset: explicit heading IDs, ignoring fenced code/comments."""
     sections, current, fence = {}, None, None
-    for line in draft.splitlines():
+    for line in re.sub(r'<!--.*?-->', '', draft, flags=re.S).splitlines():
         marker = re.match(r'^\s{0,3}(`{3,}|~{3,})', line)
         if marker:
             token = marker.group(1)
@@ -199,7 +199,7 @@ def _fact_checks(artifacts, rebuilt, required, draft):
         errors.append('facts signature differs from SQL declaration')
     operations = [o for o in facts['operations'] if o.get('scope') in documented]
     items = [i for i in rebuilt['items'] if i['kind'] in
-             ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'CALL', 'PERFORM', 'EXECUTE')]
+             ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'CALL', 'PERFORM', 'EXECUTE', 'RETURN')]
     matched, item_facts = set(), {}
     for item in items:
         ref = item['source_ref']

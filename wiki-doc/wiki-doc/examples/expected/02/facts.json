@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "table+demo+events_log": {
+      "operations": {
+        "CREATE": 1,
+        "INSERT": 1,
+        "SELECT": 1
+      },
+      "reads": [
+        "demo_src.events"
+      ],
+      "writes": [
+        "demo.events_log"
+      ],
+      "calls": [],
+      "columns": [
+        {
+          "object": "demo.events_log",
+          "name": "event_name",
+          "type_target": "varchar(64)",
+          "type_expression": "varchar(16)"
+        },
+        {
+          "object": "demo.events_log",
+          "name": "event_value",
+          "type_target": "numeric(18, 4)",
+          "type_expression": "numeric(12, 2)"
+        },
+        {
+          "object": "demo.events_log",
+          "name": "created_at",
+          "type_target": "timestamp with time zone",
+          "type_expression": "timestamp with time zone"
+        },
+        {
+          "object": "demo.events_log",
+          "name": "payload",
+          "type_target": "jsonb",
+          "type_expression": "jsonb"
+        }
+      ]
+    }
+  }
+}

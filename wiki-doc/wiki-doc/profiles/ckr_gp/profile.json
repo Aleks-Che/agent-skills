@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "CKR_GP",
+  "activation_prefixes": ["s_gp_p1024_dmr_svd_", "s_gp_p1024_src_bvd_"],
+  "schema_pattern": "^s_gp_p1024_(dmr_svd|src_bvd)_(.+)_gp_(ini|stg|mtd|core|apt)$",
+  "families": {"dmr_svd": "SVD", "src_bvd": "BVD"},
+  "audit_loader_suffix": "_audit",
+  "audit_call_layer": "core",
+  "features": ["ckr_uup_queue", "ckr_uup_products_contract_val", "ckr_uup_org_st", "product_group", "coef_up", "consent", "row_number", "init_type_oper", "start_oper", "add_log", "end_oper"],
+  "matrix": {
+    "BVD:BVD:same": {"ini": "allowed", "stg": "allowed", "mtd": "allowed", "core": "allowed", "apt": "allowed"},
+    "BVD:BVD:other": {"ini": "forbidden", "stg": "forbidden", "mtd": "forbidden", "core": "forbidden", "apt": "forbidden"},
+    "BVD:SVD:other": {"ini": "forbidden", "stg": "forbidden", "mtd": "forbidden", "core": "forbidden", "apt": "forbidden"},
+    "SVD:BVD:other": {"ini": "forbidden", "stg": "forbidden", "mtd": "forbidden", "core": "forbidden", "apt": "allowed"},
+    "SVD:SVD:other": {"ini": "forbidden", "stg": "unconfirmed", "mtd": "unconfirmed", "core": "unconfirmed", "apt": "allowed"},
+    "SVD:SVD:same": {"ini": "unconfirmed", "stg": "unconfirmed", "mtd": "unconfirmed", "core": "unconfirmed", "apt": "unconfirmed"}
+  }
+}

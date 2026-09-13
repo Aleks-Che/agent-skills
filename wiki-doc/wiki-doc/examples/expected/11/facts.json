@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()": {
+      "operations": {
+        "PERFORM": 1,
+        "SELECT": 1,
+        "RETURN": 1
+      },
+      "reads": [
+        "s_gp_p1024_dmr_svd_kb_ckr_audit_gp_core.logs"
+      ],
+      "writes": [],
+      "calls": [
+        "s_gp_p1024_dmr_svd_kb_ckr_audit_gp_core.add_log"
+      ],
+      "access": {
+        "calls": "allowed",
+        "reads": "unconfirmed"
+      },
+      "structures": [
+        {
+          "kind": "SELECT",
+          "into": [
+            "n"
+          ]
+        },
+        {
+          "kind": "RETURN",
+          "return_expression": "n"
+        }
+      ],
+      "definitions": [
+        {
+          "object": "s_gp_p1024_dmr_svd_kb_ckr_audit_gp_core.add_log",
+          "status": "resolved"
+        }
+      ]
+    }
+  }
+}

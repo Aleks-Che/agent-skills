@@ -89,7 +89,7 @@ def _build_context(inventory, object_kind, object_key=''):
 
 
 def generate_plan(inventory, policy, page_id=None, object_kind=None,
-                  documented_subjects=None, object_key=None, profile_active=False):
+                  documented_subjects=None, object_key=None, profile_active=False, profile_path=None):
     """Generate validation_plan.json from inventory and policy.
 
     Args:
@@ -132,9 +132,17 @@ def generate_plan(inventory, policy, page_id=None, object_kind=None,
     policy_checks = [c for c in derive_required_checks(policy, object_kind, context)
                      if c['source'] not in ('inventory', 'profile') and c['rule_id'] != 'section']
     if profile_active:
+        from profiles import load_profile
+        from sql_syntax import mask_sql
+        import re
+        profile = load_profile(profile_path)
         for ordinal, item in enumerate(inventory.get('items', []), 1):
             subjects = [f'{field}/{name}' for field in ('reads', 'writes', 'calls') for name in item.get(field, [])]
-            subjects += ['feature/' + name for name in item.get('details', {}).get('profile_features', [])]
+            fields = item.get('details', {})
+            text = ' '.join(fields.get('formulas',[]) + fields.get('conditions',[]) +
+                            [c.get('expression','') for c in fields.get('columns',[])])
+            code = mask_sql(text, mask_identifiers=False)[0]
+            subjects += ['feature/' + name for name in profile['features'] if re.search(r'\b' + re.escape(name) + r'\b', code, re.I)]
             for subject in sorted(set(subjects)):
                 policy_checks.append({'id': f'profile_check:{ordinal}:{subject}', 'rule_id': 'profile_check',
                                       'subject': f'{object_key}/profile/{ordinal}/{subject}',
@@ -214,6 +222,7 @@ def main():
     parser.add_argument('--subjects', nargs='*', help='Documented subjects')
     parser.add_argument('--object-key', help='Canonical object key')
     parser.add_argument('--profile-active', action='store_true', help='Include CKR_GP profile obligations')
+    parser.add_argument('--profile', help='Explicit profile JSON/Markdown path')
 
     args = parser.parse_args()
 
@@ -228,7 +237,7 @@ def main():
             object_kind=args.kind,
             documented_subjects=args.subjects,
             object_key=args.object_key,
-            profile_active=args.profile_active,
+            profile_active=args.profile_active or bool(args.profile), profile_path=args.profile,
         )
 
         print(json.dumps(plan, indent=2, ensure_ascii=False))

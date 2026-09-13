@@ -1,0 +1,373 @@
+{
+  "schema_version": 1,
+  "status": "accepted",
+  "scope": "P1-01 through P1-07",
+  "date": "2026-09-13",
+  "environment": {
+    "platform": "Windows",
+    "python": "3.12.7",
+    "pglast": "7.14"
+  },
+  "tests": {
+    "total": 512,
+    "passed": 511,
+    "skipped": 1,
+    "failed": 0,
+    "elapsed_seconds": 136.322,
+    "skip_reason": "Windows symlink creation unavailable"
+  },
+  "regression": {
+    "cases": 11,
+    "subjects": 14,
+    "repeats": 3,
+    "bundles": 42,
+    "reference_valid": true,
+    "saved_valid": true,
+    "cycle": "semi-automatic-saved",
+    "full_agent_cycle_completed": false,
+    "repair_iterations": 5,
+    "outcome_variants": {
+      "01/function+demo+load_missing+()": 1,
+      "02/table+demo+events_log": 1,
+      "03/function+demo+fn_with_cte+(date)": 1,
+      "04/function+demo+refresh_summary+(bigint,integer)": 1,
+      "05/function+demo+fn_default_value+(character varying,character varying)": 1,
+      "06/function+archive+orders_summary+()": 1,
+      "06/function+core+orders_summary+()": 1,
+      "06/function+core+orders_summary+(bigint)": 1,
+      "07/function+demo+fn_dynamic+(text)": 1,
+      "08/migration+08_alter_migration.sql+08": 1,
+      "09/function+demo+total_for+(bigint)": 1,
+      "09/view+demo+order_totals": 1,
+      "10/ctas+demo+event_clock": 1,
+      "11/function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()": 1
+    }
+  },
+  "mutations": {
+    "total": 28,
+    "false_ready": 0,
+    "false_ready_rate": 0.0,
+    "results": [
+      {
+        "case": "01",
+        "subject": "function+demo+load_missing+()",
+        "mutation": "invent-target-type",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "01",
+        "subject": "function+demo+load_missing+()",
+        "mutation": "invent-target-type",
+        "mode": "coherent",
+        "decision": "blocked",
+        "false_ready": false
+      },
+      {
+        "case": "02",
+        "subject": "table+demo+events_log",
+        "mutation": "swap-target-and-expression-type",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "02",
+        "subject": "table+demo+events_log",
+        "mutation": "swap-target-and-expression-type",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "03",
+        "subject": "function+demo+fn_with_cte+(date)",
+        "mutation": "cte-as-physical",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "03",
+        "subject": "function+demo+fn_with_cte+(date)",
+        "mutation": "cte-as-physical",
+        "mode": "coherent",
+        "decision": "blocked",
+        "false_ready": false
+      },
+      {
+        "case": "04",
+        "subject": "function+demo+refresh_summary+(bigint,integer)",
+        "mutation": "wrong-update-assignment",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "04",
+        "subject": "function+demo+refresh_summary+(bigint,integer)",
+        "mutation": "wrong-update-assignment",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "05",
+        "subject": "function+demo+fn_default_value+(character varying,character varying)",
+        "mutation": "invent-default",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "05",
+        "subject": "function+demo+fn_default_value+(character varying,character varying)",
+        "mutation": "invent-default",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "06",
+        "subject": "function+core+orders_summary+()",
+        "mutation": "wrong-return-type",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "06",
+        "subject": "function+core+orders_summary+()",
+        "mutation": "wrong-return-type",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "06",
+        "subject": "function+archive+orders_summary+()",
+        "mutation": "wrong-return-type",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "06",
+        "subject": "function+archive+orders_summary+()",
+        "mutation": "wrong-return-type",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "06",
+        "subject": "function+core+orders_summary+(bigint)",
+        "mutation": "wrong-return-type",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "06",
+        "subject": "function+core+orders_summary+(bigint)",
+        "mutation": "wrong-return-type",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "07",
+        "subject": "function+demo+fn_dynamic+(text)",
+        "mutation": "invent-dynamic-name",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "07",
+        "subject": "function+demo+fn_dynamic+(text)",
+        "mutation": "invent-dynamic-name",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "08",
+        "subject": "migration+08_alter_migration.sql+08",
+        "mutation": "stale-migration-type",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "08",
+        "subject": "migration+08_alter_migration.sql+08",
+        "mutation": "stale-migration-type",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "09",
+        "subject": "view+demo+order_totals",
+        "mutation": "multiply-to-add",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "09",
+        "subject": "view+demo+order_totals",
+        "mutation": "multiply-to-add",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "09",
+        "subject": "function+demo+total_for+(bigint)",
+        "mutation": "multiply-to-add",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "09",
+        "subject": "function+demo+total_for+(bigint)",
+        "mutation": "multiply-to-add",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "10",
+        "subject": "ctas+demo+event_clock",
+        "mutation": "wrong-ctas-type",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "10",
+        "subject": "ctas+demo+event_clock",
+        "mutation": "wrong-ctas-type",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "11",
+        "subject": "function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()",
+        "mutation": "audit-read-as-call-exception",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false
+      },
+      {
+        "case": "11",
+        "subject": "function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()",
+        "mutation": "audit-read-as-call-exception",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false
+      }
+    ]
+  },
+  "publication": {
+    "pages": 14,
+    "valid": true,
+    "lint_valid": true,
+    "lint_issues": 0,
+    "idempotent": true,
+    "source_findings": [
+      {
+        "operation": "calls",
+        "page_id": "function-s-gp-p1024-dmr-svd-kb-ckr-demo-gp-core-audit-probe--a6245efa6881.md",
+        "reason": "Direct audit routine call exception",
+        "source_ref": {
+          "end_line": 15,
+          "path": "11_audit_access.sql",
+          "sha256": "7366f6074b0f5be3a45e2cf9001c57ded9c32f79cef6d12fd2390c9fff662d2a",
+          "start_line": 15
+        },
+        "source_schema": "s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core",
+        "status": "allowed",
+        "target": "s_gp_p1024_dmr_svd_kb_ckr_audit_gp_core.add_log"
+      },
+      {
+        "operation": "reads",
+        "page_id": "function-s-gp-p1024-dmr-svd-kb-ckr-demo-gp-core-audit-probe--a6245efa6881.md",
+        "reason": "Profile access matrix SVD:SVD:other, target layer core",
+        "source_ref": {
+          "end_line": 16,
+          "path": "11_audit_access.sql",
+          "sha256": "7366f6074b0f5be3a45e2cf9001c57ded9c32f79cef6d12fd2390c9fff662d2a",
+          "start_line": 16
+        },
+        "source_schema": "s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core",
+        "status": "unconfirmed",
+        "target": "s_gp_p1024_dmr_svd_kb_ckr_audit_gp_core.logs"
+      }
+    ],
+    "windows_fault_recovery_and_concurrent_process_tests": true
+  },
+  "independent_content_review": {
+    "pages": 14,
+    "cases": 11,
+    "oracle_files_excluded": true,
+    "all_found_defects_corrected": true,
+    "mermaid_rendered": false,
+    "limitation": "CTE expression types remain conservative unknown where inference is unsupported; target DDL types remain known."
+  },
+  "legacy_transition": {
+    "files": 12,
+    "legacy_pages": 11,
+    "lint_valid": true,
+    "warnings": 11,
+    "old_paths_preserved": true,
+    "converted_keys": 10,
+    "unresolved": [
+      "migration-reload-core-ckr-motiv-orgstruct-asm--603ccfe8f71e.md"
+    ],
+    "original_wiki_unchanged": true
+  },
+  "tool_versions": {
+    "scripts_sha256": "7b616066bb5c857164a4ad3069a8c8d65b4444fd8d2740adaf59872f3d548406",
+    "skill_md_sha256": "9569086f26e163b3c75159b54921c34f829a1f8edc0b08acc6d63e1e03f9794b",
+    "template_sha256": "555d1fe829494e88b24106ffe551d0b0121d55012dd20ae4efbbdfce88f67ffb",
+    "policy_sha256": "fd344d286a01e2c6a20eb7764af8ae36f8164071cbf1b48cc0a80f832b18e186"
+  },
+  "evidence": [
+    {
+      "path": ".p1-runs/p1-release/reference-report.json",
+      "sha256": "6093f69160b6fbc6eb36c5dcbefd4bd557a37896300cdeed73a209775970baed"
+    },
+    {
+      "path": ".p1-runs/p1-release/regression-report.json",
+      "sha256": "6262a23233dcfa6948c0440ad539fae247f3d3aecb75e064a0b4a43845cb4ab9"
+    },
+    {
+      "path": ".p1-runs/p1-release/publication-report.json",
+      "sha256": "5075cb506a4faaa2e3e8a1250d0cb348da260a9d936c64f5fdd4578daa820214"
+    },
+    {
+      "path": ".p1-runs/p1-release-mutations/mutation-report.json",
+      "sha256": "dfbf1440f7f392314472ef2fd213ffa5648782a0c241fe1da2e5e48000a9ca1d"
+    },
+    {
+      "path": ".p1-runs/p1-release-tests.log",
+      "sha256": "39a7bd1381bccae68dec198b26f1fd3de2c1e17f424c085e7dd41cf067889479"
+    },
+    {
+      "path": ".p1-runs/legacy-copy/lint-report.json",
+      "sha256": "56abc7f57aa8e2630581b5be04dfce6a2f1da2f9374272f01e4b54d16e1aedc8"
+    },
+    {
+      "path": ".p1-runs/legacy-copy/identity-registry-preview.json",
+      "sha256": "28a41c924542a9405bf0e19d9f1d9254e1b1f0c66b034c62f188eccd97c05477"
+    }
+  ],
+  "git_diff_check": true,
+  "skill_quick_validate": true
+}

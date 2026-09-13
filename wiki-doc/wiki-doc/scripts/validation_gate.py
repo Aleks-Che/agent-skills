@@ -157,31 +157,6 @@ def evaluate_checks(checks, required, policy):
     }
 
 
-def _section_bodies(draft):
-    """P0 Markdown subset: explicit heading IDs, ignoring fenced code/comments."""
-    sections, current, fence = {}, None, None
-    for line in re.sub(r'<!--.*?-->', '', draft, flags=re.S).splitlines():
-        marker = re.match(r'^\s{0,3}(`{3,}|~{3,})', line)
-        if marker:
-            token = marker.group(1)
-            if fence is None:
-                fence = token
-            elif token[0] == fence[0] and len(token) >= len(fence):
-                fence = None
-            continue
-        heading = None if fence else re.match(r'^#{1,6}\s+(.+?)\s*$', line)
-        if heading:
-            text = heading.group(1)
-            explicit = re.search(r'\{#([\w-]+)\}\s*$', text)
-            current = explicit.group(1) if explicit else text.strip()
-            if current in sections:
-                raise ValueError(f'Duplicate section ID {current!r}')
-            sections[current] = []
-        elif current and line.strip() and not re.match(r'^\s*<!--.*-->\s*$', line):
-            sections[current].append(line)
-    return sections
-
-
 def _fact_checks(artifacts, rebuilt, required, draft):
     """Match operations in both directions by source occurrence, never writer IDs."""
     errors, facts = [], artifacts['facts']
@@ -197,6 +172,9 @@ def _fact_checks(artifacts, rebuilt, required, draft):
         if obj.get(key) != expected:
             errors.append(f'facts identity {key} differs from SQL declaration')
     signature = declaration['details'].get('signature')
+    for field in ('parameters','returns','volatility'):
+        if field in obj and obj[field] != declaration['details'].get(field):
+            errors.append(f'facts {field} differs from SQL declaration')
     if signature:
         try:
             declared = obj.get('signature') or ''
@@ -214,8 +192,9 @@ def _fact_checks(artifacts, rebuilt, required, draft):
     elif obj.get('canonical_key') != key:
         errors.append('facts canonical_key differs from independently resolved identity')
     operations = [o for o in facts['operations'] if o.get('scope') in documented]
-    items = [i for i in rebuilt['items'] if i['kind'] in
-             ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'CALL', 'PERFORM', 'EXECUTE', 'RETURN')]
+    operation_kinds = ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'CALL', 'PERFORM', 'EXECUTE',
+                       'RETURN', 'CREATE', 'CTAS', 'CTE', 'ALTER', 'DROP', 'COMMENT', 'TRUNCATE', 'IF', 'ASSIGN')
+    items = [i for i in rebuilt['items'] if i['kind'] in operation_kinds]
     matched, item_facts = set(), {}
     for item in items:
         ref = item['source_ref']
@@ -235,11 +214,16 @@ def _fact_checks(artifacts, rebuilt, required, draft):
                 errors.append(f"facts {op['id']}: dynamic SQL template differs from independent inventory")
         elif op.get('dynamic') is not False:
             errors.append(f"facts {op['id']}: static SQL operation is marked dynamic")
+        structural = {k:v for k,v in item.get('details',{}).items() if k in
+                      ('branches','branch','ddl','temporary','lifetime','reference','confirmed_call_effects','group_by','arguments','command_kind','query','assignments','target_columns','into','assignment_target','return_expression','result_for')}
+        if structural and op.get('structure') != structural:
+            errors.append(f"facts {op['id']}: structure differs from independent SQL inventory")
         anchor = item['anchor']
         key = (ref['path'], anchor['object_or_scope'], anchor['construct'], anchor['ordinal'])
         item_facts[key] = op['id']
         for field in ('reads', 'writes', 'calls'):
-            names = {f"{objects[oid].get('schema')}.{objects[oid]['name']}" for oid in op.get(field, [])}
+            names = {objects[oid].get('canonical_key') if objects[oid]['kind'] in ('cte','temp_table') else
+                     f"{objects[oid].get('schema')}.{objects[oid]['name']}" for oid in op.get(field, [])}
             if names != set(item.get(field, [])):
                 errors.append(f"facts {op['id']}.{field} differs from independent SQL inventory")
     for op in operations:
@@ -273,41 +257,7 @@ def _fact_checks(artifacts, rebuilt, required, draft):
                 if col['name'] not in named:
                     errors.append(f'facts column {col["id"]}: no independent output column')
 
-    # Context entities are needed only when reached by a documented fact.
-    relevant = set(documented) | matched
-    all_facts = {f['id']: f for group in FACT_ARRAYS for f in facts[group]}
-    changed = True
-    while changed:
-        previous = relevant.copy()
-        for fid, fact in all_facts.items():
-            owners = {fact.get('scope'), fact.get('object_id')}
-            links = set(fact.get('operation_ids', [])) | set(fact.get('related_facts', []))
-            if owners & documented or links & relevant:
-                relevant.add(fid)
-            if fid in relevant:
-                for field in ('condition_ids', 'column_ids', 'source_columns'):
-                    relevant.update(fact.get(field, []))
-        changed = previous != relevant
-    coverage = artifacts['coverage']['entries']
-    try:
-        sections = _section_bodies(draft)
-    except ValueError as exc:
-        return errors + [str(exc)]
-    for fid in sorted(relevant):
-        if fid not in coverage:
-            errors.append(f'coverage: fact {fid} is not covered')
-    for fid, refs in coverage.items():
-        for ref in refs:
-            section = ref['section_id']
-            if not sections.get(section):
-                errors.append(f'coverage: {fid}: missing or empty section {section!r}')
-            if ref.get('fragment_ref') and ref['fragment_ref'] not in ('#' + section, section):
-                errors.append(f'coverage: {fid}: fragment_ref requires the P1 fragment parser')
     for required_check in required:
-        if required_check['source'] == 'section':
-            section = required_check['id'].removeprefix('section:')
-            if not sections.get(section):
-                errors.append(f'missing or empty required section {section!r}')
         if required_check['source'] != 'inventory':
             continue
         anchor = required_check['inventory_anchor']
@@ -370,7 +320,7 @@ def _verify_evidence(artifacts, roots):
     package = roots['package']
     for relative in ('SKILL.md', 'doc-writer.md', 'doc-validator.md', 'ddl-finder.md',
                      'rules.md', 'template.md', 'references/facts.md', 'references/artifacts.md',
-                     'references/check-policy.json', 'references/identity.md'):
+                     'references/check-policy.json', 'references/identity.md', 'references/coverage.md'):
         path = package / relative
         allowed[path.resolve()] = sha256_file(path)
     for path in (package / 'template').glob('*.md'):
@@ -447,8 +397,10 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
         facts, inventory = artifacts['facts'], artifacts['inventory']
         if bool(facts.get('profile')) != bool(profile_path):
             return _gate_result('blocked', errors=['Active profile and verified profile file do not match'])
-        if profile_path and sha256_file(profile_path) != sha256_file(package / 'project-profile.md'):
-            return _gate_result('blocked', errors=['Only the bundled CKR_GP profile has P0 obligation derivation'])
+        if profile_path:
+            from profiles import load_profile
+            if facts['profile'] != load_profile(profile_path)['id']:
+                return _gate_result('blocked', errors=['Facts profile differs from explicitly selected profile'])
         errors = _verify_evidence(artifacts, roots)
         if errors:
             return _gate_result('blocked', errors=errors)
@@ -466,6 +418,11 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
                                            documented_subjects=local_subjects)
             for key in ('items', 'coverage_notes', 'inputs', 'documented_subjects'):
                 rebuilt[key].extend(result[key])
+        from ddl import enrich_inventory
+        rebuilt = enrich_inventory(rebuilt,
+            context_files=[resolve_reference(ref, roots) for ref in manifest.get('context_files', [])],
+            project_root=roots['project'],
+            migration_manifest=resolve_reference(manifest['migration_manifest'], roots) if manifest.get('migration_manifest') else None)
         if rebuilt['coverage_notes']:
             return _gate_result('blocked', errors=['analysis gap: ' + n['reason'] for n in rebuilt['coverage_notes']])
         for key in ('items', 'coverage_notes', 'inputs', 'documented_subjects'):
@@ -475,7 +432,7 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
             return _gate_result('revise', errors=errors)
         if facts['dialect'] != rebuilt['dialect']:
             return _gate_result('revise', errors=['facts dialect differs from inventory'])
-        expected_plan = generate_plan(rebuilt, policy, page_id=manifest['page_id'], profile_active=bool(profile_path))
+        expected_plan = generate_plan(rebuilt, policy, page_id=manifest['page_id'], profile_active=bool(profile_path), profile_path=profile_path)
         if expected_plan != artifacts['validation_plan']:
             return _gate_result('revise', errors=['validation_plan differs from independently derived obligations'])
         declarations = [i for i in rebuilt['items'] if i['kind'] == 'DECLARATION']
@@ -497,6 +454,27 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
         errors.extend(evaluation['errors'])
         errors.extend(_fact_checks(artifacts, rebuilt, expected_plan['required_checks'],
                                    draft_bytes.decode('utf-8-sig')))
+        from sql_types import column_catalog, check_types
+        catalogue=column_catalog(rebuilt,[resolve_reference(r,roots) for r in manifest['sql_files']],
+            [resolve_reference(r,roots) for r in manifest.get('context_files',[])],roots['project'],
+            resolve_reference(manifest['migration_manifest'],roots) if manifest.get('migration_manifest') else None)
+        errors.extend(check_types(facts,catalogue))
+        if facts.get('page_contract')=='claims-v1':
+            from page_claims import check_page_claims
+            errors.extend(check_page_claims(facts,draft_bytes.decode('utf-8-sig')))
+        if profile_path:
+            from profiles import access_findings
+            obj=next(o for o in facts['objects'] if o['id'] in facts['documented_object_ids'])
+            if 'access_observations' in obj or facts.get('page_contract')=='claims-v1':
+                if obj.get('access_observations')!=access_findings(rebuilt,load_profile(profile_path)):
+                    errors.append('Source access observations differ from verified profile; source defects are separate from doc defects')
+        from coverage_gate import validate_coverage
+        coverage_result = validate_coverage(artifacts['coverage'], draft_bytes.decode('utf-8-sig'),
+                                            facts, expected_plan, policy, wiki_root=roots.get('wiki'),
+                                            link_roots=[roots.get('link_project', roots['project'])])
+        if coverage_result.input_error:
+            return _gate_result('blocked', errors=coverage_result.errors, input_error=True)
+        errors.extend(coverage_result.errors)
         verdict = evaluation['decision']
         if errors and verdict == 'ready':
             verdict = 'revise'
@@ -518,6 +496,12 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
             final_errors.append('manifest changed during evaluation')
         if compute_tool_versions(package, profile_path=profile_path, policy_path=policy_path) != versions:
             final_errors.append('tool versions changed during evaluation')
+        for linked_path, checked_hash in coverage_result.link_snapshots.items():
+            if checked_hash is None:
+                if not linked_path.is_dir(): final_errors.append(f'linked directory disappeared during evaluation: {linked_path}')
+                continue
+            if not linked_path.is_file() or sha256_file(linked_path) != checked_hash:
+                final_errors.append(f'linked file changed during evaluation: {linked_path}')
         if final_errors:
             return _gate_result('blocked', errors=final_errors)
         if write_decision:

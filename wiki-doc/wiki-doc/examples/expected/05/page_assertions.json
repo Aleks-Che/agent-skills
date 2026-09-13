@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {
+      "group": "objects",
+      "selector": {
+        "kind": "function",
+        "name": "fn_default_value"
+      },
+      "field": "parameters.0.default",
+      "value": "'default'",
+      "id": "invent-default"
+    }
+  ]
+}

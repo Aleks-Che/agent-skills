@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+demo+refresh_summary+(bigint,integer)": {
+      "operations": {
+        "PERFORM": 2,
+        "UPDATE": 1,
+        "MERGE": 1
+      },
+      "reads": [
+        "demo_stg.summary_tmp"
+      ],
+      "writes": [
+        "demo.queue",
+        "demo.summary"
+      ],
+      "calls": [
+        "demo_audit.log_event"
+      ],
+      "structures": [
+        {
+          "kind": "MERGE",
+          "branches": [
+            {
+              "match": "MERGE_WHEN_MATCHED",
+              "action": "CMD_UPDATE",
+              "condition": "",
+              "assignments": [
+                "\"value\" = s.value"
+              ],
+              "values": []
+            },
+            {
+              "match": "MERGE_WHEN_NOT_MATCHED_BY_TARGET",
+              "action": "CMD_INSERT",
+              "condition": "",
+              "assignments": [
+                "\"id\"",
+                "\"value\""
+              ],
+              "values": [
+                "s.id",
+                "s.value"
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "UPDATE",
+          "assignments": [
+            {
+              "target": "status",
+              "expression": "p_status"
+            },
+            {
+              "target": "end_date",
+              "expression": "now()"
+            }
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "object": "demo_audit.log_event",
+          "status": "resolved"
+        }
+      ],
+      "columns": [
+        {
+          "object": "demo.summary",
+          "name": "id",
+          "type_expression": "bigint",
+          "expression_status": "known"
+        },
+        {
+          "object": "demo.summary",
+          "name": "value",
+          "type_expression": "numeric",
+          "expression_status": "known"
+        }
+      ]
+    }
+  }
+}

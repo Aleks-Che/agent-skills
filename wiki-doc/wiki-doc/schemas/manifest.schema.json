@@ -128,6 +128,9 @@
     "identity_registry": {
       "$ref": "#/$defs/file_ref"
     },
+    "publication_plan": {
+      "$ref": "#/$defs/artifact_ref"
+    },
     "documented_subjects": {
       "type": "array",
       "items": {

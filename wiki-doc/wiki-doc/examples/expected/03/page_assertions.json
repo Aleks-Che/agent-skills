@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {
+      "group": "objects",
+      "selector": {
+        "kind": "cte"
+      },
+      "field": "physical",
+      "value": true,
+      "id": "cte-as-physical"
+    }
+  ]
+}

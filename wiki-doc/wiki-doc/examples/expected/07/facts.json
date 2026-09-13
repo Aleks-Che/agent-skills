@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+demo+fn_dynamic+(text)": {
+      "operations": {
+        "EXECUTE": 2
+      },
+      "reads": [
+        "demo_src.events"
+      ],
+      "writes": [],
+      "calls": [],
+      "unknown_required": true,
+      "structures": [
+        {
+          "kind": "EXECUTE",
+          "command_kind": "TRUNCATE",
+          "arguments": [
+            "'demo_stg'",
+            "'events_' || p_suffix"
+          ]
+        },
+        {
+          "kind": "EXECUTE",
+          "command_kind": "INSERT"
+        }
+      ]
+    }
+  }
+}

@@ -91,13 +91,15 @@ def compute_tool_versions(
         'scripts_sha256': scripts_sha,
         'skill_md_sha256': tree_hash([skill_md] + [package_dir / n for n in
             ('doc-writer.md', 'doc-validator.md', 'ddl-finder.md', 'rules.md',
-             'references/facts.md', 'references/artifacts.md', 'references/identity.md')]),
+             'references/facts.md', 'references/artifacts.md', 'references/identity.md', 'references/coverage.md',
+             'references/sql-support.md', 'references/publication.md', 'references/regression.md')]),
         'template_sha256': tree_hash([template] + list((package_dir / 'template').glob('*.md'))),
         'policy_sha256': sha256_file(policy),
     }
 
     if profile_path:
-        versions['profile_sha256'] = sha256_file(profile_path)
+        from profiles import profile_hash
+        versions['profile_sha256'] = profile_hash(profile_path)
 
     return versions
 
@@ -155,6 +157,8 @@ def create_manifest(
         manifest['documented_subjects'] = read_json(inv_path)['documented_subjects']
     if identity_registry:
         manifest['identity_registry'] = _file_ref(identity_registry, project_dir)
+    if (artifacts_dir / 'publication.json').is_file():
+        manifest['publication_plan'] = _artifact_ref(artifacts_dir / 'publication.json', artifacts_dir)
 
     if context_files:
         manifest['context_files'] = [_file_ref(p, project_dir) for p in context_files]
@@ -263,6 +267,12 @@ def verify_manifest_hashes(
                 errors.append(f'migration_manifest: {exc}')
 
     # Check artifacts
+    if manifest.get('publication_plan'):
+        ref = manifest['publication_plan']
+        if ref.get('root', 'run') != 'run' or ref.get('path') != 'publication.json':
+            errors.append('publication_plan must reference run/publication.json')
+        else:
+            errors.extend(verify(ref, 'publication_plan', 'run'))
     for name, ref in manifest.get('artifacts', {}).items():
         errors.extend(verify(ref, f'artifacts.{name}', 'run'))
 
@@ -416,6 +426,8 @@ def save_bundle(run_dir: Path, dest: Path, *, roots=None, policy_path=None, prof
         shutil.copy2(run_dir / filename, dest / filename)
     source_roots = {'project': run_dir, **(roots or {}), 'run': run_dir}
     manifest = read_json(run_dir / 'manifest.json')
+    if manifest.get('publication_plan'):
+        shutil.copy2(run_dir / 'publication.json', dest / 'publication.json')
     refs = manifest['sql_files'] + manifest.get('context_files', [])
     if manifest.get('migration_manifest'):
         refs.append(manifest['migration_manifest'])
@@ -432,7 +444,10 @@ def save_bundle(run_dir: Path, dest: Path, *, roots=None, policy_path=None, prof
             raise BundleError(f'Archive path collision: {ref["path"]}')
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
-    archive_roots = {**(roots or {}), 'project': dest}
+    # Source evidence is copied into the archive; reader-facing SQL links still
+    # resolve against the published wiki and its original SQL project.
+    archive_roots = {**(roots or {}), 'project': dest,
+                     'link_project': source_roots.get('link_project', source_roots['project'])}
     checked = evaluate_bundle(dest, roots=archive_roots, policy_path=policy_path, profile_path=profile_path)
     if not checked['publication_authorized']:
         raise BundleError('Archived copy failed verification: ' + '; '.join(checked['errors']))

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+core+orders_summary+()": {
+      "operations": {
+        "SELECT": 1
+      },
+      "reads": [
+        "demo.orders"
+      ],
+      "writes": [],
+      "calls": [],
+      "declaration": {
+        "returns": "bigint",
+        "volatility": "stable"
+      },
+      "conditions": []
+    },
+    "function+archive+orders_summary+()": {
+      "operations": {
+        "SELECT": 1
+      },
+      "reads": [
+        "demo.order_history"
+      ],
+      "writes": [],
+      "calls": [],
+      "declaration": {
+        "returns": "bigint",
+        "volatility": "stable"
+      },
+      "conditions": []
+    },
+    "function+core+orders_summary+(bigint)": {
+      "operations": {
+        "SELECT": 1
+      },
+      "reads": [
+        "demo.orders"
+      ],
+      "writes": [],
+      "calls": [],
+      "declaration": {
+        "returns": "bigint",
+        "volatility": "stable"
+      },
+      "conditions": [
+        "id >= p_min_id"
+      ]
+    }
+  }
+}

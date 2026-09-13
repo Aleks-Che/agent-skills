@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "view+demo+order_totals": {
+      "operations": {
+        "SELECT": 1
+      },
+      "reads": [
+        "demo.orders"
+      ],
+      "writes": [],
+      "calls": [],
+      "formulas": [
+        "price * quantity"
+      ],
+      "conditions": [
+        "status = 'paid'"
+      ]
+    },
+    "function+demo+total_for+(bigint)": {
+      "operations": {
+        "SELECT": 1
+      },
+      "reads": [
+        "demo.orders"
+      ],
+      "writes": [],
+      "calls": [],
+      "formulas": [
+        "price * quantity"
+      ],
+      "conditions": [
+        "id = p_id AND status = 'paid'"
+      ],
+      "declaration": {
+        "returns": "numeric",
+        "volatility": "stable"
+      }
+    }
+  }
+}

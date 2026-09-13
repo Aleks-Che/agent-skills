@@ -352,8 +352,6 @@ def extract_operations(sql_text: str, file_path: str, file_sha256: str,
             else:
                 add_note(start, stop, 'Unanalyzed dynamic SQL expression')
         item.details['has_date_boundary'] = bool(re.search(r'\b(?:DATE|TIMESTAMP|INTERVAL)\b', segment, re.I))
-        item.details['profile_features'] = sorted(set(re.findall(
-            r'\b(?:ckr_uup_queue|ckr_uup_products_contract_val|ckr_uup_org_st|product_group|coef_up|consent|row_number|init_type_oper|start_oper|add_log|end_oper)\b', segment, re.I)))
         for field in ('reads','writes','calls'):
             setattr(item, field, list(dict.fromkeys(getattr(item, field))))
             for target in getattr(item, field):
@@ -419,7 +417,7 @@ def object_scope(obj):
         return f"unresolved+{obj.kind}+{obj.schema or '?'}+{obj.name}@{obj.start_line}"
 
 
-def extract_inventory(sql_text: str, file_path: str, file_sha256: str,
+def _extract_inventory_legacy(sql_text: str, file_path: str, file_sha256: str,
                       dialect: str = 'postgres', version: str = 'unknown',
                       documented_subjects: list = None) -> dict:
     objects = extract_objects(sql_text, file_path, file_sha256)
@@ -514,6 +512,33 @@ def extract_inventory(sql_text: str, file_path: str, file_sha256: str,
     }
 
 
+def extract_inventory(sql_text, file_path, file_sha256, dialect='postgres', version='unknown', documented_subjects=None):
+    """Native syntax analysis with stable P0 anchors for the previously supported subset."""
+    from sql_ast import analyze, require_parser
+    require_parser()
+    try:
+        native = analyze(sql_text, file_path, file_sha256, dialect, version, documented_subjects)
+    except Exception as exc:
+        # A parse failure must never turn into a successful regex-only validation.
+        fallback = _extract_inventory_legacy(sql_text, file_path, file_sha256, dialect, version, documented_subjects)
+        fallback['coverage_notes'].append({'source_ref': {'path': file_path, 'sha256': file_sha256,
+            'start_line': 1, 'end_line': max(1, len(sql_text.splitlines()))}, 'reason': f'PostgreSQL AST analysis failed: {exc}'})
+        return fallback
+    try:
+        previous = _extract_inventory_legacy(sql_text, file_path, file_sha256, dialect, version, documented_subjects)
+    except ValueError:
+        return native
+    if not native['coverage_notes'] and not previous['coverage_notes'] and not any(i['kind'] in ('EXECUTE','CTAS','CTE') for i in native['items']):
+        declarations = {i['details']['canonical_key']: i['details'] for i in native['items'] if i['kind'] == 'DECLARATION'}
+        for item in previous['items']:
+            if item['kind'] == 'DECLARATION':
+                info = declarations.get(item['details']['canonical_key'], {})
+                for key in ('parameters', 'returns', 'returns_table', 'analysis', 'volatility'):
+                    if key in info: item['details'][key] = info[key]
+        return previous
+    return native
+
+
 def _item_to_dict(item: InventoryItem) -> dict:
     d = {
         'anchor': item.anchor,
@@ -548,6 +573,8 @@ def main():
     parser.add_argument('--subjects', nargs='*', help='Documented subjects (object names)')
     parser.add_argument('--run-id', help='UUID for this run')
     parser.add_argument('--project-root', type=Path, help='Store paths relative to the SQL project root')
+    parser.add_argument('--context', type=Path, nargs='*', default=[])
+    parser.add_argument('--migration-manifest', type=Path)
 
     args = parser.parse_args()
 
@@ -566,6 +593,10 @@ def main():
 
         if args.run_id:
             result['run_id'] = args.run_id
+
+        from ddl import enrich_inventory
+        result = enrich_inventory(result, context_files=args.context, project_root=args.project_root,
+                                  migration_manifest=args.migration_manifest)
 
         print(json.dumps(result, indent=2, ensure_ascii=False))
 

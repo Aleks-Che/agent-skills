@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {
+      "group": "objects",
+      "selector": {
+        "kind": "function",
+        "name": "audit_probe"
+      },
+      "field": "access_observations.1.status",
+      "value": "allowed",
+      "id": "audit-read-as-call-exception"
+    }
+  ]
+}

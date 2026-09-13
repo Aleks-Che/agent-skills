@@ -408,5 +408,53 @@
       "formatting",
       "grammar"
     ]
+  },
+  "coverage": {
+    "required_groups": [
+      "objects",
+      "definitions",
+      "operations",
+      "columns",
+      "formulas",
+      "conditions",
+      "unknowns"
+    ],
+    "allowed_sections": {
+      "objects": [
+        "header_purpose",
+        "schema_signature",
+        "entities",
+        "formulas_dependencies",
+        "misc"
+      ],
+      "definitions": [
+        "schema_signature",
+        "entities",
+        "formulas_dependencies",
+        "misc"
+      ],
+      "operations": [
+        "formulas_dependencies",
+        "misc"
+      ],
+      "columns": [
+        "entities",
+        "schema_signature",
+        "formulas_dependencies"
+      ],
+      "formulas": [
+        "formulas_dependencies"
+      ],
+      "conditions": [
+        "formulas_dependencies",
+        "misc"
+      ],
+      "unknowns": [
+        "schema_signature",
+        "entities",
+        "formulas_dependencies",
+        "misc"
+      ]
+    }
   }
 }

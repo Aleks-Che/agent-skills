@@ -8,7 +8,8 @@
     "rules",
     "object_type_groups",
     "section_applicability",
-    "blocking_override_rules"
+    "blocking_override_rules",
+    "coverage"
   ],
   "properties": {
     "schema_version": {
@@ -38,6 +39,110 @@
     },
     "blocking_override_rules": {
       "$ref": "#/$defs/blocking_override"
+    },
+    "coverage": {
+      "type": "object",
+      "required": [
+        "required_groups",
+        "allowed_sections"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "required_groups": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "objects",
+              "definitions",
+              "operations",
+              "columns",
+              "formulas",
+              "conditions",
+              "unknowns"
+            ]
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "allowed_sections": {
+          "type": "object",
+          "required": [
+            "objects",
+            "definitions",
+            "operations",
+            "columns",
+            "formulas",
+            "conditions",
+            "unknowns"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "objects": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            },
+            "definitions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            },
+            "operations": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            },
+            "formulas": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            },
+            "conditions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            },
+            "unknowns": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            }
+          }
+        }
+      }
     }
   },
   "additionalProperties": false,

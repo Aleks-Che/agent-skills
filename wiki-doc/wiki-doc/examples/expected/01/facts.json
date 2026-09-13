@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+demo+load_missing+()": {
+      "declaration": {
+        "returns": "void",
+        "parameters": []
+      },
+      "operations": {
+        "INSERT": 1,
+        "SELECT": 1
+      },
+      "reads": [
+        "demo_src.events"
+      ],
+      "writes": [
+        "demo.missing_target"
+      ],
+      "calls": [],
+      "definitions": [
+        {
+          "object": "demo.missing_target",
+          "status": "not_found"
+        }
+      ],
+      "unknown_required": true,
+      "columns": [
+        {
+          "object": "demo.missing_target",
+          "name": "id",
+          "type_target": null,
+          "type_expression": "bigint"
+        },
+        {
+          "object": "demo.missing_target",
+          "name": "loaded_at",
+          "type_target": null,
+          "type_expression": "timestamp with time zone"
+        }
+      ]
+    }
+  }
+}

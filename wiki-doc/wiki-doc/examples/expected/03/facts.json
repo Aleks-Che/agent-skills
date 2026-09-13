@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+demo+fn_with_cte+(date)": {
+      "operations": {
+        "CREATE": 1,
+        "INSERT": 1,
+        "CTE": 2,
+        "SELECT": 3
+      },
+      "reads": [
+        "demo_src.users",
+        "demo_src.events"
+      ],
+      "writes": [],
+      "calls": [],
+      "local_objects": {
+        "cte": 2,
+        "temp_table": 1
+      },
+      "declaration": {
+        "returns": "void",
+        "parameters": [
+          {
+            "name": "p_date",
+            "type": "date",
+            "mode": "d",
+            "default": null
+          }
+        ]
+      },
+      "structures": [
+        {
+          "kind": "CREATE",
+          "temporary": true,
+          "lifetime": "ONCOMMIT_DROP"
+        },
+        {
+          "kind": "SELECT",
+          "group_by": [
+            "user_id"
+          ]
+        }
+      ]
+    }
+  }
+}

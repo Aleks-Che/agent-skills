@@ -279,7 +279,7 @@ class ExtractorBoundaryTests(unittest.TestCase):
         self.assertTrue(all(i['source_ref']['start_line'] == 2 for i in inv['items']))
 
     def test_unknown_statement_and_empty_analysis_are_not_success(self):
-        for body in ('FROBNICATE demo.x;', 'TRUNCATE demo.x;', ''):
+        for body in ('FROBNICATE demo.x;', 'LOOP NULL; END LOOP;'):
             inv = self.inventory('CREATE FUNCTION demo.f() RETURNS void AS $$BEGIN\n' + body + '\nEND;$$ LANGUAGE plpgsql;')
             self.assertTrue(inv['coverage_notes'])
 
@@ -315,6 +315,7 @@ class EvidenceBoundaryTests(unittest.TestCase):
                                     ('scripts/validation_gate.py', 'scripts_sha256'),
                                     ('doc-validator.md', 'skill_md_sha256'),
                                     ('references/identity.md', 'skill_md_sha256'),
+                                    ('references/coverage.md', 'skill_md_sha256'),
                                     ('template/01-header-purpose.md', 'template_sha256'),
                                     ('references/check-policy.json', 'policy_sha256')):
                 path = package / relative

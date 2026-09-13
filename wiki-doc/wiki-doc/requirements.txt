@@ -2,3 +2,7 @@
 jsonschema==4.26.0
 # jsonschema treats date-time as unchecked unless this optional checker is installed.
 rfc3339-validator==0.1.4
+# CommonMark token stream and source line maps used by the coverage gate.
+markdown-it-py==3.0.0
+# PostgreSQL/PLpgSQL syntax trees for P1 scoped analysis (never executes SQL).
+pglast==7.14

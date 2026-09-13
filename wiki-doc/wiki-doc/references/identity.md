@@ -80,6 +80,6 @@ Gate сверяет canonical_key с SQL, а page_id — с вычисленны
 Архив сохраняет снимок. `identity.py check <key> --existing-ids ...` возвращает
 код 1 при занятом стандартном имени; compute может выбрать свободное расширенное имя.
 
-Схема результата compute — `schemas/identity.schema.json`. Поддержка quoted
-identifiers в identity не означает их поддержку SQL-сканером P0: такой SQL пока
-создаёт блокирующий analysis_gap. Расширение синтаксиса остаётся задачей P1-03.
+Схема результата compute — `schemas/identity.schema.json`. AST-анализ P1 поддерживает
+quoted identifiers в объявлениях; матрица синтаксиса и границы разрешения зависимостей —
+[sql-support.md](sql-support.md). Неподдержанная конструкция сохраняет analysis_gap.

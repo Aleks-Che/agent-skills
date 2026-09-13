@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "01",
+      "sql": "01_no_target_ddl.sql",
+      "context": [
+        "context.sql"
+      ],
+      "subjects": [
+        "function+demo+load_missing+()"
+      ],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15"
+    },
+    {
+      "id": "02",
+      "sql": "02_now_and_casts.sql",
+      "context": [
+        "context.sql"
+      ],
+      "subjects": [
+        "table+demo+events_log"
+      ],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15"
+    },
+    {
+      "id": "03",
+      "sql": "03_cte_temp.sql",
+      "context": [
+        "context.sql"
+      ],
+      "subjects": [
+        "function+demo+fn_with_cte+(date)"
+      ],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15"
+    },
+    {
+      "id": "04",
+      "sql": "04_update_perform.sql",
+      "context": [
+        "context.sql"
+      ],
+      "subjects": [
+        "function+demo+refresh_summary+(bigint,integer)"
+      ],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15"
+    },
+    {
+      "id": "05",
+      "sql": "05_default_string.sql",
+      "context": [
+        "context.sql"
+      ],
+      "subjects": [
+        "function+demo+fn_default_value+(character varying,character varying)"
+      ],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15"
+    },
+    {
+      "id": "06",
+      "sql": "06_same_name_diff_schema.sql",
+      "context": [
+        "context.sql"
+      ],
+      "subjects": [
+        "function+core+orders_summary+()",
+        "function+archive+orders_summary+()",
+        "function+core+orders_summary+(bigint)"
+      ],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15"
+    },
+    {
+      "id": "07",
+      "sql": "07_dynamic_sql.sql",
+      "context": [
+        "context.sql"
+      ],
+      "subjects": [
+        "function+demo+fn_dynamic+(text)"
+      ],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15"
+    },
+    {
+      "id": "08",
+      "sql": "08_alter_migration.sql",
+      "context": [
+        "context.sql"
+      ],
+      "subjects": [
+        "migration+08_alter_migration.sql+08"
+      ],
+      "profile": null,
+      "migration_manifest": "migrations/manifest.json",
+      "version": "15"
+    },
+    {
+      "id": "09",
+      "sql": "09_view_and_readonly.sql",
+      "context": [
+        "context.sql"
+      ],
+      "subjects": [
+        "view+demo+order_totals",
+        "function+demo+total_for+(bigint)"
+      ],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15"
+    },
+    {
+      "id": "10",
+      "sql": "10_ctas.sql",
+      "context": [
+        "context.sql"
+      ],
+      "subjects": [
+        "ctas+demo+event_clock"
+      ],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15"
+    },
+    {
+      "id": "11",
+      "sql": "11_audit_access.sql",
+      "context": [
+        "context.sql",
+        "11_audit_access.sql"
+      ],
+      "subjects": [
+        "function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()"
+      ],
+      "profile": "profiles/ckr_gp/profile.json",
+      "migration_manifest": null,
+      "version": "unknown"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "ctas+demo+event_clock": {
+      "operations": {
+        "CTAS": 1,
+        "SELECT": 1
+      },
+      "reads": [
+        "demo_src.events"
+      ],
+      "writes": [
+        "demo.event_clock"
+      ],
+      "calls": [],
+      "conditions": [],
+      "definitions": [
+        {
+          "object": "demo.event_clock",
+          "status": "resolved"
+        }
+      ],
+      "columns": [
+        {
+          "object": "demo.event_clock",
+          "name": "id",
+          "type_target": "bigint",
+          "type_expression": "bigint"
+        },
+        {
+          "object": "demo.event_clock",
+          "name": "loaded_at",
+          "type_target": "timestamp with time zone",
+          "type_expression": "timestamp with time zone"
+        },
+        {
+          "object": "demo.event_clock",
+          "name": "cutoff",
+          "type_target": "date",
+          "type_expression": "date"
+        }
+      ]
+    }
+  }
+}

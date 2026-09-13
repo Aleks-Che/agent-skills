@@ -27,6 +27,12 @@ def load_policy(path=None, *, expected_sha256=None):
             raise PolicyError('Policy bytes differ from the verified policy hash')
     except ArtifactInputError as exc:
         raise PolicyError(f'Cannot load check policy: {exc}') from exc
+    return validate_policy(policy)
+
+
+def validate_policy(policy):
+    """Validate either a loaded snapshot or a caller-provided catalog."""
+    from artifact_schema import read_json, validate_schema, ArtifactInputError
     if not isinstance(policy, dict):
         raise PolicyError('Check policy must be an object')
     if policy.get('schema_version') != 1:
@@ -68,6 +74,11 @@ def _validate_policy_structure(policy):
     for section_id, section in policy.get('section_applicability', {}).items():
         if 'block_id' not in section:
             errors.append(f'section_applicability.{section_id}: missing block_id')
+
+    for group, sections in policy.get('coverage', {}).get('allowed_sections', {}).items():
+        for section_id in sections:
+            if section_id not in policy['section_applicability']:
+                errors.append(f'coverage.allowed_sections.{group}: unknown section {section_id!r}')
 
     overrides = policy.get('blocking_override_rules', {})
     if 'cannot_be_editorial' not in overrides:
@@ -248,7 +259,8 @@ def derive_inventory_checks(policy, inventory_items, object_key=''):
     """Preserve independent anchors and expand every concrete expression."""
     import hashlib
     checks = []
-    operation_kinds = {'SELECT','INSERT','UPDATE','DELETE','MERGE','DDL','PERFORM','CALL','EXECUTE','RETURN','OTHER','CTE','TEMP_TABLE'}
+    operation_kinds = {'SELECT','INSERT','UPDATE','DELETE','MERGE','DDL','PERFORM','CALL','EXECUTE','RETURN','OTHER','CTE','TEMP_TABLE',
+                       'CREATE','CTAS','ALTER','DROP','COMMENT','TRUNCATE','IF','ASSIGN'}
     for item in inventory_items:
         kind, details = item['kind'], item.get('details', {})
         anchor = {'path': item.get('source_ref', {}).get('path', item['anchor'].get('path', '')),

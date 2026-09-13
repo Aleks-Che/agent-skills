@@ -34,9 +34,11 @@ class InventoryAcceptanceTests(unittest.TestCase):
     def test_explicit_view_column_list_cannot_silently_use_select_alias(self):
         sql = 'CREATE VIEW demo.v(actual_name) AS SELECT amount AS different_name FROM demo.orders;'
         inv = extract_inventory(sql, 'source.sql', 'a' * 64)
-        self.assertTrue(any('column lists' in n['reason'] for n in inv['coverage_notes']))
+        self.assertFalse(inv['coverage_notes'], inv['coverage_notes'])
+        declaration = next(i for i in inv['items'] if i['kind'] == 'DECLARATION')
+        self.assertEqual(declaration['details']['output_columns'][0]['name'], 'actual_name')
         plan = generate_plan(inv, load_policy())
-        self.assertTrue(any(c['rule_id'] == 'analysis_gap' and c['blocking'] for c in plan['required_checks']))
+        self.assertFalse(any(c['rule_id'] == 'analysis_gap' for c in plan['required_checks']))
 
     def inventory(self, sql, subjects=None):
         return extract_inventory(sql, 'test.sql', sha256_bytes(sql.encode()), documented_subjects=subjects)
@@ -90,7 +92,7 @@ class InventoryAcceptanceTests(unittest.TestCase):
         self.assertEqual(selected['documented_subjects'], ['function+demo+f+(integer)'])
 
     def test_unsupported_fragment_creates_a_blocking_plan_obligation(self):
-        inv = self.inventory('CREATE FUNCTION demo.f() RETURNS void LANGUAGE plpgsql AS $$ BEGIN TRUNCATE demo.t; PERFORM demo.log(); END; $$;')
+        inv = self.inventory('CREATE FUNCTION demo.f() RETURNS void LANGUAGE plpgsql AS $$ BEGIN LOOP NULL; END LOOP; END; $$;')
         checks = generate_plan(inv, load_policy())['required_checks']
         self.assertTrue(any(c['rule_id'] == 'analysis_gap' and c['blocking'] for c in checks))
 
@@ -319,6 +321,7 @@ class GateAcceptanceTests(unittest.TestCase):
                  'definitions': [], 'columns': [], 'formulas': [], 'conditions': [],
                  'operations': [{'id': 'exec', 'kind': 'EXECUTE', 'scope': 'f', 'order': 1,
                                  'dynamic': {'template': 'TRUNCATE TABLE demo.%I', 'unresolved_parts': ['suffix']},
+                                 'structure': {'arguments': ['suffix'], 'command_kind': 'TRUNCATE'},
                                  'reads': [], 'writes': [], 'calls': [], 'condition_ids': [], 'source_refs': [ref]}],
                  'unknowns': [{'id': 'runtime', 'what': 'Concrete TRUNCATE target', 'reason': 'suffix is a runtime argument',
                                'related_facts': ['exec']}]}

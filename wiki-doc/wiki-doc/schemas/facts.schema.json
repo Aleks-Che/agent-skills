@@ -18,6 +18,7 @@
     "unknowns"
   ],
   "properties": {
+    "page_contract": {"const": "claims-v1"},
     "schema_version": {
       "const": 2
     },
@@ -248,6 +249,24 @@
         "canonical_key": {
           "type": "string",
           "minLength": 1
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "returns": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "volatility": {
+          "enum": ["immutable", "stable", "volatile"]
+        },
+        "access_observations": {
+          "type": "array", "items": {"type": "object"}
         }
       },
       "additionalProperties": false,
@@ -412,7 +431,8 @@
             "LOOP",
             "RAISE",
             "ASSIGN",
-            "OTHER"
+            "OTHER",
+            "CTE"
           ]
         },
         "reads": {
@@ -508,6 +528,9 @@
           "type": "string",
           "minLength": 1,
           "pattern": "\\S"
+        },
+        "structure": {
+          "type": "object"
         }
       },
       "additionalProperties": false,
@@ -539,6 +562,8 @@
         "source_refs"
       ],
       "properties": {
+        "expression_status": {"enum": ["known", "unknown", "not_applicable"]},
+        "primary_key": {"type": "boolean"},
         "id": {
           "type": "string",
           "minLength": 1,

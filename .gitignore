@@ -2,3 +2,5 @@ opencode/agents/
 opencode/
 wiki-doc/sql/
 wiki-doc/docs/
+wiki-doc/.runtime/
+wiki-doc/.p1-runs/

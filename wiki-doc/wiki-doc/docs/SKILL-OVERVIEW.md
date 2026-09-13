@@ -2,6 +2,12 @@
 
 Дата обзора: 12 сентября 2026 года.
 
+Это исторический снимок до реализации P0/P1. Упоминания прежних файлов, ограничений
+и чисел тестов ниже относятся к этой дате; актуальные контракты находятся в
+[SKILL.md](../SKILL.md) и [references](../references/artifacts.md).
+В P1-05 doc-evaluator.md удалён как неиспользуемый внешний указатель; профиль
+перенесён в `profiles/ckr_gp/`. Этот обзор не является обязательным runtime-контекстом.
+
 Объект обзора — пакет `wiki-doc` из каталога `C:/work/git/my-repos/wiki-doc/wiki-doc`. Описание подготовлено по текущему содержимому его инструкций, шаблонов, Python-кода, тестов и контрольных SQL-примеров. До создания этого обзора пакет содержал **46 файлов: 29 Markdown, 14 SQL, 2 Python и 1 JSON**.
 
 `wiki-doc` задаёт агенту процесс создания и обновления wiki-документации SQL-объектов: от поиска определений и восстановления структуры до проверки черновика и сохранения страницы в локальную wiki. Он также описывает режимы ответов по существующей документации и её проверки.
@@ -65,7 +71,7 @@ DDL здесь — определения и изменения структур
 - Разные объекты одного SQL-файла имеют собственную идентичность и могут получать отдельные страницы.
 - Ошибка исходного SQL и ошибка документации рассматриваются отдельно: точное описание проблемного SQL может пройти проверку.
 
-Источник: [SKILL.md](C:/work/git/my-repos/wiki-doc/wiki-doc/SKILL.md).
+Источник: [SKILL.md](../SKILL.md).
 
 ## Структура пакета
 
@@ -268,7 +274,7 @@ DDL запрашивается для объединения читаемых и
 
 ## Реестр фактов и карта покрытия
 
-Источник: [references/facts.md](C:/work/git/my-repos/wiki-doc/wiki-doc/references/facts.md).
+Источник: [references/facts.md](../references/facts.md).
 
 ### Верхний уровень facts.json
 
@@ -352,7 +358,7 @@ DDL запрашивается для объединения читаемых и
 
 ## Поиск определений: ddl-finder
 
-Источник: [ddl-finder.md](C:/work/git/my-repos/wiki-doc/wiki-doc/ddl-finder.md).
+Источник: [ddl-finder.md](../ddl-finder.md).
 
 ### Назначение и вход
 
@@ -414,7 +420,7 @@ DDL запрашивается для объединения читаемых и
 
 ## Создание разделов: doc-writer
 
-Источник: [doc-writer.md](C:/work/git/my-repos/wiki-doc/wiki-doc/doc-writer.md).
+Источник: [doc-writer.md](../doc-writer.md).
 
 ### Входной контракт
 
@@ -452,7 +458,7 @@ Writer использует все `reads/writes/calls`, включая UPDATE, 
 
 ## Все шесть блоков шаблона
 
-Источник общей карты: [template.md](C:/work/git/my-repos/wiki-doc/wiki-doc/template.md).
+Источник общей карты: [template.md](../template.md).
 
 ### Применимость и порядок
 
@@ -469,7 +475,7 @@ Writer использует все `reads/writes/calls`, включая UPDATE, 
 
 ### Блок 01: объект и назначение
 
-Источник: [01-header-purpose.md](C:/work/git/my-repos/wiki-doc/wiki-doc/template/01-header-purpose.md).
+Источник: [01-header-purpose.md](../template/01-header-purpose.md).
 
 Блок формирует заголовок вида «схема.имя (тип объекта)» и краткий паспорт: схема, тип, диалект и версия, подтверждённый слой, ссылки на исходники.
 
@@ -484,7 +490,7 @@ Writer использует все `reads/writes/calls`, включая UPDATE, 
 
 ### Блок 02: схема работы, сигнатура и параметры
 
-Источник: [02-schema-signature.md](C:/work/git/my-repos/wiki-doc/wiki-doc/template/02-schema-signature.md).
+Источник: [02-schema-signature.md](../template/02-schema-signature.md).
 
 **Схема работы** объясняет порядок: условие выполнения → чтение, преобразование или изменение → результат. Допускаются нумерованные шаги, ASCII или Mermaid. Каждая операция должна иметь покрытие, но не обязана занимать самостоятельный большой раздел.
 
@@ -503,7 +509,7 @@ Writer использует все `reads/writes/calls`, включая UPDATE, 
 
 ### Блок 03: структура, сущности и справочники
 
-Источник: [03-entities.md](C:/work/git/my-repos/wiki-doc/wiki-doc/template/03-entities.md).
+Источник: [03-entities.md](../template/03-entities.md).
 
 Для таблицы документируются объявленные колонки. Для загрузки выражения SELECT сопоставляются колонкам назначения по позиции, с учётом колонок, заполняемых DEFAULT. `INSERT` без списка колонок и `SELECT *` разрешаются по подтверждённой структуре.
 
@@ -528,7 +534,7 @@ Writer использует все `reads/writes/calls`, включая UPDATE, 
 
 ### Блок 04: формулы, зависимости, CTE и динамика
 
-Источник: [04-formulas-dependencies.md](C:/work/git/my-repos/wiki-doc/wiki-doc/template/04-formulas-dependencies.md).
+Источник: [04-formulas-dependencies.md](../template/04-formulas-dependencies.md).
 
 **Расчётные формулы** охватывают арифметику, CASE, агрегаты, окна, приведения дат и типов, фильтры, JOIN-ключи, NULL и дедубликацию. Они проверяются у любого вида объекта.
 
@@ -546,7 +552,7 @@ Writer использует все `reads/writes/calls`, включая UPDATE, 
 
 ### Блок 05: диаграмма потока данных
 
-Источник: [05-dataflow-diagram.md](C:/work/git/my-repos/wiki-doc/wiki-doc/template/05-dataflow-diagram.md).
+Источник: [05-dataflow-diagram.md](../template/05-dataflow-diagram.md).
 
 Граф строится по `reads/writes/calls` всех операций. В нём присутствуют физические источники и цели, существенные временные объекты и узлы операций.
 
@@ -568,7 +574,7 @@ Writer использует все `reads/writes/calls`, включая UPDATE, 
 
 ### Блок 06: даты, ошибки, эффекты, примеры и ограничения
 
-Источник: [06-misc.md](C:/work/git/my-repos/wiki-doc/wiki-doc/template/06-misc.md).
+Источник: [06-misc.md](../template/06-misc.md).
 
 Этот блок объединяет семь групп содержания, каждая включается по применимости.
 
@@ -588,7 +594,7 @@ Writer использует все `reads/writes/calls`, включая UPDATE, 
 
 ## Содержательная проверка: doc-validator
 
-Источник: [doc-validator.md](C:/work/git/my-repos/wiki-doc/wiki-doc/doc-validator.md).
+Источник: [doc-validator.md](../doc-validator.md).
 
 ### Вход и результат
 
@@ -697,7 +703,7 @@ accuracy_percent = 100 × O / (O + D)
 
 ## Все функции Python-валидатора
 
-Источник: [scripts/validation_gate.py](C:/work/git/my-repos/wiki-doc/wiki-doc/scripts/validation_gate.py).
+Источник: [scripts/validation_gate.py](../scripts/validation_gate.py).
 
 Модуль содержит две функции — `evaluate(report)` и `main()` — и точку входа. Он использует только стандартные модули `argparse`, `json`, `sys`. База данных и внешние Python-библиотеки этому скрипту не нужны.
 
@@ -861,7 +867,7 @@ if __name__ == "__main__":
 
 ## Идентичность страниц и публикация
 
-Источник: разделы об идентификаторе и локальной публикации в [SKILL.md](C:/work/git/my-repos/wiki-doc/wiki-doc/SKILL.md).
+Источник: разделы об идентификаторе и локальной публикации в [SKILL.md](../SKILL.md).
 
 ### Канонический ключ
 
@@ -917,7 +923,7 @@ if __name__ == "__main__":
 
 ## Профиль CKR_GP и правила доступа
 
-Источники: [project-profile.md](C:/work/git/my-repos/wiki-doc/wiki-doc/project-profile.md), [rules.md](C:/work/git/my-repos/wiki-doc/wiki-doc/rules.md).
+Источники: [project-profile.md](../project-profile.md), [rules.md](../rules.md).
 
 ### Когда включается профиль
 
@@ -996,7 +1002,7 @@ SVD разрешён прямой вызов функций или процед�
 
 ## Все контрольные SQL-сценарии
 
-Источник порядка проверки: [examples/README.md](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/README.md).
+Источник порядка проверки: [examples/README.md](../examples/README.md).
 
 Пакет содержит 11 пар SQL/expected. Файлы `.expected.md` перечисляют ожидаемые факты и решения; это не полные эталонные wiki-страницы и не Python-тесты. Сравниваются содержание, операции и ограничения, а не дословное совпадение текста.
 
@@ -1004,7 +1010,7 @@ SVD разрешён прямой вызов функций или процед�
 
 ### 01. Отсутствующий DDL цели
 
-Вход: [01_no_target_ddl.sql](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/01_no_target_ddl.sql). Ожидания: [01_no_target_ddl.expected.md](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/01_no_target_ddl.expected.md).
+Вход: [01_no_target_ddl.sql](../examples/01_no_target_ddl.sql). Ожидания: [01_no_target_ddl.expected.md](../examples/01_no_target_ddl.expected.md).
 
 Функция `demo.load_missing()` вставляет `id` и `now()` из `demo_src.events` в `demo.missing_target`. Определение назначения намеренно отсутствует.
 
@@ -1014,7 +1020,7 @@ SVD разрешён прямой вызов функций или процед�
 
 ### 02. Разные типы назначения и выражения
 
-Вход: [02_now_and_casts.sql](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/02_now_and_casts.sql). Ожидания: [02_now_and_casts.expected.md](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/02_now_and_casts.expected.md).
+Вход: [02_now_and_casts.sql](../examples/02_now_and_casts.sql). Ожидания: [02_now_and_casts.expected.md](../examples/02_now_and_casts.expected.md).
 
 Файл создаёт `demo.events_log` и затем загружает её из `demo_src.events`. CREATE и INSERT учитываются как разные операции.
 
@@ -1024,7 +1030,7 @@ SVD разрешён прямой вызов функций или процед�
 
 ### 03. CTE, временная таблица и фильтры
 
-Вход: [03_cte_temp.sql](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/03_cte_temp.sql). Ожидания: [03_cte_temp.expected.md](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/03_cte_temp.expected.md).
+Вход: [03_cte_temp.sql](../examples/03_cte_temp.sql). Ожидания: [03_cte_temp.expected.md](../examples/03_cte_temp.expected.md).
 
 `demo.fn_with_cte(p_date date)` создаёт `tmp_filtered` с `ON COMMIT DROP` и заполняет её через `active_users` и `recent_events`.
 
@@ -1034,7 +1040,7 @@ CREATE TEMP и INSERT покрываются отдельно. Колонки в
 
 ### 04. UPDATE, PERFORM и MERGE
 
-Вход: [04_update_perform.sql](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/04_update_perform.sql). Ожидания: [04_update_perform.expected.md](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/04_update_perform.expected.md).
+Вход: [04_update_perform.sql](../examples/04_update_perform.sql). Ожидания: [04_update_perform.expected.md](../examples/04_update_perform.expected.md).
 
 `demo.refresh_summary(bigint, integer)` вызывает логирование, обновляет `demo.queue`, выполняет MERGE и снова вызывает логирование.
 
@@ -1044,7 +1050,7 @@ UPDATE меняет status/end_date только при `id = p_id`. MERGE чи�
 
 ### 05. Строка default и обязательность аргументов
 
-Вход: [05_default_string.sql](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/05_default_string.sql). Ожидания: [05_default_string.expected.md](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/05_default_string.expected.md).
+Вход: [05_default_string.sql](../examples/05_default_string.sql). Ожидания: [05_default_string.expected.md](../examples/05_default_string.expected.md).
 
 `demo.fn_default_value(p_date_start varchar, p_date_end varchar)` имеет два обязательных входа без DEFAULT в объявлении.
 
@@ -1054,7 +1060,7 @@ UPDATE меняет status/end_date только при `id = p_id`. MERGE чи�
 
 ### 06. Одинаковые имена и перегрузки
 
-Вход: [06_same_name_diff_schema.sql](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/06_same_name_diff_schema.sql). Ожидания: [06_same_name_diff_schema.expected.md](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/06_same_name_diff_schema.expected.md).
+Вход: [06_same_name_diff_schema.sql](../examples/06_same_name_diff_schema.sql). Ожидания: [06_same_name_diff_schema.expected.md](../examples/06_same_name_diff_schema.expected.md).
 
 В файле три read-only функции: `core.orders_summary()`, `archive.orders_summary()` и `core.orders_summary(bigint)`. Все возвращают bigint и объявлены STABLE.
 
@@ -1064,7 +1070,7 @@ UPDATE меняет status/end_date только при `id = p_id`. MERGE чи�
 
 ### 07. Динамический SQL
 
-Вход: [07_dynamic_sql.sql](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/07_dynamic_sql.sql). Ожидания: [07_dynamic_sql.expected.md](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/07_dynamic_sql.expected.md).
+Вход: [07_dynamic_sql.sql](../examples/07_dynamic_sql.sql). Ожидания: [07_dynamic_sql.expected.md](../examples/07_dynamic_sql.expected.md).
 
 `demo.fn_dynamic(text)` содержит два EXECUTE: TRUNCATE и INSERT в динамически именуемую таблицу. Статический источник INSERT — `demo_src.events`.
 
@@ -1074,7 +1080,7 @@ UPDATE меняет status/end_date только при `id = p_id`. MERGE чи�
 
 ### 08. Восстановление схемы по manifest
 
-Вход: [08_alter_migration.sql](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/08_alter_migration.sql) и файлы из [manifest.json](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/migrations/manifest.json). Ожидания: [08_alter_migration.expected.md](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/08_alter_migration.expected.md).
+Вход: [08_alter_migration.sql](../examples/08_alter_migration.sql) и файлы из [manifest.json](../examples/migrations/manifest.json). Ожидания: [08_alter_migration.expected.md](../examples/08_alter_migration.expected.md).
 
 Manifest задаёт ревизию 043 и порядок: `baseline/orders.sql` → `08_alter_migration.sql` → `migrations/043_amount.sql`. Пути разрешаются от каталога manifest.
 
@@ -1084,7 +1090,7 @@ Manifest задаёт ревизию 043 и порядок: `baseline/orders.sql
 
 ### 09. Формулы во view и read-only функции
 
-Вход: [09_view_and_readonly.sql](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/09_view_and_readonly.sql). Ожидания: [09_view_and_readonly.expected.md](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/09_view_and_readonly.expected.md).
+Вход: [09_view_and_readonly.sql](../examples/09_view_and_readonly.sql). Ожидания: [09_view_and_readonly.expected.md](../examples/09_view_and_readonly.expected.md).
 
 Объекты — view `demo.order_totals` и функция `demo.total_for(bigint)`. Оба читают `demo.orders`, используют `price * quantity` и фильтр `status = 'paid'`. У функции дополнительно есть `id = p_id`, RETURNS numeric и STABLE.
 
@@ -1092,7 +1098,7 @@ Manifest задаёт ревизию 043 и порядок: `baseline/orders.sql
 
 ### 10. CTAS как определение структуры
 
-Вход: [10_ctas.sql](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/10_ctas.sql). Ожидания: [10_ctas.expected.md](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/10_ctas.expected.md).
+Вход: [10_ctas.sql](../examples/10_ctas.sql). Ожидания: [10_ctas.expected.md](../examples/10_ctas.expected.md).
 
 `CREATE TABLE demo.event_clock AS SELECT ...` одновременно определяет и заполняет таблицу из `demo_src.events`. Ожидается `resolved` без отдельного CREATE со списком типов.
 
@@ -1100,7 +1106,7 @@ Manifest задаёт ревизию 043 и порядок: `baseline/orders.sql
 
 ### 11. Audit-вызов и чтение audit-таблицы
 
-Вход: [11_audit_access.sql](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/11_audit_access.sql). Ожидания: [11_audit_access.expected.md](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/11_audit_access.expected.md).
+Вход: [11_audit_access.sql](../examples/11_audit_access.sql). Ожидания: [11_audit_access.expected.md](../examples/11_audit_access.expected.md).
 
 В сценарии CKR_GP функция `audit_probe()` вызывает `add_log('start')`, затем напрямую читает `logs` и возвращает число строк. Определение `add_log` присутствует и содержит INSERT в эту таблицу.
 
@@ -1112,10 +1118,10 @@ Manifest задаёт ревизию 043 и порядок: `baseline/orders.sql
 
 | Файл | Роль |
 |---|---|
-| [context.sql](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/context.sql) | Общие схемы и определения источников/целей, очередь, заказы, история и no-op audit-функция для сценариев с этим контекстом |
-| [baseline/orders.sql](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/baseline/orders.sql) | Начальное определение `demo_migration.orders` с `id`, `legacy`, `total` |
-| [043_amount.sql](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/migrations/043_amount.sql) | Финальный тип amount, DEFAULT и комментарий в миграционном сценарии |
-| [manifest.json](C:/work/git/my-repos/wiki-doc/wiki-doc/examples/migrations/manifest.json) | `dialect: postgres`, `version: 15`, `target_revision: 043` и явный `ordered_files` |
+| [context.sql](../examples/context.sql) | Общие схемы и определения источников/целей, очередь, заказы, история и no-op audit-функция для сценариев с этим контекстом |
+| [baseline/orders.sql](../examples/baseline/orders.sql) | Начальное определение `demo_migration.orders` с `id`, `legacy`, `total` |
+| [043_amount.sql](../examples/migrations/043_amount.sql) | Финальный тип amount, DEFAULT и комментарий в миграционном сценарии |
+| [manifest.json](../examples/migrations/manifest.json) | `dialect: postgres`, `version: 15`, `target_revision: 043` и явный `ordered_files` |
 
 ### Проверка полного цикла
 
@@ -1125,7 +1131,7 @@ README предлагает создавать изолированные SQL-п
 
 ## Все функции и методы тестового модуля
 
-Источник: [tests/test_validation_gate.py](C:/work/git/my-repos/wiki-doc/wiki-doc/tests/test_validation_gate.py).
+Источник: [tests/test_validation_gate.py](../tests/test_validation_gate.py).
 
 В модуле две вспомогательные функции и класс `PublicationDecisionTests` с девятью тестовыми методами. Вместе с двумя функциями основного скрипта в пакете **13 определений Python-функций/методов и один класс**; все они разобраны в этом обзоре.
 
@@ -1243,7 +1249,7 @@ python -B -m unittest discover -s C:/work/git/my-repos/wiki-doc/wiki-doc/tests -
 
 ### REVIEW-FOLLOWUP.md
 
-Источник: [REVIEW-FOLLOWUP.md](C:/work/git/my-repos/wiki-doc/wiki-doc/REVIEW-FOLLOWUP.md).
+Источник: [REVIEW-FOLLOWUP.md](../history/REVIEW-FOLLOWUP.md).
 
 Это исторический документ от 5 сентября 2026 года. Его первая часть описывает промежуточное состояние с остаточными замечаниями F1–F11, а поздний раздел «Результат устранения остатков» фиксирует исправления и заменяет прежний вывод о частичной реализации.
 
@@ -1253,7 +1259,7 @@ python -B -m unittest discover -s C:/work/git/my-repos/wiki-doc/wiki-doc/tests -
 
 ### REVIEW-VERIFICATION.md
 
-Источник: [REVIEW-VERIFICATION.md](C:/work/git/my-repos/wiki-doc/wiki-doc/REVIEW-VERIFICATION.md).
+Источник: [REVIEW-VERIFICATION.md](../history/REVIEW-VERIFICATION.md).
 
 Отчёт той же даты описывает проверку исправлений: согласованность инструкций, девять тестов gate, YAML-шапки и локальные ссылки. Он также сообщает о повторной проверке ранее сохранённых результатов двух тестовых проектов и трёх страниц.
 
@@ -1265,7 +1271,7 @@ python -B -m unittest discover -s C:/work/git/my-repos/wiki-doc/wiki-doc/tests -
 
 ### doc-evaluator.md
 
-Источник: [doc-evaluator.md](C:/work/git/my-repos/wiki-doc/wiki-doc/doc-evaluator.md).
+Источник: doc-evaluator.md (historical pointer removed in P1-05).
 
 Текущий файл содержит одну строку о переносе оценщика в отдельный скилл `.gigacode/skills/doc-evaluator/`. В рассматриваемой структуре пакета этого скилла нет.
 

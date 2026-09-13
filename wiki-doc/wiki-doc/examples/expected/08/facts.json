@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "migration+08_alter_migration.sql+08": {
+      "operations": {
+        "ALTER": 4
+      },
+      "reads": [],
+      "writes": [
+        "demo_migration.orders"
+      ],
+      "calls": [],
+      "exact_columns": {
+        "demo_migration.orders": [
+          "id",
+          "amount",
+          "updated_on"
+        ]
+      },
+      "definitions": [
+        {
+          "object": "demo_migration.orders",
+          "status": "resolved",
+          "revision": "043",
+          "migration_order": [
+            "baseline/orders.sql",
+            "08_alter_migration.sql",
+            "migrations/043_amount.sql"
+          ]
+        }
+      ],
+      "columns": [
+        {
+          "object": "demo_migration.orders",
+          "name": "amount",
+          "type_target": "numeric(18, 4)",
+          "default": "0"
+        },
+        {
+          "object": "demo_migration.orders",
+          "name": "updated_on",
+          "type_target": "date"
+        },
+        {
+          "object": "demo_migration.orders",
+          "name": "id",
+          "primary_key": true
+        }
+      ]
+    }
+  }
+}

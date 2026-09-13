@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {
+      "group": "formulas",
+      "selector": {},
+      "field": "expression",
+      "value": "price + quantity",
+      "id": "multiply-to-add"
+    }
+  ]
+}

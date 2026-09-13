@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {
+      "group": "operations",
+      "selector": {
+        "kind": "EXECUTE"
+      },
+      "field": "structure.arguments.1",
+      "value": "'events_fixed'",
+      "id": "invent-dynamic-name"
+    }
+  ]
+}

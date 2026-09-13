@@ -19,8 +19,9 @@ description: >-
    формат ссылок; для новой Markdown-wiki используй относительные Markdown-ссылки.
 2. Определи диалект, версию СУБД и документируемую ревизию из проекта. Если версия
    не установлена, записывай `unknown`; не заявляй совместимость неподтверждённых конструкций.
-3. Прочитай [профиль проекта](project-profile.md) только при совпадении его области
-   применения. Для CKR_GP дополнительно используй [правила доступа](rules.md).
+3. Прочитай [профиль CKR_GP](profiles/ckr_gp/profile.md) только при явной конфигурации
+   или подтверждённых идентификаторах проекта. Его [правила доступа](profiles/ckr_gp/access.md)
+   и [машиночитаемый каталог](profiles/ckr_gp/profile.json) загружаются только для активного профиля.
    Наличие этих файлов в пакете само по себе не включает профиль для любого проекта.
 4. Выбери режим: генерация/обновление страницы, Query или Lint. Для генерации
    применимость секций задаётся исключительно [template.md](template.md).
@@ -64,6 +65,10 @@ CTE и алиас не являются самостоятельными физ�
 Неподдержанный фрагмент в `coverage_notes` создаёт обязательство `analysis_gap`
 и блокирует допуск до расширения анализа. Каждая извлечённая формула и условие
 имеют отдельное обязательство; сохраняй его ID и полный `inventory_anchor`.
+
+Передай найденный DDL через `--context`, порядок миграций через `--migration-manifest`
+в экстрактор и bundle. Матрица AST-разбора и типов: [sql-support.md](references/sql-support.md).
+При активном профиле передай его `profile.json` через `--profile` в план, bundle и gate.
 
 
 Построй реестр по контракту [references/facts.md](references/facts.md) версии 2.
@@ -110,7 +115,16 @@ CTE и алиас не являются самостоятельными физ�
 обёртка с `schema_version`, `run_id`, `page_id` и `entries` (маппинг fact_id → секции).
 На этом этапе основная страница и индекс ещё не изменяются.
 
+Проверь покрытие командой `coverage_gate.py --bundle <run_dir> --wiki-root <wiki_output_dir> --json`.
+Синтаксис секций/фрагментов и границы проверки — в [references/coverage.md](references/coverage.md).
+Для ссылок на SQL вне wiki добавь `--link-root <project_dir>`.
+
 ### 4. Валидация черновика
+
+Сначала выполни `python scripts/publish.py prepare <run_dir> --wiki <wiki_dir>`.
+Это сохраняет ручные блоки и фиксирует снимки страницы/индекса/metadata в publication.json.
+Проверяй именно получившийся окончательный черновик; контракт слияния и конфликтов —
+в [publication.md](references/publication.md).
 
 Передай [doc-validator.md](doc-validator.md):
 
@@ -138,28 +152,23 @@ doc-validator; процент сам по себе не разрешает пу�
 
 После содержательной валидации создай manifest командой `bundle.py create` с тем же
 run_id, путями SQL и корнем проекта, затем выполни
-`validation_gate.py --bundle <run_dir> --root project <project_dir> --write-decision --json`.
+`validation_gate.py --bundle <run_dir> --root project <project_dir> --root wiki <wiki_output_dir> --write-decision --json`.
 Для активного профиля передай одинаковый `--profile` в bundle create и gate;
 для иной политики передай одинаковый `--policy`. Полный `ready` и
 `publication_authorized: true` — обязательное условие публикации.
 Повторное использование решения требует нового вызова gate без `--write-decision`.
+Передавай тот же корень wiki при повторном gate и в roots для bundle.save_bundle.
 Проверка одного отчёта и ручной расчёт процентов допуска не дают:
 
 
-1. Проверь, что SQL/DDL, основная страница и индекс не изменились с момента чтения.
-   При изменении исходников обнови реестр и валидацию; при конфликте wiki согласуй
-   изменения с текущим содержимым, сохраняя ручные правки.
-2. Подготовь новую страницу и индекс с сохранением существующих ссылок. Восстановление
-   после ошибки должно сохранять прежние файлы: держи их копии в директории запуска.
-3. Перед заменой сериализуй запись в этот индекс средствами среды (эксклюзивная
-   блокировка/один основной агент) и повторно проверь хеши. Отдельные run_id не защищают
-   общий индекс от одновременной записи. При невозможности исключить конфликт оставь черновик.
-4. Замени основную страницу подготовленным файлом, затем обнови индекс.
-   При частичной ошибке восстанови изменённые этим запуском файлы из копий.
-5. Убедись, что страница и ссылка в индексе существуют. Сохрани проверенный комплект
-   через `bundle.save_bundle` в `.wiki-doc/runs/<run_id>/` и проверь архив повторным gate.
-   Архив содержит снимки исходников; при его чтении корень project — каталог архива.
-   Только после этого очищай свою временную директорию; проверь её абсолютный путь.
+1. Просмотри итоговые изменения: `python scripts/publish.py publish <run_dir> --wiki <wiki_dir> --project-root <project_dir> --dry-run`.
+2. Выполни ту же команду без `--dry-run`. Publisher сам повторяет gate под общей
+   межпроцессной блокировкой, проверяет конфликты, архивирует bundle и журналирует замены.
+3. После сбоя используй `python scripts/publish.py recover --wiki <wiki_dir>`.
+   Сохрани конфликты и backup; не восстанавливай чужие изменившиеся файлы вручную поверх правок.
+4. Проверь результат через `python scripts/lint.py <wiki_dir> --project-root <project_dir> --json`.
+   Очистка собственного `.tmp/<run_id>` доступна отдельным флагом `--cleanup-run` publisher;
+   архив, metadata и журнал сохраняются вне временного каталога.
 
 Запрос на обновление wiki разрешает обычную замену сгенерированной страницы:
 повторное подтверждение на каждую перезапись не требуется. Если ручной текст
@@ -205,6 +214,12 @@ python scripts/identity.py compute --kind migration --migration-path migrations/
 
 ## Lint
 
+Исполни `python scripts/lint.py <wiki_dir> --project-root <project_dir> --json`
+(без `--json` — читаемый отчёт). Команда не изменяет wiki; сообщает код, файл и способ
+исправления. Legacy-страница без нового происхождения получает предупреждение о
+непроверенном состоянии, а не вымышленный смысловой дефект. Замечания к исходному
+доступу выводятся отдельным `source_findings`.
+
 Проверь разрешение ссылок, отсутствующие/дублирующиеся ключи страниц, актуальность
 SQL/DDL-хешей, противоречия коду и применимые секции. Проверки доступа включай только
 для активного профиля. Изолированные страницы оценивай по назначению, а не автоматически
@@ -215,6 +230,12 @@ SQL/DDL-хешей, противоречия коду и применимые с
 Используй контрольные случаи и порядок проверки из [examples/README.md](examples/README.md).
 Проверяй фактические операции, типы, условия и решение о публикации, а не совпадение
 формулировок с эталоном.
+
+Исполняемый цикл, адаптер агента, три повторения и мутации:
+[regression.md](references/regression.md). Сохранённые детерминированные результаты
+вместе с независимым содержательным проходом обозначаются полуавтоматическим циклом;
+их нельзя называть тремя прогонами LLM. История из `history/` и обзор из `docs/`
+не входят в обязательный контекст writer/validator.
 
 ### Валидация артефактов
 
@@ -242,8 +263,8 @@ python scripts/identity.py compute --kind <kind> --schema <schema> --name <name>
 python scripts/sql_extract.py <sql_file> --subjects <canonical_scope> --run-id <uuid> --project-root <project_dir>
 python scripts/validation_plan.py <run_dir>/inventory.json --page-id <page_id>
 python scripts/bundle.py create <run_dir> --page-id <page_id> --run-id <uuid> --sql <sql_file> --project-root <project_dir>
-python scripts/validation_gate.py --bundle <run_dir> --root project <project_dir> --write-decision --json
-python scripts/validation_gate.py --bundle <run_dir> --root project <project_dir> --json
+python scripts/validation_gate.py --bundle <run_dir> --root project <project_dir> --root wiki <wiki_dir> --write-decision --json
+python scripts/validation_gate.py --bundle <run_dir> --root project <project_dir> --root wiki <wiki_dir> --json
 python scripts/evidence.py validate <evidence.json> --root project <project_dir>
 ```
 

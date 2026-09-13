@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+demo+fn_default_value+(character varying,character varying)": {
+      "operations": {
+        "IF": 1,
+        "SELECT": 2,
+        "ASSIGN": 2,
+        "INSERT": 1
+      },
+      "reads": [
+        "demo.queue",
+        "demo_src.events"
+      ],
+      "writes": [
+        "demo.results_tmp"
+      ],
+      "calls": [],
+      "declaration": {
+        "parameters": [
+          {
+            "name": "p_date_start",
+            "type": "varchar",
+            "mode": "d",
+            "default": null
+          },
+          {
+            "name": "p_date_end",
+            "type": "varchar",
+            "mode": "d",
+            "default": null
+          }
+        ],
+        "returns": "void"
+      },
+      "conditions": [
+        "p_date_start = 'default'",
+        "status = 1",
+        "e.event_date BETWEEN v_start AND v_end"
+      ],
+      "structures": [
+        {
+          "kind": "SELECT",
+          "into": [
+            "v_start",
+            "v_end"
+          ]
+        },
+        {
+          "kind": "ASSIGN",
+          "assignment_target": "v_start"
+        },
+        {
+          "kind": "ASSIGN",
+          "assignment_target": "v_end"
+        }
+      ]
+    }
+  }
+}

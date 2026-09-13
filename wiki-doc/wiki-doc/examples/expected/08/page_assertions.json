@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {
+      "group": "columns",
+      "selector": {
+        "name": "amount"
+      },
+      "field": "type_target",
+      "value": "numeric(12, 2)",
+      "id": "stale-migration-type"
+    }
+  ]
+}

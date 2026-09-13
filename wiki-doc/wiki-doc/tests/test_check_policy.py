@@ -1,10 +1,12 @@
 """Tests for check_policy.py — check catalog, derivation, and blocking rules."""
 import importlib.util
 import json
+import sys
 import unittest
 from pathlib import Path
 
 PATH = Path(__file__).resolve().parents[1] / 'scripts' / 'check_policy.py'
+sys.path.insert(0, str(PATH.parent))
 SPEC = importlib.util.spec_from_file_location('check_policy', PATH)
 POLICY_MOD = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(POLICY_MOD)
@@ -251,7 +253,7 @@ class InventoryChecksTests(unittest.TestCase):
         checks = POLICY_MOD.derive_inventory_checks(self.policy, items, 'fn+test')
         self.assertEqual(len(checks), 1)
         self.assertEqual(checks[0]['rule_id'], 'operation')
-        self.assertEqual(checks[0]['id'], 'operation:SELECT:1')
+        self.assertEqual(checks[0]['inventory_anchor'], items[0]['anchor'])
 
     def test_multiple_operations_create_separate_checks(self):
         items = [
@@ -262,9 +264,8 @@ class InventoryChecksTests(unittest.TestCase):
         checks = POLICY_MOD.derive_inventory_checks(self.policy, items, 'fn+test')
         self.assertEqual(len(checks), 3)
         check_ids = [c['id'] for c in checks]
-        self.assertIn('operation:SELECT:1', check_ids)
-        self.assertIn('operation:INSERT:1', check_ids)
-        self.assertIn('operation:SELECT:2', check_ids)
+        self.assertEqual(len(set(check_ids)), 3)
+        self.assertEqual([c['inventory_anchor'] for c in checks], [i['anchor'] for i in items])
 
 
 class BlockingOverrideTests(unittest.TestCase):

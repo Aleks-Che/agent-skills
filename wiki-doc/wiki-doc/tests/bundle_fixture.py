@@ -13,6 +13,8 @@ from validation_plan import generate_plan
 from check_policy import load_policy
 from validation_gate import evaluate_bundle
 from evidence import sha256_file
+from identity import page_id
+PAGE_ID = page_id("function+core+calc+()")
 
 
 def write_json(run, name, data):
@@ -21,7 +23,7 @@ def write_json(run, name, data):
 
 def seal(run, issue=True):
     facts = read_json(run / 'facts.json')
-    manifest = create_manifest(run_id=facts['run_id'], page_id='function+core+calc',
+    manifest = create_manifest(run_id=facts['run_id'], page_id=PAGE_ID,
                                sql_files=[run / 'source.sql'], artifacts_dir=run,
                                tool_versions=compute_tool_versions(PACKAGE))
     write_manifest(manifest, run / 'manifest.json')
@@ -43,12 +45,14 @@ def make_bundle(run):
         elif isinstance(value, list):
             for child in value: hashes(child)
     hashes(facts)
+    facts['objects'][0]['page_id'] = PAGE_ID
+    facts['objects'][0]['canonical_key'] = 'function+core+calc+()'
     write_json(run, 'facts', facts)
     inv = extract_inventory((run / 'source.sql').read_text(encoding='utf-8-sig'), 'source.sql', sha,
                             version='15', documented_subjects=['core.calc'])
     inv['run_id'] = facts['run_id']
     write_json(run, 'inventory', inv)
-    plan = generate_plan(inv, load_policy(), page_id='function+core+calc')
+    plan = generate_plan(inv, load_policy(), page_id=PAGE_ID)
     write_json(run, 'validation_plan', plan)
     draft = '''# Calculation {#header_purpose}
 core.calc sums positive order amounts with a multiplier of 1.1.
@@ -64,7 +68,7 @@ Business rounding requirements are not specified by SQL.
                for group in ('objects', 'definitions', 'operations', 'columns', 'formulas', 'conditions', 'unknowns')
                for f in facts[group]}
     write_json(run, 'coverage', {'schema_version': 2, 'run_id': facts['run_id'],
-                                'page_id': 'function+core+calc', 'entries': entries})
+                                'page_id': PAGE_ID, 'entries': entries})
     checks = []
     fact_by_rule = {'operation': 'op_001', 'formula': 'formula_001', 'condition': 'cond_001'}
     for c in plan['required_checks']:
@@ -77,7 +81,7 @@ Business rounding requirements are not specified by SQL.
                  'fact_ids': [fact_by_rule.get(c['rule_id'], 'obj_1')]}
         checks.append(check)
     write_json(run, 'validation', {'schema_version': 2, 'run_id': facts['run_id'],
-                                  'page_id': 'function+core+calc', 'checks': checks})
+                                  'page_id': PAGE_ID, 'checks': checks})
     result = seal(run)
     if result['decision'] != 'ready':
         raise AssertionError(f'Positive bundle must be ready: {result}')

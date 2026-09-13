@@ -202,7 +202,8 @@
             "procedure",
             "migration",
             "cte",
-            "temp_table"
+            "temp_table",
+            "ctas"
           ]
         },
         "schema": {
@@ -243,6 +244,10 @@
         },
         "physical": {
           "type": "boolean"
+        },
+        "canonical_key": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "additionalProperties": false,

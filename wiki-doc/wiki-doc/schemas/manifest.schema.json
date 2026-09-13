@@ -124,6 +124,18 @@
         "string",
         "null"
       ]
+    },
+    "identity_registry": {
+      "$ref": "#/$defs/file_ref"
+    },
+    "documented_subjects": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "uniqueItems": true
     }
   },
   "additionalProperties": false,

@@ -188,6 +188,15 @@
       "conditions": {
         "profile_active": true
       }
+    },
+    {
+      "id": "analysis_gap",
+      "description": "Unparsed SQL fragment requires resolution before publication",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/analysis_gap",
+      "source": "inventory",
+      "conditions": {}
     }
   ],
   "object_type_groups": {
@@ -331,11 +340,18 @@
     "entities": {
       "description": "Structure, columns, reference data",
       "applicable_when": {
-        "object_kind": [
-          "table",
-          "view",
-          "materialized_view",
-          "ctas"
+        "_or": [
+          {
+            "object_kind": [
+              "table",
+              "view",
+              "materialized_view",
+              "ctas"
+            ]
+          },
+          {
+            "returns_table": true
+          }
         ]
       },
       "block_id": "03"
@@ -386,6 +402,11 @@
       "access_rule_violation",
       "unsupported_claim",
       "identity_unresolved"
+    ],
+    "editorial_defect_codes": [
+      "typo_in_description",
+      "formatting",
+      "grammar"
     ]
   }
 }

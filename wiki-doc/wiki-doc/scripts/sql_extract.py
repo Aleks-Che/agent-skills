@@ -3,7 +3,7 @@
 This module extracts operations, dependencies, and structure from SQL/DDL
 without reading facts.json, draft, or expected test results.
 
-Supported subset (regex-based, not a full AST parser):
+Recognized constructs (some require blocking coverage_notes; not a full AST parser):
 - CREATE FUNCTION/PROCEDURE (with dollar-quoted bodies)
 - CREATE VIEW / CREATE MATERIALIZED VIEW / CREATE TABLE AS (CTAS)
 - DML: SELECT, INSERT, UPDATE, DELETE, MERGE
@@ -25,6 +25,7 @@ import sys
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Optional
+from identity import ObjectDescriptor, canonical_key, IdentityError, _parse_arg_types
 
 
 SUPPORTED_CONSTRUCTS = frozenset({
@@ -43,10 +44,11 @@ PLPGSQL_KEYWORDS = {'PERFORM', 'CALL', 'EXECUTE'}
 DOLLAR_QUOTE_RE = re.compile(r'\$(?:[a-zA-Z_][a-zA-Z_0-9]*)?\$')
 
 # Pattern for CREATE statements
+REFERENCE_PATTERN = r'[a-zA-Z_][\w$]*(?:\s*\.\s*[a-zA-Z_][\w$]*)?'
 CREATE_RE = re.compile(
     r'CREATE\s+(?:OR\s+REPLACE\s+)?'
     r'(FUNCTION|PROCEDURE|VIEW|MATERIALIZED\s+VIEW|TABLE)\s+'
-    r'([a-zA-Z_][\w]*(?:\.[a-zA-Z_][\w]*)?)',
+    r'(' + REFERENCE_PATTERN + ')',
     re.IGNORECASE
 )
 
@@ -76,8 +78,8 @@ CALL_RE = re.compile(r'\bCALL\s+(\S+(?:\.\S+)?)', re.IGNORECASE)
 EXECUTE_RE = re.compile(r'\bEXECUTE\s+', re.IGNORECASE)
 
 # Patterns for FROM/JOIN
-FROM_RE = re.compile(r'\bFROM\s+(\S+(?:\.\S+)?)', re.IGNORECASE)
-JOIN_RE = re.compile(r'\bJOIN\s+(\S+(?:\.\S+)?)', re.IGNORECASE)
+FROM_RE = re.compile(r'\bFROM\s+(?:ONLY\s+)?(' + REFERENCE_PATTERN + ')', re.IGNORECASE)
+JOIN_RE = re.compile(r'\bJOIN\s+(?:ONLY\s+)?(' + REFERENCE_PATTERN + ')', re.IGNORECASE)
 
 # Pattern for CTE
 CTE_RE = re.compile(r'\bWITH\s+(\w+)\s+AS\s*\(', re.IGNORECASE)
@@ -114,61 +116,7 @@ def _strip_strings_and_comments(text: str) -> str:
     return _mask_sql(text)[0]
 
 
-def _mask_sql(text):
-    masked, ranges, issues = list(text), [], []
-    i = 0
-    while i < len(text):
-        start, kind = i, None
-        if text.startswith('--', i):
-            kind = 'comment'
-            end = text.find('\n', i)
-            i = len(text) if end < 0 else end
-        elif text.startswith('/*', i):
-            kind, depth, i = 'comment', 1, i + 2
-            while i < len(text) and depth:
-                if text.startswith('/*', i):
-                    depth, i = depth + 1, i + 2
-                elif text.startswith('*/', i):
-                    depth, i = depth - 1, i + 2
-                else:
-                    i += 1
-            if depth:
-                issues.append((start, 'Unterminated block comment'))
-        elif text[i] in "'\"":
-            kind, quote, i = 'quoted', text[i], i + 1
-            escaped = start > 0 and text[start - 1] in 'eE' and (start < 2 or not text[start - 2].isalnum())
-            closed = False
-            while i < len(text):
-                if escaped and text[i] == '\\':
-                    i += 2
-                elif text[i] == quote:
-                    if i + 1 < len(text) and text[i + 1] == quote:
-                        i += 2
-                    else:
-                        i += 1
-                        closed = True
-                        break
-                else:
-                    i += 1
-            i = min(i, len(text))
-            if not closed:
-                issues.append((start, 'Unterminated quoted token'))
-            if quote == '"':
-                issues.append((start, 'Quoted identifiers are outside the P0 subset'))
-        else:
-            tag = DOLLAR_QUOTE_RE.match(text, i)
-            if tag:
-                kind = 'dollar'
-                end = text.find(tag.group(), tag.end())
-                i = len(text) if end < 0 else end + len(tag.group())
-                if end < 0:
-                    issues.append((start, 'Unterminated dollar quote'))
-                ranges.append((start, i, tag.end(), end if end >= 0 else len(text)))
-            else:
-                i += 1
-        if kind:
-            masked[start:i] = ['\n' if ch == '\n' else ' ' for ch in text[start:i]]
-    return ''.join(masked), ranges, issues
+from sql_syntax import mask_sql as _mask_sql, matching_paren, split_top_level
 
 
 @dataclass
@@ -208,6 +156,8 @@ class ObjectInfo:
     end: int = 0
     body_start: int = 0
     body_end: int = 0
+    input_types: Optional[list] = None
+    identity_error: Optional[str] = None
 
 
 def _line_of(text: str, pos: int) -> int:
@@ -231,23 +181,32 @@ def _counters():
 
 
 def extract_objects(sql_text: str, file_path: str, file_sha256: str) -> list:
-    """Read top-level declarations with literal-aware statement boundaries."""
+    """Read declarations and their exact signature/body boundaries."""
     cleaned, ranges, _ = _mask_sql(sql_text)
     objects = []
     for m in CREATE_RE.finditer(cleaned):
         semi = cleaned.find(';', m.end())
         end = semi + 1 if semi >= 0 else len(sql_text)
-        full_name = m.group(2).lower()
+        full_name = re.sub(r'\s+', '', m.group(2)).lower()
         schema, name = full_name.rsplit('.', 1) if '.' in full_name else (None, full_name)
-        kind = m.group(1).lower().replace(' ', '_')
+        kind = '_'.join(m.group(1).lower().split())
         if kind == 'table' and re.search(r'\bAS\s+(?:SELECT|WITH)\b', cleaned[m.end():end], re.I):
             kind = 'ctas'
         body_start, body_end = m.start(), end
-        signature = None
+        signature, input_types, identity_error = None, None, None
         if kind in ('function', 'procedure'):
-            sig = SIGNATURE_RE.match(cleaned, m.start())
-            if sig:
-                signature = name + '(' + sql_text[sig.start(2):sig.end(2)].strip() + ')'
+            args_start = m.end() + len(cleaned[m.end():end]) - len(cleaned[m.end():end].lstrip())
+            try:
+                if args_start >= end or cleaned[args_start] != '(':
+                    raise IdentityError('Missing routine signature')
+                args_end = matching_paren(cleaned, args_start)
+                if args_end >= end:
+                    raise IdentityError('Signature extends outside declaration')
+                signature = name + sql_text[args_start:args_end + 1]
+                args = sql_text[args_start + 1:args_end]
+                input_types = list(_parse_arg_types(split_top_level(args) if args.strip() else []))
+            except (ValueError, IdentityError) as exc:
+                identity_error = str(exc)
             bodies = [(bs, be) for ds, de, bs, be in ranges if m.end() <= ds < end
                       and re.search(r'\bAS\s*$', cleaned[m.end():ds], re.I)]
             if bodies:
@@ -255,241 +214,171 @@ def extract_objects(sql_text: str, file_path: str, file_sha256: str) -> list:
         objects.append(ObjectInfo(name, kind, schema, signature,
                                   _line_of(sql_text, m.start()),
                                   _line_of(sql_text, max(m.start(), end - 1)),
-                                  m.start(), end, body_start, body_end))
+                                  m.start(), end, body_start, body_end, input_types, identity_error))
     return objects
+
+
+def _clauses(text):
+    """Top-level keyword spans in masked SQL (parenthesized expressions are opaque)."""
+    depth, result = 0, []
+    for m in re.finditer(r'\(|\)|[a-zA-Z_][\w$]*', text):
+        if m.group() == '(':
+            depth += 1
+        elif m.group() == ')':
+            depth -= 1
+        elif depth == 0:
+            result.append((m.group().upper(), m.start(), m.end()))
+    return result
+
+
+def _expressions(raw, kind):
+    """Concrete output/assignment expressions and predicate clauses for bounded SQL."""
+    cleaned = _strip_strings_and_comments(raw)
+    words = _clauses(cleaned)
+    boundary = {'FROM','WHERE','GROUP','HAVING','ORDER','LIMIT','OFFSET','RETURNING','INTO','USING',
+                'JOIN','LEFT','RIGHT','FULL','INNER','CROSS','WHEN','UNION','WINDOW','FETCH'}
+    formulas, conditions, columns = [], [], []
+    formula_pattern = r'[+/%-]|[\w.)]\s*\*\s*[\w.(]|\b(?:SUM|AVG|COUNT|MIN|MAX|CASE|OVER)\b|[a-zA-Z_]\w*\s*\('
+    for index, (word, start, end) in enumerate(words):
+        next_clause = next((pos for token, pos, _ in words[index + 1:] if token in boundary or token == 'ON'), len(raw))
+        expression = raw[end:next_clause].strip().rstrip(';').strip()
+        if word in ('WHERE','ON','HAVING') and expression:
+            conditions.append(expression)
+        if word == 'SELECT' or (kind == 'UPDATE' and word == 'SET') or (kind == 'RETURN' and word == 'RETURN'):
+            if word == 'SELECT':
+                expression = re.sub(r'^ALL\s+', '', expression, flags=re.I)
+            for term in split_top_level(expression) if expression else []:
+                term_cleaned = _strip_strings_and_comments(term)
+                alias = re.search(r'\s+AS\s+([a-zA-Z_]\w*)\s*$', term_cleaned, re.I)
+                expr = term[:alias.start()].strip() if alias else term
+                if word == 'SET':
+                    assignment = re.match(r'[^=]+=\s*(.*)', expr, re.S)
+                    expr = assignment.group(1) if assignment else expr
+                if re.search(formula_pattern, _strip_strings_and_comments(expr), re.I):
+                    formulas.append(expr)
+                if word == 'SELECT':
+                    bare = re.fullmatch(r'(?:[a-zA-Z_]\w*\.)?([a-zA-Z_]\w*)', expr)
+                    columns.append({'name': alias.group(1).lower() if alias else (bare.group(1).lower() if bare else None),
+                                    'expression': expr})
+    return formulas, conditions, columns
 
 
 def extract_operations(sql_text: str, file_path: str, file_sha256: str,
                        scope: str = '', counters: dict = None) -> tuple:
-    """Extract DML/PLpgSQL operations from SQL body.
-
-    Returns (items: list[InventoryItem], notes: list[CoverageNote])
-    """
-    if counters is None:
-        counters = _counters()
-
-    items = []
-    notes = []
-
-    dollar_ranges = _find_dollar_quoted_ranges(sql_text)
-    cleaned = _strip_strings_and_comments(sql_text)
-
-    # SELECT
-    for m in SELECT_RE.finditer(cleaned):
-        if _is_in_dollar_quote(m.start(), dollar_ranges):
+    counters = {} if counters is None else counters
+    items, notes = [], []
+    cleaned, _, lexical_issues = _mask_sql(sql_text)
+    identifier = REFERENCE_PATTERN
+    patterns = {
+        'SELECT': r'\bSELECT\b', 'INSERT': r'\bINSERT\s+INTO\s+(?:ONLY\s+)?(' + identifier + ')',
+        'UPDATE': r'\bUPDATE\s+(?:ONLY\s+)?(' + identifier + ')',
+        'DELETE': r'\bDELETE\s+FROM\s+(?:ONLY\s+)?(' + identifier + ')',
+        'MERGE': r'\bMERGE\s+INTO\s+(' + identifier + ')',
+        'PERFORM': r'\bPERFORM\b', 'CALL': r'\bCALL\b', 'EXECUTE': r'\bEXECUTE\b',
+        'RETURN': r'\bRETURN\b', 'CTE': r'\bWITH\s+(' + identifier + r')\s+AS\s*\(',
+        'TEMP_TABLE': r'\bCREATE\s+(?:LOCAL\s+)?TEMP(?:ORARY)?\s+TABLE\s+(' + identifier + ')',
+    }
+    matches = sorted((m.start(), kind, m) for kind, pattern in patterns.items()
+                     for m in re.finditer(pattern, cleaned, re.I))
+    def add_note(start, stop, reason):
+        notes.append(CoverageNote(SourceRef(file_path, _line_of(sql_text, start),
+                    _line_of(sql_text, max(start, stop - 1)), file_sha256), reason))
+    for start, kind, m in matches:
+        statement_start = cleaned.rfind(';', 0, start) + 1
+        # MERGE/ON CONFLICT actions are part of the parent statement, not tables named SET.
+        if kind == 'UPDATE' and (m.group(1).upper() == 'SET' or re.search(r'\bMERGE\b|\bON\s+CONFLICT\b', cleaned[statement_start:start], re.I)):
             continue
-        line = _line_of(sql_text, m.start())
-        counters['SELECT'] += 1
-        reads = _extract_from_joins(cleaned, m.start())
-        items.append(InventoryItem(
-            anchor={'object_or_scope': scope, 'construct': 'SELECT', 'ordinal': counters['SELECT']},
-            kind='SELECT',
-            source_ref=SourceRef(file_path, line, line, file_sha256),
-            reads=reads,
-        ))
-
-    # INSERT
-    for m in INSERT_RE.finditer(cleaned):
-        if _is_in_dollar_quote(m.start(), dollar_ranges):
-            continue
-        line = _line_of(sql_text, m.start())
-        target = m.group(1)
-        counters['INSERT'] += 1
-        reads = _extract_from_joins(cleaned, m.end())
-        items.append(InventoryItem(
-            anchor={'object_or_scope': scope, 'construct': 'INSERT', 'ordinal': counters['INSERT']},
-            kind='INSERT',
-            source_ref=SourceRef(file_path, line, line, file_sha256),
-            writes=[_normalize_ref(target)],
-            reads=reads,
-        ))
-
-    # UPDATE
-    for m in UPDATE_RE.finditer(cleaned):
-        if _is_in_dollar_quote(m.start(), dollar_ranges):
-            continue
-        line = _line_of(sql_text, m.start())
-        target = m.group(1)
-        counters['UPDATE'] += 1
-        reads = _extract_from_joins(cleaned, m.end())
-        items.append(InventoryItem(
-            anchor={'object_or_scope': scope, 'construct': 'UPDATE', 'ordinal': counters['UPDATE']},
-            kind='UPDATE',
-            source_ref=SourceRef(file_path, line, line, file_sha256),
-            writes=[_normalize_ref(target)],
-            reads=reads,
-        ))
-
-    # DELETE
-    for m in DELETE_RE.finditer(cleaned):
-        if _is_in_dollar_quote(m.start(), dollar_ranges):
-            continue
-        line = _line_of(sql_text, m.start())
-        target = m.group(1)
-        counters['DELETE'] += 1
-        items.append(InventoryItem(
-            anchor={'object_or_scope': scope, 'construct': 'DELETE', 'ordinal': counters['DELETE']},
-            kind='DELETE',
-            source_ref=SourceRef(file_path, line, line, file_sha256),
-            writes=[_normalize_ref(target)],
-        ))
-
-    # MERGE
-    for m in MERGE_RE.finditer(cleaned):
-        if _is_in_dollar_quote(m.start(), dollar_ranges):
-            continue
-        line = _line_of(sql_text, m.start())
-        target = m.group(1)
-        counters['MERGE'] += 1
-        reads = []
-        using_m = MERGE_USING_RE.search(cleaned, m.start())
-        if using_m:
-            reads.append(_normalize_ref(using_m.group(1)))
-        items.append(InventoryItem(
-            anchor={'object_or_scope': scope, 'construct': 'MERGE', 'ordinal': counters['MERGE']},
-            kind='MERGE',
-            source_ref=SourceRef(file_path, line, line, file_sha256),
-            writes=[_normalize_ref(target)],
-            reads=reads,
-        ))
-
-    # PERFORM
-    for m in PERFORM_RE.finditer(cleaned):
-        if _is_in_dollar_quote(m.start(), dollar_ranges):
-            continue
-        line = _line_of(sql_text, m.start())
-        target = m.group(1)
-        counters['PERFORM'] += 1
-        items.append(InventoryItem(
-            anchor={'object_or_scope': scope, 'construct': 'PERFORM', 'ordinal': counters['PERFORM']},
-            kind='PERFORM',
-            source_ref=SourceRef(file_path, line, line, file_sha256),
-            calls=[_normalize_ref(target)],
-        ))
-
-    # CALL
-    for m in CALL_RE.finditer(cleaned):
-        if _is_in_dollar_quote(m.start(), dollar_ranges):
-            continue
-        line = _line_of(sql_text, m.start())
-        target = m.group(1)
-        counters['CALL'] += 1
-        items.append(InventoryItem(
-            anchor={'object_or_scope': scope, 'construct': 'CALL', 'ordinal': counters['CALL']},
-            kind='CALL',
-            source_ref=SourceRef(file_path, line, line, file_sha256),
-            calls=[_normalize_ref(target)],
-        ))
-
-    # EXECUTE (dynamic)
-    for m in EXECUTE_RE.finditer(cleaned):
-        if _is_in_dollar_quote(m.start(), dollar_ranges):
-            continue
-        line = _line_of(sql_text, m.start())
-        counters['EXECUTE'] += 1
-        items.append(InventoryItem(
-            anchor={'object_or_scope': scope, 'construct': 'EXECUTE', 'ordinal': counters['EXECUTE']},
-            kind='EXECUTE',
-            source_ref=SourceRef(file_path, line, line, file_sha256),
-            details={'dynamic': True, 'unresolved_parts': ['dynamic target']},
-        ))
-
-    # CTE
-    for m in CTE_RE.finditer(cleaned):
-        if _is_in_dollar_quote(m.start(), dollar_ranges):
-            continue
-        cte_name = m.group(1)
-        counters['CTE'] += 1
-        line = _line_of(sql_text, m.start())
-        items.append(InventoryItem(
-            anchor={'object_or_scope': scope, 'construct': 'CTE', 'ordinal': counters['CTE']},
-            kind='CTE',
-            source_ref=SourceRef(file_path, line, line, file_sha256),
-            details={'cte_name': cte_name},
-        ))
-
-    # TEMP TABLE
-    for m in TEMP_TABLE_RE.finditer(cleaned):
-        if _is_in_dollar_quote(m.start(), dollar_ranges):
-            continue
-        table_name = m.group(1)
-        counters['TEMP_TABLE'] += 1
-        line = _line_of(sql_text, m.start())
-        items.append(InventoryItem(
-            anchor={'object_or_scope': scope, 'construct': 'TEMP_TABLE', 'ordinal': counters['TEMP_TABLE']},
-            kind='TEMP_TABLE',
-            source_ref=SourceRef(file_path, line, line, file_sha256),
-            details={'table_name': table_name},
-        ))
-
-    for m in re.finditer(r'\bRETURN\b', cleaned, re.I):
-        counters['RETURN'] = counters.get('RETURN', 0) + 1
-        line = _line_of(sql_text, m.start())
-        items.append(InventoryItem({'object_or_scope': scope, 'construct': 'RETURN', 'ordinal': counters['RETURN']},
-                                   'RETURN', SourceRef(file_path, line, line, file_sha256)))
-
-    # Keep source spans and statement features independent of writer-created IDs.
-    for item in items:
-        # Locate the occurrence by its line and construct, then stop at this statement.
-        matches = list(re.finditer(r'\b' + re.escape(item.kind.replace('_TABLE', '')) + r'\b', cleaned, re.I))
-        match = next((m for m in matches if _line_of(sql_text, m.start()) == item.source_ref.start_line), None)
-        if match:
-            stop = cleaned.find(';', match.start())
-            stop = len(cleaned) if stop < 0 else stop + 1
-            segment = cleaned[match.start():stop]
-            item.details['profile_features'] = sorted(set(re.findall(
-                r'\b(?:ckr_uup_queue|ckr_uup_products_contract_val|ckr_uup_org_st|product_group|coef_up|consent|row_number|init_type_oper|start_oper|add_log|end_oper)\b', segment, re.I)))
-            item.source_ref.end_line = _line_of(sql_text, max(match.start(), stop - 1))
-            if item.kind in DML_KEYWORDS | {'RETURN', 'PERFORM', 'CALL'}:
-                item.details['has_formula'] = bool(re.search(r'[+/-]|[\w.)]\s*\*\s*[\w.(]|\b(?:SUM|AVG|COUNT|MIN|MAX|CASE|OVER)\b', segment, re.I))
-                item.details['has_condition'] = bool(re.search(r'\b(?:WHERE|ON|CASE|HAVING)\b', segment, re.I))
-                item.calls = list(dict.fromkeys(item.calls + re.findall(r'\b([a-zA-Z_]\w*\.[a-zA-Z_]\w*)\s*\(', segment)))
-                # INSERT target(column-list) is not a function invocation.
-                item.calls = [name for name in item.calls if name not in item.writes]
-                builtins = {'sum', 'avg', 'count', 'min', 'max', 'now', 'coalesce', 'nullif',
-                            'greatest', 'least', 'round', 'abs', 'lower', 'upper', 'trim',
-                            'substring', 'extract', 'date_trunc', 'to_char', 'to_date',
-                            'row_number', 'cast', 'in', 'values', 'over', 'filter'}
-                for call in re.findall(r'(?<![\w.])([a-zA-Z_]\w*)\s*\(', segment):
-                    if call.lower() not in builtins and call not in item.writes:
-                        notes.append(CoverageNote(item.source_ref, f'Unresolved unqualified call: {call}'))
-                if re.search(r'(?<![\w.])(?:now|coalesce|nullif|greatest|least|round|abs|date_trunc|to_char|to_date)\s*\(', segment, re.I):
-                    item.details['has_formula'] = True
-            for field in ('reads', 'writes', 'calls'):
-                for target in getattr(item, field):
-                    if '.' not in target:
-                        notes.append(CoverageNote(item.source_ref, f'Unresolved {field} target/search_path: {target}'))
-            # Bare EXECUTE variables cannot establish the operation template.
-            if item.kind == 'EXECUTE':
-                raw = sql_text[match.start():stop]
-                if not re.match(r"EXECUTE\s+(?:format\s*\(\s*)?'(?:SELECT|INSERT|UPDATE|DELETE|TRUNCATE)\b", raw, re.I):
-                    notes.append(CoverageNote(item.source_ref, 'Unanalyzed dynamic SQL expression'))
-
-    for pos, reason in _mask_sql(sql_text)[2]:
-        notes.append(CoverageNote(SourceRef(file_path, _line_of(sql_text, pos),
-                                           _line_of(sql_text, pos), file_sha256), reason))
-    # This is a deliberately bounded scanner. Complex grammar remains a blocking gap.
-    for match in re.finditer(r'\b(?:MERGE|WITH|TRIGGER|INDEX|CONSTRAINT|GRANT|REVOKE|ALTER|DROP|TRUNCATE|IF|LOOP|EXCEPTION|DECLARE|COPY|DO)\b', cleaned, re.I):
-        line = _line_of(sql_text, match.start())
-        notes.append(CoverageNote(SourceRef(file_path, line, line, file_sha256),
-                                  f'{match.group().upper()} requires analysis beyond the P0 subset'))
-    for match in re.finditer(r'\(\s*SELECT\b|\b(?:UNION|INTERSECT|EXCEPT)\b', cleaned, re.I):
-        line = _line_of(sql_text, match.start())
-        notes.append(CoverageNote(SourceRef(file_path, line, line, file_sha256), 'Nested/set query requires scoped analysis beyond P0'))
-    for match in re.finditer(r'[^;]+(?:;|$)', cleaned):
-        fragment = re.sub(r'^\s*(?:BEGIN\b\s*)?', '', match.group(), flags=re.I).strip()
+        stop = cleaned.find(';', start)
+        stop = len(cleaned) if stop < 0 else stop + 1
+        segment, raw = cleaned[start:stop], sql_text[start:stop]
+        counters[kind] = counters.get(kind, 0) + 1
+        item = InventoryItem({'object_or_scope': scope, 'construct': kind, 'ordinal': counters[kind]},
+                             kind, SourceRef(file_path, _line_of(sql_text, start),
+                                             _line_of(sql_text, max(start, stop - 1)), file_sha256))
+        if kind in ('INSERT','UPDATE','DELETE','MERGE'):
+            item.writes = [_normalize_ref(m.group(1))]
+        if kind in DML_KEYWORDS | {'PERFORM','RETURN'}:
+            item.reads = _extract_from_joins(cleaned, start)
+            if kind == 'DELETE':
+                item.reads = [ref for ref in item.reads if ref not in item.writes]
+            if kind in ('DELETE','MERGE'):
+                using = re.search(r'\bUSING\s+(' + identifier + ')', segment, re.I)
+                if using:
+                    item.reads.append(_normalize_ref(using.group(1)))
+        if kind in DML_KEYWORDS | {'RETURN','PERFORM','CALL'}:
+            try:
+                formulas, conditions, columns = _expressions(raw, kind)
+            except ValueError as exc:
+                formulas, conditions, columns = [], [], []
+                add_note(start, stop, str(exc))
+            item.details.update(formulas=formulas, conditions=conditions,
+                                has_formula=bool(formulas), has_condition=bool(conditions))
+            if columns:
+                item.details['columns'] = columns
+            item.calls = [_normalize_ref(name) for name in re.findall(r'\b([a-zA-Z_][\w$]*\s*\.\s*[a-zA-Z_][\w$]*)\s*\(', segment)]
+            item.calls = [name for name in item.calls if name not in item.writes]
+            builtins = {'sum','avg','count','min','max','now','coalesce','nullif','greatest','least','round','abs',
+                        'lower','upper','trim','substring','extract','date_trunc','to_char','to_date','row_number',
+                        'cast','in','values','over','filter','numeric','decimal','varchar','character','timestamp','time'}
+            for call in re.findall(r'(?<![\w.])([a-zA-Z_]\w*)\s*\(', segment):
+                if call.lower() not in builtins and call.lower() not in item.writes:
+                    add_note(start, stop, f'Unresolved unqualified call: {call}')
+            # Comma joins and clauses not covered by this scanner must not silently lose sources.
+            for word, begin, end in _clauses(segment):
+                if word in ('FROM','USING'):
+                    tail = segment[end:]
+                    tail = re.split(r'\b(?:WHERE|GROUP|ORDER|HAVING|RETURNING|WHEN)\b', tail, maxsplit=1, flags=re.I)[0]
+                    if len(split_top_level(tail.rstrip(';'))) > 1:
+                        add_note(start, stop, 'Comma-separated sources require scoped analysis')
+            if re.search(r'\bSELECT\b.*?\bINTO\b|\bON\s+CONFLICT\b|\bDISTINCT\s+ON\b|\bWINDOW\b', segment, re.I | re.S):
+                add_note(start, stop, 'SELECT INTO / ON CONFLICT / named window requires scoped analysis')
+        if kind == 'CTE':
+            item.details['cte_name'] = m.group(1)
+        if kind == 'TEMP_TABLE':
+            item.details['table_name'] = m.group(1)
+            add_note(start, stop, 'Temporary table columns/lifetime require scoped analysis')
+        if kind == 'EXECUTE':
+            item.details.update(dynamic=True, unresolved_parts=['runtime target or parameter values'])
+            template = re.match(r"EXECUTE\s+(?:format\s*\(\s*)?'((?:''|[^'])*)'", raw, re.I | re.S)
+            if template:
+                command = template.group(1).replace("''", "'")
+                item.details['template'] = command
+                first = re.match(r'\s*(SELECT|INSERT|UPDATE|DELETE|TRUNCATE)\b', command, re.I)
+                item.details['command_kind'] = first.group(1).upper() if first else 'UNKNOWN'
+                # Only a known single command template supports an honest runtime unknown.
+                template_code = _strip_strings_and_comments(command).strip().rstrip(';')
+                if not first or ';' in template_code or re.search(r'%(?!%|(?:[1-9]\d*\$)?[IL])', command):
+                    add_note(start, stop, 'Unanalyzed dynamic SQL template')
+            else:
+                add_note(start, stop, 'Unanalyzed dynamic SQL expression')
+        item.details['has_date_boundary'] = bool(re.search(r'\b(?:DATE|TIMESTAMP|INTERVAL)\b', segment, re.I))
+        item.details['profile_features'] = sorted(set(re.findall(
+            r'\b(?:ckr_uup_queue|ckr_uup_products_contract_val|ckr_uup_org_st|product_group|coef_up|consent|row_number|init_type_oper|start_oper|add_log|end_oper)\b', segment, re.I)))
+        for field in ('reads','writes','calls'):
+            setattr(item, field, list(dict.fromkeys(getattr(item, field))))
+            for target in getattr(item, field):
+                if '.' not in target:
+                    add_note(start, stop, f'Unresolved {field} target/search_path: {target}')
+        items.append(item)
+    for pos, reason in lexical_issues:
+        add_note(pos, pos + 1, reason)
+    for m in re.finditer(r'\b(?:MERGE|WITH|TRIGGER|INDEX|CONSTRAINT|GRANT|REVOKE|ALTER|DROP|TRUNCATE|IF|LOOP|EXCEPTION|DECLARE|COPY|DO|CASE)\b', cleaned, re.I):
+        add_note(m.start(), m.end(), f'{m.group().upper()} requires analysis beyond the P0 subset')
+    for m in re.finditer(r'\(\s*SELECT\b|\b(?:UNION|INTERSECT|EXCEPT)\b', cleaned, re.I):
+        add_note(m.start(), m.end(), 'Nested/set query requires scoped analysis beyond P0')
+    for m in re.finditer(r'[^;]+(?:;|$)', cleaned):
+        fragment = re.sub(r'^\s*(?:BEGIN\b\s*)?', '', m.group(), flags=re.I).strip()
         if not fragment or re.fullmatch(r'END\s*;?', fragment, re.I):
             continue
-        if not re.match(r'(?:SELECT|INSERT|UPDATE|DELETE|MERGE|PERFORM|CALL|EXECUTE|CREATE|WITH|RETURN)\b', fragment, re.I):
-            line = _line_of(sql_text, match.start())
-            notes.append(CoverageNote(SourceRef(file_path, line, line, file_sha256),
-                                      f'Unanalyzed executable fragment: {fragment[:60]}'))
+        recognized = any(m.start() <= start < m.end() for start, _, _ in matches)
+        if not recognized or not re.match(r'(?:SELECT|INSERT|UPDATE|DELETE|MERGE|PERFORM|CALL|EXECUTE|CREATE|WITH|RETURN)\b', fragment, re.I):
+            add_note(m.start(), m.end(), f'Unanalyzed executable fragment: {fragment[:60]}')
     return items, notes
 
 
 def _normalize_ref(ref: str) -> str:
     """Normalize a table/function reference."""
-    ref = ref.strip().rstrip(';,')
+    ref = re.sub(r'\s+', '', ref.strip().rstrip(';,')).lower()
     # Remove trailing parenthesis and everything after it
     if '(' in ref:
         ref = ref[:ref.index('(')]
@@ -520,7 +409,14 @@ def _extract_from_joins(text: str, start_pos: int) -> list:
 
 
 def object_scope(obj):
-    return f"{obj.kind}+{obj.schema or '?'}+{obj.signature or obj.name}"
+    try:
+        if obj.identity_error:
+            raise IdentityError(obj.identity_error)
+        if obj.kind in ('function', 'procedure') and obj.input_types is None:
+            raise IdentityError('Unresolved signature')
+        return canonical_key(ObjectDescriptor(obj.kind, obj.schema, obj.name, obj.input_types))
+    except IdentityError:
+        return f"unresolved+{obj.kind}+{obj.schema or '?'}+{obj.name}@{obj.start_line}"
 
 
 def extract_inventory(sql_text: str, file_path: str, file_sha256: str,
@@ -555,7 +451,10 @@ def extract_inventory(sql_text: str, file_path: str, file_sha256: str,
         all_items.append(InventoryItem(
             {'object_or_scope': scope, 'construct': 'DECLARATION', 'ordinal': 1},
             'DECLARATION', ref, details={'object_kind': obj.kind, 'name': obj.name,
-                                      'schema': obj.schema, 'signature': obj.signature}))
+                                      'schema': obj.schema, 'signature': obj.signature,
+                                      'input_types': obj.input_types, 'canonical_key': scope}))
+        if scope.startswith('unresolved+'):
+            note(obj.start, obj.end, obj.identity_error or 'Unresolved object identity')
         if obj.schema is None:
             note(obj.start, obj.end, 'Unresolved schema/search_path for declaration')
         if obj.kind == 'table':
@@ -564,12 +463,28 @@ def extract_inventory(sql_text: str, file_path: str, file_sha256: str,
         if obj.kind in ('function', 'procedure') and obj.body_start == obj.start:
             note(obj.start, obj.end, 'Routine requires an AS dollar-quoted body in the P0 subset')
             continue
+        if obj.kind in ('function', 'procedure'):
+            header = cleaned[obj.start:obj.body_start] + cleaned[obj.body_end:obj.end]
+            language = re.search(r'\bLANGUAGE\s+(\w+)', header, re.I)
+            if not language or language.group(1).lower() not in ('sql', 'plpgsql'):
+                note(obj.start, obj.end, 'Unsupported or unresolved routine language')
+            if re.search(r'\bRETURNS\s+TABLE\b', header, re.I):
+                all_items[-1].details['returns_table'] = True
+                note(obj.start, obj.end, 'RETURNS TABLE columns require structural analysis')
         body = sql_text[obj.body_start:obj.body_end]
         items, notes = extract_operations(body, file_path, file_sha256, scope)
         offset = _line_of(sql_text, obj.body_start) - 1
         for item in items + notes:
             item.source_ref.start_line += offset
             item.source_ref.end_line += offset
+        if obj.kind in ('view', 'materialized_view', 'ctas'):
+            header_match = CREATE_RE.match(cleaned, obj.start)
+            if header_match and cleaned[header_match.end():obj.end].lstrip().startswith('('):
+                note(obj.start, obj.end, 'Explicit relation output column lists require structural analysis')
+            outputs = next((i.details.get('columns', []) for i in items if i.kind == 'SELECT'), [])
+            all_items[-1].details['output_columns'] = outputs
+            if any(o['expression'] == '*' or o['expression'].endswith('.*') for o in outputs):
+                note(obj.start, obj.end, 'Wildcard output columns require DDL context analysis')
         all_items.extend(items)
         all_notes.extend(notes)
         if not items:
@@ -579,12 +494,15 @@ def extract_inventory(sql_text: str, file_path: str, file_sha256: str,
         all_items.extend(items)
         all_notes.extend(notes)
         note(0, len(sql_text), 'No supported object declaration; migration/raw statement scope requires further analysis')
-    elif not documented_subjects:
+    else:
         remainder = list(cleaned)
         for obj in objects:
             remainder[obj.start:obj.end] = ' ' * (obj.end - obj.start)
         if ''.join(remainder).strip(' ;\r\n\t'):
             note(0, len(sql_text), 'Unanalyzed top-level statements outside declarations')
+    if not all_items:
+        all_items.append(InventoryItem({'object_or_scope': file_path, 'construct': 'ANALYSIS_GAP', 'ordinal': 1},
+                                      'ANALYSIS_GAP', SourceRef(file_path, 1, 1, file_sha256)))
     return {
         'schema_version': 2,
         'run_id': '00000000-0000-0000-0000-000000000000',

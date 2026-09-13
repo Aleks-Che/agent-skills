@@ -316,13 +316,13 @@ class EvidenceChecksTests(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_check_evidence_against_inputs_match(self):
-        evidence = [{'path': 'test.sql', 'sha256': self.sha}]
+        evidence = [{'path': 'test.sql', 'sha256': self.sha, 'start_line': 1, 'end_line': 1}]
         inputs = [{'path': 'test.sql', 'sha256': self.sha}]
         errors = check_evidence_against_inputs(evidence, inputs, {})
         self.assertEqual(errors, [])
 
     def test_check_evidence_against_inputs_mismatch(self):
-        evidence = [{'path': 'test.sql', 'sha256': '0' * 64}]
+        evidence = [{'path': 'test.sql', 'sha256': '0' * 64, 'start_line': 1, 'end_line': 1}]
         inputs = [{'path': 'test.sql', 'sha256': self.sha}]
         errors = check_evidence_against_inputs(evidence, inputs, {})
         self.assertEqual(len(errors), 1)

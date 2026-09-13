@@ -82,6 +82,8 @@ def _build_context(inventory, object_kind, object_key=''):
         'has_conditions': has_conditions,
         'has_dynamic_sql': has_dynamic_sql,
         'has_unknowns': has_unknowns,
+        'has_date_boundaries': any(i.get('details', {}).get('has_date_boundary') for i in items),
+        'returns_table': any(i.get('details', {}).get('returns_table') for i in items),
         'source_count': len({ref for item in items for ref in item.get('reads', [])}),
     }
 
@@ -101,20 +103,26 @@ def generate_plan(inventory, policy, page_id=None, object_kind=None,
     Returns:
         dict matching validation_plan.schema.json v2
     """
-    subjects = documented_subjects or inventory.get('documented_subjects', [])
-    if not subjects:
-        raise ValueError('No documented subjects found in inventory')
-
-    # Use first subject as primary
-    primary_subject = subjects[0] if subjects else 'unknown'
-    if object_key is None:
-        object_key = primary_subject
-
-    # Determine object kind
-    if object_kind is None:
-        object_kind = _determine_object_kind(inventory, subjects)
-    elif object_kind not in VALID_OBJECT_KINDS:
-        raise ValueError(f'Invalid object kind: {object_kind!r}')
+    from artifact_schema import validate_schema, load_schemas
+    errors = validate_schema(inventory, load_schemas()['inventory'], 'inventory')
+    if errors:
+        raise ValueError('\n'.join(errors))
+    subjects = documented_subjects or inventory['documented_subjects']
+    selected = [i for i in inventory['items'] if i['anchor']['object_or_scope'] in subjects]
+    if not selected:
+        raise ValueError('Selected subjects do not match independent inventory scopes')
+    inventory = {**inventory, 'items': selected, 'documented_subjects': subjects}
+    declarations = [i for i in selected if i['kind'] == 'DECLARATION']
+    if len(subjects) != 1 or len(declarations) > 1:
+        raise ValueError('Generate one plan per independently selected declaration')
+    primary_subject = subjects[0]
+    if object_key is not None and object_key != primary_subject:
+        raise ValueError('Object key differs from the selected declaration')
+    object_key = primary_subject
+    derived_kind = _determine_object_kind(inventory, subjects)
+    if object_kind is not None and object_kind != derived_kind:
+        raise ValueError('Object kind differs from the selected declaration')
+    object_kind = derived_kind
 
     # Build context
     context = _build_context(inventory, object_kind, object_key)
@@ -137,6 +145,16 @@ def generate_plan(inventory, policy, page_id=None, object_kind=None,
     inventory_checks = derive_inventory_checks(
         policy, inventory.get('items', []), object_key
     )
+
+    import hashlib
+    for note in inventory.get('coverage_notes', []):
+        ref = note['source_ref']
+        owner = next((item for item in selected if item['source_ref']['path'] == ref['path']), selected[0])
+        anchor = {'path': owner['source_ref']['path'], **owner['anchor']}
+        digest = hashlib.sha256(json.dumps(note, sort_keys=True).encode()).hexdigest()[:16]
+        inventory_checks.append({'id': 'analysis_gap:' + digest, 'rule_id': 'analysis_gap',
+                                 'subject': note['reason'], 'source': 'inventory', 'inventory_anchor': anchor,
+                                 'applicable': True, 'blocking': True, 'category': 'technical'})
 
     # Derive section checks
     section_checks = derive_section_checks(policy, context)
@@ -180,6 +198,9 @@ def generate_plan(inventory, policy, page_id=None, object_kind=None,
         'required_checks': all_checks,
     }
 
+    errors = validate_schema(plan, load_schemas()['validation_plan'], 'validation_plan')
+    if errors:
+        raise ValueError('\n'.join(errors))
     return plan
 
 
@@ -197,7 +218,8 @@ def main():
     args = parser.parse_args()
 
     try:
-        inventory = json.loads(Path(args.inventory).read_text(encoding='utf-8'))
+        from artifact_schema import read_json
+        inventory = read_json(args.inventory)
         policy = load_policy(args.policy)
 
         plan = generate_plan(

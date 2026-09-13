@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Object identity result",
+  "description": "Output of identity computation: canonical key, slug, page_id, and collision status",
+  "type": "object",
+  "required": [
+    "canonical_key",
+    "slug",
+    "page_id",
+    "collision"
+  ],
+  "properties": {
+    "canonical_key": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S",
+      "description": "Canonical key: kind+schema+name or kind+schema+name+(types) or migration+path+id"
+    },
+    "slug": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9-]{0,79}$",
+      "description": "Safe filename slug derived from canonical key"
+    },
+    "page_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^:\\\\]+\\.md$",
+      "description": "New slug--hash.md filename or an explicitly matched existing wiki-relative Markdown path"
+    },
+    "collision": {
+      "type": "boolean",
+      "description": "True if page_id collides with an existing page"
+    }
+  },
+  "additionalProperties": false
+}

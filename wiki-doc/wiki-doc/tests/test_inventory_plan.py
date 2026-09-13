@@ -231,7 +231,7 @@ class GeneratePlanTests(unittest.TestCase):
                 }
             ],
             'inputs': [{'path': 'test.sql', 'sha256': 'a' * 64}],
-            'documented_subjects': ['test_func'],
+            'documented_subjects': ['fn+test'],
         }
         plan = VP_MOD.generate_plan(inventory, self.policy, page_id='fn+test')
         self.assertEqual(plan['schema_version'], 2)
@@ -241,14 +241,7 @@ class GeneratePlanTests(unittest.TestCase):
         self.assertIn('operation', check_ids)
 
     def test_plan_for_table_has_columns_check(self):
-        inventory = {
-            'schema_version': 2,
-            'run_id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-            'dialect': {'name': 'postgres', 'version': 'unknown'},
-            'items': [],
-            'inputs': [{'path': 'test.sql', 'sha256': 'a' * 64}],
-            'documented_subjects': ['my_table'],
-        }
+        inventory = SQL_MOD.extract_inventory('CREATE TABLE demo.t (id int);', 'test.sql', 'a' * 64)
         plan = VP_MOD.generate_plan(inventory, self.policy, page_id='table+test',
                                      object_kind='table')
         check_ids = {c['rule_id'] for c in plan['required_checks']}
@@ -256,14 +249,8 @@ class GeneratePlanTests(unittest.TestCase):
         self.assertNotIn('signature', check_ids)
 
     def test_plan_preserves_run_id(self):
-        inventory = {
-            'schema_version': 2,
-            'run_id': 'b1b2c3d4-e5f6-7890-abcd-ef1234567890',
-            'dialect': {'name': 'postgres', 'version': 'unknown'},
-            'items': [],
-            'inputs': [{'path': 'test.sql', 'sha256': 'a' * 64}],
-            'documented_subjects': ['test'],
-        }
+        inventory = SQL_MOD.extract_inventory('CREATE VIEW demo.v AS SELECT 1;', 'test.sql', 'a' * 64)
+        inventory['run_id'] = 'b1b2c3d4-e5f6-7890-abcd-ef1234567890'
         plan = VP_MOD.generate_plan(inventory, self.policy)
         self.assertEqual(plan['run_id'], 'b1b2c3d4-e5f6-7890-abcd-ef1234567890')
 

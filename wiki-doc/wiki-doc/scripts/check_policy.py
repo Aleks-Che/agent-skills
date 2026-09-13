@@ -16,12 +16,15 @@ class PolicyError(ValueError):
     """Policy or context data is invalid."""
 
 
-def load_policy(path=None):
+def load_policy(path=None, *, expected_sha256=None):
     """Load and validate check-policy.json."""
     from artifact_schema import read_json, validate_schema, ArtifactInputError
     policy_path = Path(path) if path else POLICY_PATH
     try:
-        policy = read_json(policy_path)
+        snapshots = {}
+        policy = read_json(policy_path, snapshot_hashes=snapshots)
+        if expected_sha256 is not None and snapshots[policy_path.resolve()] != expected_sha256:
+            raise PolicyError('Policy bytes differ from the verified policy hash')
     except ArtifactInputError as exc:
         raise PolicyError(f'Cannot load check policy: {exc}') from exc
     if not isinstance(policy, dict):
@@ -242,43 +245,30 @@ def derive_section_checks(policy, context=None):
 
 
 def derive_inventory_checks(policy, inventory_items, object_key=''):
-    """Derive checks from inventory items (operations, formulas, conditions, unknowns)."""
+    """Preserve independent anchors and expand every concrete expression."""
+    import hashlib
     checks = []
-    counters = {}
-
+    operation_kinds = {'SELECT','INSERT','UPDATE','DELETE','MERGE','DDL','PERFORM','CALL','EXECUTE','RETURN','OTHER','CTE','TEMP_TABLE'}
     for item in inventory_items:
-        kind = item.get('kind', 'unknown')
-        counters[kind] = counters.get(kind, 0) + 1
-        ordinal = counters[kind]
-
-        rule_ids = []
-        if kind in ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'DDL', 'PERFORM', 'CALL', 'EXECUTE', 'RETURN', 'OTHER', 'CTE', 'TEMP_TABLE'):
-            rule_ids.append('operation')
-        details = item.get('details', {})
-        for feature, rule in (('has_formula', 'formula'), ('has_condition', 'condition'), ('dynamic', 'unknown')):
-            if details.get(feature):
-                rule_ids.append(rule)
-        for rule_id in rule_ids:
-            anchor = item.get('anchor', {})
-            path = item.get('source_ref', {}).get('path', anchor.get('path', ''))
-            subject = f'{path}/{anchor.get("object_or_scope", object_key)}/{kind}/{anchor.get("ordinal", ordinal)}/{rule_id}'
+        kind, details = item['kind'], item.get('details', {})
+        anchor = {'path': item.get('source_ref', {}).get('path', item['anchor'].get('path', '')),
+                  **{k: item['anchor'][k] for k in ('object_or_scope','construct','ordinal')}}
+        features = [('operation', 0)] if kind in operation_kinds else []
+        for group, flag, rule in (('formulas','has_formula','formula'), ('conditions','has_condition','condition')):
+            expressions = details.get(group, [None] if details.get(flag) else [])
+            features.extend((rule, i) for i in range(1, len(expressions) + 1))
+        if details.get('dynamic'):
+            features.append(('unknown', 1))
+        for rule_id, index in features:
             rule = get_rule(policy, rule_id)
-            checks.append({
-                'id': f'{rule_id}:{kind}:{ordinal}',
-                'rule_id': rule_id,
-                'subject': subject,
-                'source': 'inventory',
-                'inventory_anchor': {
-                    'path': path,
-                    'object_or_scope': anchor.get('object_or_scope', object_key),
-                    'construct': kind,
-                    'ordinal': anchor.get('ordinal', ordinal),
-                },
-                'applicable': True,
-                'blocking': rule['blocking_default'],
-                'category': rule['category'],
-            })
-
+            if not rule:
+                raise PolicyError(f'Missing rule {rule_id!r}')
+            identity = json.dumps([anchor, rule_id, index], sort_keys=True, separators=(',', ':'))
+            digest = hashlib.sha256(identity.encode()).hexdigest()[:16]
+            checks.append({'id': f'{rule_id}:{kind}:{digest}', 'rule_id': rule_id,
+                           'subject': f'{anchor["path"]}/{anchor["object_or_scope"]}/{kind}/{anchor["ordinal"]}/{rule_id}/{index}',
+                           'source': 'inventory', 'inventory_anchor': anchor.copy(),
+                           'applicable': True, 'blocking': rule['blocking_default'], 'category': rule['category']})
     return checks
 
 
@@ -312,10 +302,10 @@ def validate_check_against_policy(policy, check, object_kind=None):
         errors.append(f'check {check.get("id")}: unknown rule_id {rule_id!r}')
         return errors
 
-    if check.get('category') not in ('technical', 'editorial'):
+    if check.get('category') != rule['category']:
         errors.append(f'check {check.get("id")}: invalid category')
 
-    if check.get('source') not in ('inventory', 'object_type', 'section', 'profile'):
+    if check.get('source') != rule['source']:
         errors.append(f'check {check.get("id")}: invalid source')
 
     if check.get('source') == 'inventory' and 'inventory_anchor' not in check:
@@ -324,6 +314,10 @@ def validate_check_against_policy(policy, check, object_kind=None):
     if check.get('source') != 'inventory' and 'inventory_anchor' in check:
         errors.append(f'check {check.get("id")}: non-inventory source must not have inventory_anchor')
 
+    if rule['blocking_default'] and check.get('blocking') is not True:
+        errors.append(f'check {check.get("id")}: policy blocking cannot be lowered')
+    if check.get('applicable') is not True:
+        errors.append(f'check {check.get("id")}: required obligation cannot be made inapplicable')
     return errors
 
 

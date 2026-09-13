@@ -32,9 +32,13 @@ def _invalid_constant(value):
     raise ValueError(f'non-JSON number {value}')
 
 
-def read_json(path):
+def read_json(path, *, snapshot_hashes=None):
     try:
-        return json.loads(Path(path).read_text(encoding='utf-8-sig'),
+        import hashlib
+        data = Path(path).read_bytes()
+        if snapshot_hashes is not None:
+            snapshot_hashes[Path(path).resolve()] = hashlib.sha256(data).hexdigest()
+        return json.loads(data.decode('utf-8-sig'),
                           object_pairs_hook=_unique_keys, parse_constant=_invalid_constant)
     except (OSError, UnicodeError, ValueError) as exc:
         raise ArtifactInputError(f'{path}: invalid JSON or unreadable input: {exc}') from exc
@@ -283,11 +287,11 @@ def validate_artifacts(artifacts, required=None):
     return errors
 
 
-def read_artifact_set(artifacts_dir):
+def read_artifact_set(artifacts_dir, *, snapshot_hashes=None):
     directory = Path(artifacts_dir)
     if not directory.is_dir():
         raise ArtifactInputError(f'Not a directory: {directory}')
-    return {name: read_json(directory / f'{name}.json') for name in SCHEMA_FILES
+    return {name: read_json(directory / f'{name}.json', snapshot_hashes=snapshot_hashes) for name in SCHEMA_FILES
             if (directory / f'{name}.json').exists()}
 
 

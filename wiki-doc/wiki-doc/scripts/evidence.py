@@ -223,7 +223,7 @@ def validate_evidence(
 
 def validate_source_ref(ref: dict, roots: dict[str, Path]) -> EvidenceRef:
     """Validate a source_ref (same structure as evidence)."""
-    return validate_evidence(ref, roots)
+    return validate_evidence({'root': 'project', **ref} if isinstance(ref, dict) else ref, roots)
 
 
 def validate_source_refs(refs: list[dict], roots: dict[str, Path]) -> list[EvidenceRef]:
@@ -243,13 +243,27 @@ def check_evidence_against_inputs(
     inputs: list of {path, sha256} from facts.json or manifest
     Returns list of error strings.
     """
-    input_map = {inp['path']: inp['sha256'] for inp in inputs}
-    errors = []
+    roots = {**{n: r.path for n, r in _ROOTS.items()}, **roots}
+    errors, input_map = [], {}
+    for inp in inputs:
+        try:
+            path = resolve_reference(inp, roots)
+            if path in input_map and input_map[path] != inp['sha256']:
+                errors.append(f'Conflicting input hashes: {inp["path"]}')
+            input_map[path] = inp['sha256']
+        except (EvidenceError, KeyError) as exc:
+            errors.append(str(exc))
     for i, ev in enumerate(evidence):
-        path = ev.get('path', '')
-        sha = ev.get('sha256', '')
-        if path in input_map and sha != input_map[path]:
-            errors.append(f'evidence.{i}: sha256 mismatch with declared input {path!r}')
+        try:
+            validate_evidence({'root': 'project', **ev}, roots)
+            path = resolve_reference(ev, roots)
+            if path not in input_map:
+                errors.append(f'evidence.{i}: undeclared input {ev["path"]!r}')
+            elif ev['sha256'] != input_map[path]:
+                errors.append(f'evidence.{i}: sha256 mismatch with declared input {ev["path"]!r}')
+        except EvidenceError as exc:
+            errors.append(f'evidence.{i}: {exc}')
+
     return errors
 
 
@@ -274,11 +288,15 @@ def check_evidence_existence(
 
 def _cli_validate(args):
     """CLI: validate evidence refs from JSON."""
-    import json
-    data = json.loads(Path(args.input).read_text(encoding='utf-8-sig'))
+    from artifact_schema import read_json
+    data = read_json(args.input)
+    if not isinstance(data, (dict, list)):
+        raise EvidenceError('Evidence input must be an object or array')
     roots = {name: Path(p) for name, p in args.root} if args.root else {}
     errors = []
     refs = data if isinstance(data, list) else data.get('evidence', [data])
+    if not isinstance(refs, list):
+        raise EvidenceError('evidence must be an array')
     for i, ref in enumerate(refs):
         try:
             validate_evidence(ref, roots, check_lines=not args.no_lines, check_hash=not args.no_hash)
@@ -306,7 +324,12 @@ def main(argv=None):
 
     args = parser.parse_args(argv)
     if args.command == 'validate':
-        return _cli_validate(args)
+        try:
+            return _cli_validate(args)
+        except (ValueError, OSError, TypeError) as exc:
+            import json, sys
+            print(json.dumps({'error': str(exc)}, ensure_ascii=True), file=sys.stderr)
+            return 2
     parser.print_help()
     return 2
 

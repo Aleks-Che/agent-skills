@@ -57,9 +57,13 @@ CTE и алиас не являются самостоятельными физ�
 выбранное SQL-объявление, диалект и относительные пути от корня проекта. Выполни
 `sql_extract.py` с `--subjects`, `--project-root` и `--run-id`, сохрани `inventory.json`,
 затем получи `validation_plan.json` через `validation_plan.py`. Выбирай однозначное
-объявление (полное имя или scope из инвентаря); один run — одна страница.
+объявление: полное имя допустимо только без перегрузок, иначе используй канонический
+`object_scope` из инвентаря. Один run — одна страница. Запиши выбранные
+`documented_subjects` в manifest; gate повторяет выбор по исходному SQL.
 План выводится из SQL и политики до writer и не сокращается по составу facts.
-Неподдержанный фрагмент в `coverage_notes` блокирует допуск до расширения анализа.
+Неподдержанный фрагмент в `coverage_notes` создаёт обязательство `analysis_gap`
+и блокирует допуск до расширения анализа. Каждая извлечённая формула и условие
+имеют отдельное обязательство; сохраняй его ID и полный `inventory_anchor`.
 
 
 Построй реестр по контракту [references/facts.md](references/facts.md) версии 2.
@@ -164,7 +168,9 @@ run_id, путями SQL и корнем проекта, затем выполн
 
 ## Идентификатор страницы
 
-Храни канонический ключ объекта отдельно от имени файла:
+Используй общий модуль `scripts/identity.py` и контракт
+[references/identity.md](references/identity.md). Храни канонический ключ объекта
+в `facts.objects[].canonical_key`, отдельно от имени файла:
 
 - relation: `kind + schema + name`;
 - function/procedure: дополнительно **всегда** упорядоченные типы входных аргументов,
@@ -177,7 +183,17 @@ run_id, путями SQL и корнем проекта, затем выполн
 (начни с 12 hex-символов); при коллизии разных ключей увеличь длину.
 Замена пунктуации в slug не влияет на уникальность, поскольку хеш берётся от исходного ключа.
 
-У существующей страницы сохраняй путь, если её ключ однозначно установлен.
+Для детерминированного вычисления используй `scripts/identity.py`:
+
+```text
+python scripts/identity.py compute --kind function --schema core --name calc --arg-types int4 bool
+python scripts/identity.py compute --kind migration --migration-path migrations/001_create.sql
+```
+
+У существующей страницы сохраняй путь по явному реестру path → canonical_key
+(`identity.py compute --registry <pages.json>`). Для прежних ключей передай
+`--legacy-keys <mapping.json>`; неоднозначность требует разрешения. Снимок реестра
+с полями `pages` и `legacy_keys` включи в manifest через `--identity-registry`.
 Неразрешённая схема или сигнатура — неопределённая идентичность: черновик можно создать,
 финальную страницу не публикуй до разрешения ключа.
 
@@ -222,7 +238,8 @@ python scripts/artifact_schema.py <artifacts_dir>
 поддержанного SQL описаны в [references/artifacts.md](references/artifacts.md).
 
 ```text
-python scripts/sql_extract.py <sql_file> --subjects <schema.name> --run-id <uuid> --project-root <project_dir>
+python scripts/identity.py compute --kind <kind> --schema <schema> --name <name> --arg-types <types...>
+python scripts/sql_extract.py <sql_file> --subjects <canonical_scope> --run-id <uuid> --project-root <project_dir>
 python scripts/validation_plan.py <run_dir>/inventory.json --page-id <page_id>
 python scripts/bundle.py create <run_dir> --page-id <page_id> --run-id <uuid> --sql <sql_file> --project-root <project_dir>
 python scripts/validation_gate.py --bundle <run_dir> --root project <project_dir> --write-decision --json
@@ -230,8 +247,12 @@ python scripts/validation_gate.py --bundle <run_dir> --root project <project_dir
 python scripts/evidence.py validate <evidence.json> --root project <project_dir>
 ```
 
-Вывод первых двух команд сохрани в inventory.json и validation_plan.json.
-Между планом и manifest writer создаёт facts, page.draft.md, coverage и validation.
+Команда identity возвращает canonical_key/page_id. Вывод sql_extract сохрани
+в `<run_dir>/inventory.json`, вывод validation_plan — в `<run_dir>/validation_plan.json`
+как UTF-8 JSON. Для получения списка scopes сначала вызови sql_extract без --subjects.
+Между планом и manifest создай facts, page.draft.md, coverage и содержательный отчёт
+validation. В bundle create перечисли DDL/контекст через --context; для существующей
+страницы добавь --identity-registry. Не создавай недостающие артефакты из примеров формы.
 Последний gate заново проверяет сохранённое решение; коды: 0 — полный ready,
 1 — revise/blocked, 2 — ошибка контракта/JSON/чтения/зависимостей.
 Legacy-вызов с одним validation.json возвращает только диагностические метрики

@@ -91,7 +91,7 @@ def compute_tool_versions(
         'scripts_sha256': scripts_sha,
         'skill_md_sha256': tree_hash([skill_md] + [package_dir / n for n in
             ('doc-writer.md', 'doc-validator.md', 'ddl-finder.md', 'rules.md',
-             'references/facts.md', 'references/artifacts.md')]),
+             'references/facts.md', 'references/artifacts.md', 'references/identity.md')]),
         'template_sha256': tree_hash([template] + list((package_dir / 'template').glob('*.md'))),
         'policy_sha256': sha256_file(policy),
     }
@@ -112,6 +112,7 @@ def create_manifest(
     artifacts_dir: Path,
     tool_versions: dict[str, str],
     project_dir: Path | None = None,
+    identity_registry: Path | None = None,
 ) -> dict[str, Any]:
     """Create a manifest dict.
 
@@ -148,6 +149,12 @@ def create_manifest(
         'tool_versions': tool_versions,
         'artifacts': {},
     }
+
+    inv_path = artifacts_dir / 'inventory.json'
+    if inv_path.is_file():
+        manifest['documented_subjects'] = read_json(inv_path)['documented_subjects']
+    if identity_registry:
+        manifest['identity_registry'] = _file_ref(identity_registry, project_dir)
 
     if context_files:
         manifest['context_files'] = [_file_ref(p, project_dir) for p in context_files]
@@ -230,6 +237,9 @@ def verify_manifest_hashes(
     # Check context files
     for i, ref in enumerate(manifest.get('context_files', [])):
         errors.extend(verify(ref, f'context_files.{i}', 'project'))
+
+    if manifest.get('identity_registry'):
+        errors.extend(verify(manifest['identity_registry'], 'identity_registry', 'project'))
 
     # Check migration manifest
     mm = manifest.get('migration_manifest')
@@ -400,13 +410,20 @@ def save_bundle(run_dir: Path, dest: Path, *, roots=None, policy_path=None, prof
     result = evaluate_bundle(run_dir, roots=roots, policy_path=policy_path, profile_path=profile_path)
     if not result['publication_authorized']:
         raise BundleError('Only a verified ready bundle can be archived: ' + '; '.join(result['errors']))
-    shutil.copytree(run_dir, dest)
+    # Copy only the verified run files, not arbitrary caches, symlinks or unrelated files.
+    dest.mkdir(parents=True)
+    for filename in ('manifest.json', 'decision.json', 'page.draft.md') + tuple(name + '.json' for name in ARTIFACT_NAMES if name != 'draft'):
+        shutil.copy2(run_dir / filename, dest / filename)
     source_roots = {'project': run_dir, **(roots or {}), 'run': run_dir}
     manifest = read_json(run_dir / 'manifest.json')
     refs = manifest['sql_files'] + manifest.get('context_files', [])
     if manifest.get('migration_manifest'):
         refs.append(manifest['migration_manifest'])
+    if manifest.get('identity_registry'):
+        refs.append(manifest['identity_registry'])
     for ref in refs:
+        if ref.get('root', 'project') != 'project':
+            raise BundleError('SQL/context snapshots require project-relative references')
         source = resolve_reference(ref, source_roots)
         target = (dest / ref['path']).resolve()
         if not target.is_relative_to(dest):
@@ -435,7 +452,7 @@ def _cli_create(args):
     sql_files = sorted(p for p in run.glob('*.sql') if not p.name.startswith('context'))
     if args.sql:
         sql_files = [Path(s) for s in args.sql]
-    context_files = sorted(run.glob('context*.sql')) if not args.no_context else []
+    context_files = [Path(p) for p in args.context] if args.context else (sorted(run.glob('context*.sql')) if not args.no_context else [])
     migration_manifest = Path(args.migration_manifest) if args.migration_manifest else None
 
     package_dir = Path(args.package_dir) if args.package_dir else Path(__file__).resolve().parent.parent
@@ -453,6 +470,7 @@ def _cli_create(args):
         artifacts_dir=run,
         tool_versions=tool_versions,
         project_dir=Path(args.project_root) if args.project_root else None,
+        identity_registry=Path(args.identity_registry) if args.identity_registry else None,
     )
 
     output = Path(args.output) if args.output else run / 'manifest.json'
@@ -479,6 +497,8 @@ def main(argv=None):
     create.add_argument('--run-id', help='UUID (generated if omitted)')
     create.add_argument('--sql', nargs='+', help='SQL file paths (auto-discovered if omitted)')
     create.add_argument('--no-context', action='store_true', help='Skip context file discovery')
+    create.add_argument('--identity-registry', help='Project-relative snapshot of existing page paths/keys and explicit legacy aliases')
+    create.add_argument('--context', nargs='+', help='Explicit context/DDL files')
     create.add_argument('--migration-manifest', help='Separate migration-order manifest path')
     create.add_argument('--project-root', help='Root for SQL and context references (default: run_dir)')
     create.add_argument('--policy', help='Policy used for this run')

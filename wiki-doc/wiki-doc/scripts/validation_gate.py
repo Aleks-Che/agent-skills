@@ -16,7 +16,7 @@ from pathlib import Path
 
 # Sibling imports
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from evidence import sha256_file, validate_evidence, EvidenceError
+from evidence import sha256_bytes, sha256_file, validate_evidence, EvidenceError
 from bundle import verify_manifest_hashes, verify_decision_against_manifest, reverify_bundle
 from check_policy import load_policy, is_defect_blocking, get_rule, PolicyError, POLICY_PATH
 from sql_extract import extract_inventory as sql_extract_inventory
@@ -24,6 +24,8 @@ from validation_plan import generate_plan
 from artifact_schema import read_artifact_set, read_json, validate_artifacts, ArtifactInputError, FACT_ARRAYS
 from bundle import compute_tool_versions
 from evidence import resolve_reference
+from identity import ObjectDescriptor, canonical_key, resolve_page_id, IdentityError, _parse_arg_types
+from sql_syntax import split_top_level
 import re
 
 STATUSES = {"ok", "defect", "inconclusive", "not_applicable"}
@@ -116,7 +118,7 @@ def evaluate_checks(checks, required, policy):
         else:
             # Extra successes never improve a score. Unclassified defects are technical.
             blocking = is_defect_blocking(policy, check.get('defect_code', check['id']),
-                                         check.get('category') != 'editorial' or check['blocking'])
+                                         check.get('defect_code', check['id']) not in policy.get('blocking_override_rules', {}).get('editorial_defect_codes', []) or check['blocking'])
             if blocking and check['status'] in ('defect', 'inconclusive'):
                 (defects if check['status'] == 'defect' else unknowns).append(check['id'])
     for expected in required:
@@ -195,8 +197,22 @@ def _fact_checks(artifacts, rebuilt, required, draft):
         if obj.get(key) != expected:
             errors.append(f'facts identity {key} differs from SQL declaration')
     signature = declaration['details'].get('signature')
-    if signature and obj.get('signature') not in (signature, signature[signature.index('('):]):
-        errors.append('facts signature differs from SQL declaration')
+    if signature:
+        try:
+            declared = obj.get('signature') or ''
+            if '(' not in declared or not declared.rstrip().endswith(')'):
+                raise IdentityError('Missing facts signature')
+            body = declared[declared.index('(') + 1:declared.rindex(')')]
+            types = list(_parse_arg_types(split_top_level(body) if body.strip() else []))
+            if types != declaration['details'].get('input_types'):
+                errors.append('facts signature differs from SQL declaration')
+        except ValueError as exc:
+            errors.append(f'facts signature: {exc}')
+    key = declaration['details'].get('canonical_key')
+    if not key or key.startswith('unresolved+'):
+        errors.append('Unresolved canonical object identity')
+    elif obj.get('canonical_key') != key:
+        errors.append('facts canonical_key differs from independently resolved identity')
     operations = [o for o in facts['operations'] if o.get('scope') in documented]
     items = [i for i in rebuilt['items'] if i['kind'] in
              ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'CALL', 'PERFORM', 'EXECUTE', 'RETURN')]
@@ -213,6 +229,12 @@ def _fact_checks(artifacts, rebuilt, required, draft):
             continue
         op = matches[0]
         matched.add(op['id'])
+        if item['kind'] == 'EXECUTE':
+            dynamic = op.get('dynamic')
+            if not isinstance(dynamic, dict) or dynamic.get('template') != item['details'].get('template'):
+                errors.append(f"facts {op['id']}: dynamic SQL template differs from independent inventory")
+        elif op.get('dynamic') is not False:
+            errors.append(f"facts {op['id']}: static SQL operation is marked dynamic")
         anchor = item['anchor']
         key = (ref['path'], anchor['object_or_scope'], anchor['construct'], anchor['ordinal'])
         item_facts[key] = op['id']
@@ -223,6 +245,33 @@ def _fact_checks(artifacts, rebuilt, required, draft):
     for op in operations:
         if op['id'] not in matched:
             errors.append(f"facts operation {op['id']} has no independent SQL occurrence")
+
+    for group in ('formulas', 'conditions'):
+        for fact in facts[group]:
+            linked = set(fact.get('operation_ids', [])) & matched
+            for op_id in linked:
+                occurrence_keys = [key for key, fid in item_facts.items() if fid == op_id]
+                expressions = [expression for item in items
+                               if (item['source_ref']['path'], item['anchor']['object_or_scope'], item['anchor']['construct'], item['anchor']['ordinal']) in occurrence_keys
+                               for expression in item.get('details', {}).get(group, [])]
+                if _expression_key(fact['expression']) not in {_expression_key(e) for e in expressions}:
+                    errors.append(f'facts {fact["id"]}: expression has no independent SQL occurrence')
+    if declaration['details']['object_kind'] in ('view', 'materialized_view', 'ctas'):
+        columns = [c for c in facts['columns'] if c['object_id'] in documented]
+        outputs = declaration['details'].get('output_columns', [])
+        for output in outputs:
+            if not any((output['name'] and c['name'] == output['name']) or
+                       (not output['name'] and _expression_key(c.get('expression') or '') == _expression_key(output['expression']))
+                       for c in columns):
+                errors.append(f'facts columns: missing output {output["name"] or output["expression"]}')
+            for col in columns:
+                if output['name'] and col['name'] == output['name'] and _expression_key(col.get('expression') or '') != _expression_key(output['expression']):
+                    errors.append(f'facts column {col["id"]}: expression differs from SQL output')
+        named = {o['name'] for o in outputs if o['name']}
+        if outputs and all(o['name'] for o in outputs):
+            for col in columns:
+                if col['name'] not in named:
+                    errors.append(f'facts column {col["id"]}: no independent output column')
 
     # Context entities are needed only when reached by a documented fact.
     relevant = set(documented) | matched
@@ -269,10 +318,43 @@ def _fact_checks(artifacts, rebuilt, required, draft):
         group = {'formula': 'formulas', 'condition': 'conditions', 'unknown': 'unknowns'}.get(rule)
         ids = {op_id} if rule == 'operation' else set()
         if group:
-            ids = {f['id'] for f in facts[group] if op_id in f.get('operation_ids', f.get('related_facts', []))}
+            candidates = [f for f in facts[group] if op_id in f.get('operation_ids', f.get('related_facts', []))]
+            if group in ('formulas', 'conditions'):
+                occurrence = next((i for i in items if i['anchor'] == {k: anchor[k] for k in ('object_or_scope','construct','ordinal')}
+                                   and i['source_ref']['path'] == anchor['path']), None)
+                index = int(required_check['subject'].rsplit('/', 1)[1]) - 1
+                expressions = occurrence.get('details', {}).get(group, []) if occurrence else []
+                if index < len(expressions):
+                    expected_expression = _expression_key(expressions[index])
+                    candidates = [f for f in candidates if _expression_key(f.get('expression', '')) == expected_expression]
+            ids = {f['id'] for f in candidates}
         if op_id and (not ids or not results or not any(ids & set(c.get('fact_ids', [])) for c in results)):
             errors.append(f'{required_check["id"]}: result lacks a matching {rule} fact')
     return errors
+
+
+def _expression_key(expression):
+    """Compare lexical tokens, preserving literal/identifier case and token boundaries."""
+    from sql_syntax import mask_sql
+    cleaned, dollars, _ = mask_sql(expression, mask_identifiers=False)
+    literals = {start: expression[start:end] for start, end, _, _ in dollars}
+    for m in re.finditer(r"'(?:''|[^'])*'", expression):
+        if cleaned[m.start():m.end()].strip() == '':
+            literals.setdefault(m.start(), m.group())
+    tokens, i = [], 0
+    while i < len(expression):
+        if i in literals:
+            tokens.append(literals[i])
+            i += len(literals[i])
+            continue
+        m = re.match(r'"(?:""|[^"])*"|[a-zA-Z_][\w$]*|\d+(?:\.\d+)?|::|>=|<=|<>|!=|\S', cleaned[i:])
+        if m:
+            token = m.group()
+            tokens.append(token if token.startswith('"') else token.lower())
+            i += len(token)
+        else:
+            i += 1
+    return tuple(tokens)
 
 
 def _verify_evidence(artifacts, roots):
@@ -288,7 +370,7 @@ def _verify_evidence(artifacts, roots):
     package = roots['package']
     for relative in ('SKILL.md', 'doc-writer.md', 'doc-validator.md', 'ddl-finder.md',
                      'rules.md', 'template.md', 'references/facts.md', 'references/artifacts.md',
-                     'references/check-policy.json'):
+                     'references/check-policy.json', 'references/identity.md'):
         path = package / relative
         allowed[path.resolve()] = sha256_file(path)
     for path in (package / 'template').glob('*.md'):
@@ -331,7 +413,9 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
     roots = {'project': run, **{k: Path(v).resolve() for k, v in (roots or {}).items()},
              'run': run, 'package': package}
     try:
-        artifacts = read_artifact_set(run)
+        manifest_snapshot_hash = sha256_file(run / 'manifest.json') if (run / 'manifest.json').is_file() else None
+        snapshots = {}
+        artifacts = read_artifact_set(run, snapshot_hashes=snapshots)
         if 'manifest' not in artifacts:
             return _gate_result('blocked', errors=['manifest.json not found'], input_error=True)
         required_artifacts = {'manifest', 'facts', 'inventory', 'validation_plan', 'coverage', 'validation'}
@@ -343,14 +427,23 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
         if schema_errors:
             return _gate_result('blocked', errors=schema_errors, input_error=True)
         manifest = artifacts['manifest']
+        if (sha256_file(run / 'manifest.json') != manifest_snapshot_hash
+                or snapshots.get(run / 'manifest.json') != manifest_snapshot_hash):
+            return _gate_result('blocked', errors=['manifest changed during loading; parsed bytes differ'])
         errors = verify_manifest_hashes(manifest, run, roots=roots)
         if errors:
             return _gate_result('blocked', errors=errors)
         policy_path = Path(policy_path) if policy_path else POLICY_PATH
-        policy = load_policy(policy_path)
         versions = compute_tool_versions(package, profile_path=profile_path, policy_path=policy_path)
+        policy = load_policy(policy_path, expected_sha256=versions['policy_sha256'])
         if versions != manifest['tool_versions']:
             return _gate_result('blocked', errors=['tool_versions mismatch: code, instructions, template, policy or profile changed'])
+        for name, ref in manifest['artifacts'].items():
+            if name != 'draft' and snapshots.get((run / ref['path']).resolve()) != ref['sha256']:
+                return _gate_result('blocked', errors=[f'{name}: parsed bytes differ from manifest'])
+        draft_bytes = (run / 'page.draft.md').read_bytes()
+        if sha256_bytes(draft_bytes) != manifest['artifacts']['draft']['sha256']:
+            return _gate_result('blocked', errors=['Draft bytes differ from manifest'])
         facts, inventory = artifacts['facts'], artifacts['inventory']
         if bool(facts.get('profile')) != bool(profile_path):
             return _gate_result('blocked', errors=['Active profile and verified profile file do not match'])
@@ -361,14 +454,16 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
             return _gate_result('blocked', errors=errors)
         rebuilt = {'schema_version': 2, 'run_id': manifest['run_id'], 'dialect': inventory['dialect'],
                    'items': [], 'coverage_notes': [], 'inputs': [], 'documented_subjects': []}
-        # Select by independent declaration scope from the saved inventory, then rebuild it.
+        # Rebuild the explicit manifest selection; retain inventory fallback for older manifests.
         for sql_ref in manifest['sql_files']:
             sql_path = resolve_reference(sql_ref, roots)
-            local_subjects = {i['anchor']['object_or_scope'] for i in inventory['items']
-                              if i['source_ref']['path'] == sql_ref['path']}
-            result = sql_extract_inventory(sql_path.read_text(encoding='utf-8-sig'), sql_ref['path'], sql_ref['sha256'],
+            local_subjects = manifest.get('documented_subjects', inventory['documented_subjects'])
+            sql_bytes = sql_path.read_bytes()
+            if sha256_bytes(sql_bytes) != sql_ref['sha256']:
+                return _gate_result('blocked', errors=['SQL changed during inventory reconstruction'])
+            result = sql_extract_inventory(sql_bytes.decode('utf-8-sig'), sql_ref['path'], sql_ref['sha256'],
                                            dialect=inventory['dialect']['name'], version=inventory['dialect']['version'],
-                                           documented_subjects=sorted(local_subjects) or inventory['documented_subjects'])
+                                           documented_subjects=local_subjects)
             for key in ('items', 'coverage_notes', 'inputs', 'documented_subjects'):
                 rebuilt[key].extend(result[key])
         if rebuilt['coverage_notes']:
@@ -383,16 +478,30 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
         expected_plan = generate_plan(rebuilt, policy, page_id=manifest['page_id'], profile_active=bool(profile_path))
         if expected_plan != artifacts['validation_plan']:
             return _gate_result('revise', errors=['validation_plan differs from independently derived obligations'])
+        declarations = [i for i in rebuilt['items'] if i['kind'] == 'DECLARATION']
+        if len(declarations) == 1:
+            key = declarations[0]['details'].get('canonical_key', '')
+            registry = {}
+            if manifest.get('identity_registry'):
+                registry_file = resolve_reference(manifest['identity_registry'], roots)
+                registry = read_json(registry_file, snapshot_hashes=snapshots)
+                if snapshots[registry_file] != manifest['identity_registry']['sha256']:
+                    return _gate_result('blocked', errors=['Identity registry changed during loading'])
+            if not isinstance(registry, dict) or set(registry) - {'pages', 'legacy_keys'}:
+                raise ArtifactInputError('Identity registry must contain pages and optional legacy_keys mappings')
+            expected_page = resolve_page_id(key, existing_pages=registry.get('pages'), legacy_keys=registry.get('legacy_keys'))
+            if manifest['page_id'] != expected_page:
+                return _gate_result('revise', errors=['page_id differs from canonical identity or explicit existing-page mapping'])
         report = artifacts['validation']
         evaluation = evaluate_checks(report['checks'], expected_plan['required_checks'], policy)
         errors.extend(evaluation['errors'])
         errors.extend(_fact_checks(artifacts, rebuilt, expected_plan['required_checks'],
-                                   (run / 'page.draft.md').read_text(encoding='utf-8-sig')))
+                                   draft_bytes.decode('utf-8-sig')))
         verdict = evaluation['decision']
         if errors and verdict == 'ready':
             verdict = 'revise'
         record = {'schema_version': 2, 'run_id': manifest['run_id'], 'page_id': manifest['page_id'],
-                  'decision': verdict, 'manifest_sha256': sha256_file(run / 'manifest.json'),
+                  'decision': verdict, 'manifest_sha256': manifest_snapshot_hash,
                   'validation_sha256': sha256_file(run / 'validation.json'),
                   'metrics': evaluation['metrics'], 'blocking_defects': evaluation['blocking_defects'],
                   'blocking_inconclusive': evaluation['blocking_inconclusive']}

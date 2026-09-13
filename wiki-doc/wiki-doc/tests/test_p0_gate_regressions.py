@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from bundle_fixture import make_bundle, seal, write_json, PACKAGE
+from bundle_fixture import make_bundle, seal, write_json, PACKAGE, PAGE_ID
 from artifact_schema import read_json
 from evidence import validate_evidence, EvidenceError, sha256_file, extract_lines_text
 from validation_gate import evaluate_bundle, evaluate_checks
@@ -210,7 +210,7 @@ class FullGateTests(unittest.TestCase):
         facts['profile'] = 'CKR_GP'
         write_json(self.run, 'facts', facts)
         inv = read_json(self.run / 'inventory.json')
-        plan = generate_plan(inv, load_policy(), page_id='function+core+calc', profile_active=True)
+        plan = generate_plan(inv, load_policy(), page_id=PAGE_ID, profile_active=True)
         self.assertTrue(any(c['subject'].endswith('reads/demo.orders') for c in plan['required_checks']))
         write_json(self.run, 'validation_plan', plan)
         report = read_json(self.run / 'validation.json')
@@ -309,11 +309,12 @@ class EvidenceBoundaryTests(unittest.TestCase):
         import shutil
         with tempfile.TemporaryDirectory() as temp:
             package = Path(temp) / 'package'
-            shutil.copytree(PACKAGE, package, ignore=shutil.ignore_patterns('__pycache__'))
+            shutil.copytree(PACKAGE, package, ignore=shutil.ignore_patterns('__pycache__', '.pytest_cache', '.tmp'))
             original = compute_tool_versions(package)
             for relative, field in (('schemas/facts.schema.json', 'scripts_sha256'),
                                     ('scripts/validation_gate.py', 'scripts_sha256'),
                                     ('doc-validator.md', 'skill_md_sha256'),
+                                    ('references/identity.md', 'skill_md_sha256'),
                                     ('template/01-header-purpose.md', 'template_sha256'),
                                     ('references/check-policy.json', 'policy_sha256')):
                 path = package / relative

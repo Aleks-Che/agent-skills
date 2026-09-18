@@ -240,6 +240,25 @@ SQL/DDL-хешей, противоречия коду и применимые с
 для активного профиля. Изолированные страницы оценивай по назначению, а не автоматически
 как ошибку. По запросу проверки возвращай отчёт; исправляй при запросе на исправление.
 
+## Metrics
+
+Исполни `python scripts/metrics.py <wiki_dir> --json` (без `--json` — сводка).
+Команда не изменяет wiki; собирает агрегированные метрики здоровья:
+
+- **pages** — total/managed/legacy/current/changed/missing.
+- **sources** — total_tracked/outdated/fresh/freshness_ratio, число устаревших
+  страниц и причины устаревания.
+- **checks** — total_decisions/ready/revise/blocked/ready_ratio и first_ready_at.
+- **coverage** — total_checks/resolved/ok/defect/unknown/not_applicable и
+  coverage_ratio, accuracy_ratio по архивам решений.
+- **broken_links** — число битых ссылок и затронутых файлов из lint.
+- **decision_accuracy** — ошибочные ready на мутациях
+  (`--mutation-results` принимает список или файл приёмки вида `P1-ACCEPTANCE.json`).
+- **iteration_stats** — число публикаций и уникальных страниц.
+
+Каждая доля имеет определённый знаменатель; пропущенный прогон не считается успехом.
+Схема: `schemas/metrics.schema.json`.
+
 ## Проверка скилла после изменений
 
 Используй контрольные случаи и порядок проверки из [examples/README.md](examples/README.md).

@@ -12,6 +12,7 @@ Bundle mode:  python scripts/validation_gate.py --bundle <run_dir>
 import argparse
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Sibling imports
@@ -483,6 +484,8 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
                   'validation_sha256': sha256_file(run / 'validation.json'),
                   'metrics': evaluation['metrics'], 'blocking_defects': evaluation['blocking_defects'],
                   'blocking_inconclusive': evaluation['blocking_inconclusive']}
+        if write_decision:
+            record['timestamp'] = datetime.now(timezone.utc).isoformat()
         if not write_decision:
             decision_errors = verify_decision_against_manifest(old_decision, manifest, run)
             for field in ('decision', 'metrics', 'blocking_defects', 'blocking_inconclusive'):

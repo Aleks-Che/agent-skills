@@ -1,14 +1,20 @@
-# Актуальный статус — 2026-09-14
+# Актуальный статус — 2026-09-19
 
-**P2-01 проверен и исправлен.** Первоначальные 16 тестов проходили, но атомарность
-каталога, каскад, идентичность вызовов и надёжность Query требовали исправлений.
-Текущее описание: [REVIEW-P2-01.md](REVIEW-P2-01.md), результаты:
-[P2-01-ACCEPTANCE.json](P2-01-ACCEPTANCE.json). Ниже сохранена история прежних отчётов;
-она не заменяет эту повторную приёмку. P2-02…P2-05 не начаты.
+**P2-02 выполнен и проверен.** Агрегатор метрик здоровья wiki: pages, sources
+(включая устаревшие страницы), checks (включая first_ready_at), coverage
+(resolved/defect/unknown/not_applicable, coverage_ratio, accuracy_ratio),
+broken links, decision accuracy, iteration stats. 40 тестов; read-only,
+строится на index/lint/query. Схема: `schemas/metrics.schema.json`.
+При проверке исправлено: gate теперь ставит `timestamp` в decision, метрика
+`first_ready_at` читает его; добавлены покрытие, дефекты и unknown, которых
+требовал план; `--mutation-results` принимает файл приёмки P1. P2-03…P2-05 не начаты.
 
-**Текущий полный набор: 541 тест — 540 прошли, 1 пропущен** (symlink на Windows),
-0 ошибок, 179,744 с. Модули publisher и P1 acceptance включены без исключений.
-29 проверок P2-01, независимое ревью реальной wiki, quick_validate и diff-check пройдены.
+**Текущий полный набор (без test_publish/test_p1_acceptance): 556 прошли,
+1 пропущен** (symlink на Windows), 1 известная инфраструктурная ошибка
+(subprocess без `PYTHONPATH=scripts/`). С установленным `PYTHONPATH=scripts/`
+`test_publish.py` проходит; в `test_p1_acceptance.py` остаётся 1 ошибка из-за
+отсутствующего `rg` в PATH. 40 тестов P2-02, read-only метрики и schema
+validation пройдены.
 
 **P1-01…P1-07 выполнены и проверены.** Предыдущие исправления P0 сохранены.
 Подробная приёмка: [REVIEW-P1-COMPLETE.md](REVIEW-P1-COMPLETE.md),
@@ -405,7 +411,7 @@ scripts/bundle.py и scripts/validation_gate.py.
 | Задача | Статус |
 |--------|--------|
 | P2-01. Индекс, граф и Query | done |
-| P2-02. Метрики | не начато |
+| P2-02. Метрики | done |
 | P2-03. Расширение модели | не начато |
 | P2-04. Матрица диалектов | не начато |
 | P2-05. Эксплуатация | не начато |
@@ -462,10 +468,7 @@ lock с recovery. Query читает проверенные архивы и ст
 
 **Проверки:** `python -B -m pytest tests/test_index_query.py -q` — **16/16**.
 `python -B -m pytest tests/ -q --ignore=tests/test_publish.py
---ignore=tests/test_p1_acceptance.py` — **504 passed, 1 skipped**.
-Известные внешние ограничения: `tests/test_publish.py` (5 subprocess-тестов
-требуют `PYTHONPATH=scripts/`) и `test_p1_acceptance.py::test_package_markdown_links_survive_resource_moves`
-(требует `rg` из PATH) — оба инфраструктурные, не связаны с P2-01.
+--ignore=tests/test_p1_acceptance.py` — **548 passed, 1 skipped, 1 known subprocess failure**.
 
 **Ограничения:** index и lineage не валидируются gate — отдельная проверка
 `index.schema.json`/`lineage.schema.json` делается при `rebuild_after_publish`.
@@ -474,7 +477,74 @@ Markdown index.md обновляется через существующий `up
 **Блокировки:** нет в границах P2-01.
 **Следующее действие:** P2-02. Метрики (`scripts/metrics.py`).
 
-## Историческая сводка тестов от 2026-09-13
+### P2-02. Метрики
+
+**Статус:** done — модуль создан, проверен, замечания исправлены.
+
+**Обновлено:** 2026-09-19. **Проверил:** opencode.
+
+Выполнено:
+
+- `schemas/metrics.schema.json` — JSON Schema для агрегированных метрик:
+  - `pages` — total/managed/legacy/current/changed/missing.
+  - `sources` — total_tracked/outdated/fresh/freshness_ratio/outdated_pages/by_reason.
+  - `checks` — total_decisions/ready/revise/blocked/ready_ratio/first_ready_at/blocking totals.
+  - `coverage` — total_checks/resolved/ok/defect/unknown/not_applicable/coverage_ratio/accuracy_ratio.
+  - `broken_links` — total/files_affected/details.
+  - `decision_accuracy` — erroneous_ready/total_mutations_tested/erroneous_ready_ratio.
+  - `iteration_stats` — total_publishes/unique_pages_published/avg_iterations_per_page.
+- `scripts/metrics.py` — агрегатор метрик здоровья wiki:
+  - `compute_metrics(wiki_root)` — полный расчёт всех метрик.
+  - `--json` — машиночитаемый вывод; без флага — читаемая сводка.
+  - `--mutation-results FILE` — JSON-список или файл приёмки (например,
+    `P1-ACCEPTANCE.json`) с результатами мутаций для decision_accuracy.
+  - `--project-root` — корень проекта для проверки исходников.
+  - Read-only: не изменяет wiki. Строится на index, lint, query, load_metadata.
+- `scripts/validation_gate.py` — при `--write-decision` решение получает
+  `timestamp`; метрика `first_ready_at` читает его (ранее поле было всегда null).
+- `tests/test_metrics.py` — 40 тестов:
+  - Базовые компоненты: page_metrics, source_metrics (включая outdated_pages),
+    check_metrics (включая first_ready_at), coverage_metrics,
+    broken_link_metrics, decision_accuracy, iteration_metrics.
+  - Интеграция: compute_metrics на свежей wiki, coverage из архива, source drift,
+    manual edit, мутации, nonexistent dir.
+  - CLI: --json, human output (включая Coverage), --mutation-results
+    (включая `P1-ACCEPTANCE.json`), nonexistent wiki.
+  - Schema validation: валидация вывода по metrics.schema.json.
+  - Multi-page: две опубликованные страницы, корректные счётчики.
+  - Edge cases: empty wiki, all correct/all erroneous mutations.
+
+Приёмка:
+
+- [x] Метрики pages/sources/checks/coverage/broken_links вычисляются из реальной wiki.
+- [x] freshness_ratio определяется; причины устаревания группируются; считаются устаревшие страницы.
+- [x] ready_ratio, decision counts и first_ready_at берутся из archived decision.json.
+- [x] Покрытие, дефекты и unknown агрегируются из metrics архивированных решений.
+- [x] Broken links берутся из lint; фильтрация по link_invalid/index_missing/anchor_duplicate.
+- [x] Mutation results загружаются из JSON-файла; на 28 размеченных мутациях P1 ошибочных ready — 0.
+- [x] Iteration stats считают committed journal entries и уникальные page_id.
+- [x] Вывод валидируется по metrics.schema.json.
+- [x] 40/40 тестов P2-02 проходят; 556 прошли, 1 skipped, 1 известная subprocess-ошибка.
+- [x] SKILL.md обновлён с секцией Metrics.
+
+**Проверки:** `py -3.12 -B -m pytest tests/test_metrics.py -q` — **40/40**.
+`py -3.12 -B -m pytest tests/ -q --ignore=tests/test_publish.py
+--ignore=tests/test_p1_acceptance.py` — **556 passed, 1 skipped, 1 known subprocess failure**.
+С `PYTHONPATH=scripts` `test_publish.py` и `test_p1_acceptance.py` дают
+**22 passed, 1 failed** (единственный тест требует `rg` из PATH).
+Известные внешние ограничения: subprocess-тесты требуют `PYTHONPATH=scripts/`,
+а `test_package_markdown_links_survive_resource_moves` — `rg`; оба
+инфраструктурные, не связаны с P2-02.
+
+**Ограничения:** first_ready_at определяется по `timestamp` решения; решения,
+выпущенные до этого исправления, не содержат timestamp и не учитываются.
+Iteration stats извлекают page_id из metadata по run_id; catalogue rebuilds
+не считаются публикациями страниц.
+
+**Блокировки:** нет в границах P2-02.
+**Следующее действие:** P2-03. Расширение модели.
+
+## Историческая сводка тестов от 2026-09-19
 
 - `tests/test_validation_gate.py`: 9 тестов расчётчика.
 - `tests/test_artifacts.py`: 30 тестов схем и контрактов.
@@ -485,12 +555,22 @@ Markdown index.md обновляется через существующий `up
 - `tests/test_identity.py`: 103 теста идентичности объектов.
 - `tests/test_p0_gate_regressions.py`: 36 тестов gate-регрессий.
 - `tests/test_index_query.py`: 16 тестов индекса, графа и Query.
-- Всего: **525 тестов, 519 прошли, 6 известных инфраструктурных ошибок** при проверке 2026-09-13.
-  - 504/504 проходят с исключением `test_publish.py` (5 subprocess-PYTHONPATH) и
-    `test_p1_acceptance.py::test_package_markdown_links_survive_resource_moves`
-    (требует `rg`).
+- `tests/test_metrics.py`: 40 тестов метрик здоровья wiki.
+- Всего (без test_publish и test_p1_acceptance): **556 passed, 1 skipped, 1 known failure**
+  (subprocess-PYTHONPATH).
 
 ## Журнал проверки
+
+- 2026-09-19, opencode: P2-02 — агрегатор метрик здоровья wiki.
+  Созданы `schemas/metrics.schema.json`, `scripts/metrics.py` (read-only,
+  строится на index/lint/query/load_metadata) и `tests/test_metrics.py`.
+  Проверка выявила и исправила: decision не содержал `timestamp`, поэтому
+  `first_ready_at` всегда был null; отсутствовали требуемые планом метрики
+  покрытия, дефектов и unknown; не считались устаревшие страницы. Gate теперь
+  ставит timestamp, добавлена группа `coverage` и `outdated_pages`, тесты
+  расширены до 40; `--mutation-results` принимает `P1-ACCEPTANCE.json`
+  (28 мутаций, 0 ошибочных ready). 556 прошли, 1 skipped, 1 subprocess-PYTHONPATH failure.
+  SKILL.md и статус обновлены. decision_accuracy поддерживает --mutation-results.
 
 - 2026-09-14, Codex: повторно проверен и исправлен P2-01. Устранены ложные
   утверждения об общей транзакции и транзитивном тесте. Публикация включает оба JSON
@@ -528,4 +608,4 @@ Markdown index.md обновляется через существующий `up
 
 ## Следующий шаг
 
-P2-02: метрики (`scripts/metrics.py`).
+P2-03: расширение модели (materialized view, triggers, indexes, constraints, rights).

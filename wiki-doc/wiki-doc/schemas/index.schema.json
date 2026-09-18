@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wiki machine index v1",
+  "description": "Machine-readable index of every page published in a local wiki. Built from committed bundles and optional legacy page detection.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "pages"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC timestamp of the last rebuild"
+    },
+    "pages": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/page_entry"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "page_entry": {
+      "type": "object",
+      "required": [
+        "page_id",
+        "status"
+      ],
+      "properties": {
+        "page_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "description": "Wiki-relative Markdown path"
+        },
+        "status": {
+          "enum": [
+            "managed",
+            "legacy"
+          ],
+          "description": "Managed pages have a verified bundle; legacy pages preserve prior content without new provenance"
+        },
+        "canonical_key": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Canonical key of the documented object; required for managed pages"
+        },
+        "object_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Internal object identifier from facts.json"
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "table",
+            "view",
+            "materialized_view",
+            "function",
+            "procedure",
+            "migration",
+            "cte",
+            "temp_table",
+            "ctas",
+            null
+          ]
+        },
+        "schema": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "signature": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "page_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Committed page bytes hash; see page_state for current disk state"
+        },
+        "run_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "Committed run_id (managed only)"
+        },
+        "bundle": {
+          "type": "string",
+          "description": "Wiki-relative path to the archived bundle (managed only)"
+        },
+        "source_files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "root": {
+                "const": "project"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "profile": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "project_root": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "policy": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "published_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "page_state": {
+          "enum": [
+            "current",
+            "changed",
+            "missing"
+          ]
+        },
+        "tracked_inputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "root": {
+                "const": "project"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "managed"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "canonical_key",
+              "kind",
+              "name",
+              "page_sha256",
+              "run_id",
+              "bundle",
+              "source_files",
+              "object_id",
+              "page_state",
+              "tracked_inputs"
+            ],
+            "properties": {
+              "canonical_key": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

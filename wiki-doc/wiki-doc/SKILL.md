@@ -208,9 +208,24 @@ python scripts/identity.py compute --kind migration --migration-path migrations/
 
 ## Query
 
-Найди релевантные страницы через индекс. Ответь со ссылками на страницы и при
-необходимости исходный SQL. Если wiki расходится с кодом, явно укажи расхождение.
-Не сохраняй новый анализ без запроса пользователя.
+Машинный индекс `<wiki>/.wiki-doc/index.json` и граф `<wiki>/.wiki-doc/lineage.json`
+входят в одну восстанавливаемую транзакцию со страницей, `index.md` и metadata.
+Для поиска используй `scripts/query.py`; разрешение связей, формат результатов,
+доказательства и ограничения описаны в [references/query.md](references/query.md).
+
+```text
+python scripts/query.py <wiki_dir> --page <page_id>             # всё о странице
+python scripts/query.py <wiki_dir> --dependencies <canonical_key>  # что читает/пишет/вызывает
+python scripts/query.py <wiki_dir> --consumers <canonical_key>     # кто читает/пишет/вызывает
+python scripts/query.py <wiki_dir> --affected <canonical_key>     # затронутые страницы и выходные объекты
+python scripts/query.py <wiki_dir> --outdated                    # страницы с устаревшими источниками
+```
+
+Результат — форматированный JSON с идентификаторами страниц и evidence в архиве;
+`--json` сохраняется для явного машинного режима. Query проверяет архивные снимки
+и строит актуальную пару в памяти, даже если сохранённый кэш есть. Wiki и lock-файлы
+не изменяются. При незавершённой публикации сначала требуется `publish.py recover`.
+Явная запись новой пары — `python scripts/index.py <wiki> --write` под общей блокировкой.
 
 ## Lint
 

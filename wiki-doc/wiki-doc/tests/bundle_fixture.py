@@ -21,9 +21,9 @@ def write_json(run, name, data):
     (run / f'{name}.json').write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
 
 
-def seal(run, issue=True):
+def seal(run, issue=True, *, page_id=PAGE_ID):
     facts = read_json(run / 'facts.json')
-    manifest = create_manifest(run_id=facts['run_id'], page_id=PAGE_ID,
+    manifest = create_manifest(run_id=facts['run_id'], page_id=page_id,
                                sql_files=[run / 'source.sql'], artifacts_dir=run,
                                tool_versions=compute_tool_versions(PACKAGE))
     write_manifest(manifest, run / 'manifest.json')

@@ -1,0 +1,97 @@
+{
+  "review": "P2-01",
+  "date": "2026-09-14",
+  "status": "accepted_after_fixes",
+  "environment": {
+    "python": "3.12.7",
+    "platform": "Windows",
+    "pglast": "v7.14"
+  },
+  "baseline": {
+    "index_query_tests": 16,
+    "passed": 16,
+    "acceptance_gaps_found": true
+  },
+  "tests": {
+    "command": "python -B -m unittest discover -s tests -q",
+    "total": 541,
+    "passed": 540,
+    "skipped": 1,
+    "failed": 0,
+    "seconds": 179.744,
+    "index_query_tests": 29,
+    "excluded_modules": [],
+    "skip_reason": "Windows symlink unavailable"
+  },
+  "publication": {
+    "transaction_files": [
+      "page",
+      "index.md",
+      "metadata",
+      "index.json",
+      "lineage.json"
+    ],
+    "dry_run_all_five": true,
+    "exception_rollback": true,
+    "process_death_recovery": true,
+    "foreign_json_conflict_preserved": true,
+    "explicit_rebuild_recovery": true,
+    "idempotent_cache_repair": true,
+    "two_concurrent_publishers": true,
+    "legacy_three_file_journals_supported": true
+  },
+  "real_wiki_query": {
+    "pages": 14,
+    "nodes": 14,
+    "edges": 38,
+    "scoped_edges": 6,
+    "unresolved_edges": 3,
+    "dynamic_gaps": 2,
+    "evidence_refs": 38,
+    "query_pages": 14,
+    "outdated": [],
+    "read_only": true,
+    "archive_integrity": true,
+    "historical_ready_reissued": false
+  },
+  "independent_review": {
+    "completed": true,
+    "blocking_findings_remaining": 0,
+    "live_source_refs_checked": 31,
+    "cli_evidence_refs_checked_including_duplicates": 44,
+    "read_only_files_checked": 214,
+    "coverage": [
+      "CTE/temp",
+      "calls",
+      "CTAS",
+      "dynamic SQL",
+      "impact cascade",
+      "outdated",
+      "ordinary CLI"
+    ]
+  },
+  "limits": [
+    "Operation anchors can indicate statement start; inspect complete linked SQL snapshot.",
+    "Unknown call signatures remain unresolved; published overload matches are only candidates.",
+    "Dynamic runtime targets remain gaps; impact analysis is conservative.",
+    "Historical archive integrity is checked without reissuing semantic ready.",
+    "Read-only Query rebuilds in memory and refuses a changing or pending publication.",
+    "Human CLI uses full formatted JSON; output can be verbose."
+  ],
+  "skill_quick_validate": true,
+  "git_diff_check": true,
+  "tool_versions": {
+    "scripts_sha256": "e2a09094892c3467f1ac0a69fc2c98f81c4edc1973b7d9fdf809e70ff7cbb06d",
+    "skill_md_sha256": "3a986d03cbb61447affa0f1c8887a4993fd641bb141b69a3fef3f4dda55d7bbf",
+    "template_sha256": "555d1fe829494e88b24106ffe551d0b0121d55012dd20ae4efbbdfce88f67ffb",
+    "policy_sha256": "fd344d286a01e2c6a20eb7764af8ae36f8164071cbf1b48cc0a80f832b18e186"
+  },
+  "evidence_files": {
+    ".p1-runs/p2-query-review.json": {
+      "sha256": "103cd9c3aa423806c577c701c84a01eb65da594f7ad99e287c2c122110b59b0c"
+    },
+    ".p1-runs/p2-review-tests.log": {
+      "sha256": "db7b2acc61c1cc29f5754db99e986c8d5251ea47bf57815fc89936546b2eece0"
+    }
+  }
+}

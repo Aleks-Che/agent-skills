@@ -1,0 +1,325 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wiki lineage graph v1",
+  "description": "Published page nodes and directed SQL reference edges. Local entities remain scoped edge targets; legacy nodes are unverified. Evidence paths are relative to the wiki archive.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "nodes",
+    "edges",
+    "gaps"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "nodes": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/node_entry"
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/edge_entry"
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operation_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "path",
+                "sha256",
+                "root",
+                "start_line",
+                "end_line"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "start_line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "end_line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "root": {
+                  "const": "wiki"
+                }
+              },
+              "additionalProperties": false
+            },
+            "minItems": 1
+          },
+          "reason": {
+            "type": "string"
+          },
+          "dynamic": {
+            "type": [
+              "object",
+              "boolean"
+            ]
+          }
+        },
+        "required": [
+          "page_id",
+          "run_id",
+          "operation_id",
+          "evidence",
+          "reason",
+          "dynamic"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "node_entry": {
+      "type": "object",
+      "required": [
+        "page_id",
+        "kind",
+        "status"
+      ],
+      "properties": {
+        "page_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "object_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "table",
+            "view",
+            "materialized_view",
+            "function",
+            "procedure",
+            "migration",
+            "ctas",
+            "legacy"
+          ]
+        },
+        "schema": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "signature": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "run_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "physical": {
+          "type": "boolean"
+        },
+        "status": {
+          "enum": [
+            "managed",
+            "legacy"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "managed"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "object_id",
+              "name",
+              "run_id",
+              "physical"
+            ],
+            "properties": {
+              "kind": {
+                "not": {
+                  "const": "legacy"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "legacy"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "kind": {
+                "const": "legacy"
+              },
+              "physical": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "edge_entry": {
+      "type": "object",
+      "required": [
+        "from",
+        "to",
+        "kind",
+        "resolution",
+        "candidates",
+        "page_id",
+        "run_id",
+        "operation_id",
+        "evidence"
+      ],
+      "properties": {
+        "from": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "description": "Canonical key of the documented object performing the operation"
+        },
+        "to": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "description": "Canonical key or page-qualified local/external reference"
+        },
+        "kind": {
+          "enum": [
+            "read",
+            "write",
+            "call"
+          ],
+          "description": "Operation relationship (synonym of `relation`)"
+        },
+        "operation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "sha256",
+              "root",
+              "start_line",
+              "end_line"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "start_line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "end_line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "root": {
+                "const": "wiki"
+              }
+            },
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "resolution": {
+          "enum": [
+            "published",
+            "scoped",
+            "undocumented",
+            "unresolved"
+          ]
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "page_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

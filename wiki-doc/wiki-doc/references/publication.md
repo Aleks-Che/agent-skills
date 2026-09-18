@@ -36,7 +36,8 @@ python scripts/publish.py recover --wiki <wiki_dir>
 ```
 
 Передавай те же `--profile` и `--policy`, что использовались при проверке. Dry-run
-показывает diff страницы, индекса и metadata; не создаёт даже lock-файл в wiki.
+показывает diff страницы, Markdown-индекса, metadata, машинного индекса и lineage;
+не создаёт даже lock-файл в wiki.
 Обычная публикация под межпроцессной блокировкой повторяет полный gate и проверку
 снимков. Конкурентное добавление другой подтверждённой страницы в индекс допускается;
 чужое изменение индекса или той же страницы требует новой подготовки.
@@ -44,7 +45,12 @@ python scripts/publish.py recover --wiki <wiki_dir>
 Архив и metadata: `.wiki-doc/runs/<run_id>/`, `.wiki-doc/pages/<hash>.json`.
 Staging/backup находятся на том же томе в `.wiki-doc/transactions/<run_id>/`.
 Журнал `.wiki-doc/journal/<run_id>.json` проходит состояния `prepared`, `page_replaced`,
-`index_replaced`, `metadata_replaced`, `committed`. Записи flush/fsync и отдельные
+`index_replaced`, `metadata_replaced`, `machine_index_replaced`, `lineage_replaced`,
+`committed`. Все пять файлов входят в один write set. Ошибка построения графа
+возникает до их замены. Явный `index.py --write` использует тот же lock и отдельный
+восстанавливаемый journal для пары JSON. Старые журналы из трёх файлов читаются recovery.
+Повтор committed-запуска восстанавливает отсутствующие или устаревшие JSON-кэши.
+Записи flush/fsync и отдельные
 замены файлов не образуют общей атомарной транзакции: после падения процесс восстанавливает
 согласованное старое состояние, определяя фактические байты по хэшам, включая падение
 до записи следующего состояния журнала. Новая публикация сначала запускает recovery.

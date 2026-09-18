@@ -13,6 +13,7 @@ from bundle import save_bundle
 from validation_gate import evaluate_bundle
 from wiki_store import (WikiConflict, inside, digest, read_bytes, hash_file, atomic_bytes,
                         atomic_json, json_bytes, metadata_path, merge_page, update_index, load_metadata)
+from index import build_catalogue, rebuild_locked, INDEX_PATH, LINEAGE_PATH
 
 
 @contextlib.contextmanager
@@ -118,14 +119,21 @@ def _validate_journal(root,path,journal):
     if not isinstance(journal,dict) or journal.get('schema_version')!=1 or not re.fullmatch(r'[0-9a-f-]{36}',journal.get('run_id','')):
         raise WikiConflict('Invalid recovery journal')
     run_id=journal['run_id']
-    if path.name!=run_id+'.json' or journal.get('state') not in ('prepared','page_replaced','index_replaced','metadata_replaced','committed','rolled_back','conflict'):
+    if path.name!=run_id+'.json' or journal.get('state') not in ('prepared','page_replaced','index_replaced','metadata_replaced','machine_index_replaced','lineage_replaced','committed','rolled_back','conflict'):
         raise WikiConflict('Invalid recovery state/identity')
     entries=journal.get('files')
-    if not isinstance(entries,list) or len(entries)!=3: raise WikiConflict('Invalid recovery write set')
-    page=entries[0].get('path','')
-    if not page.endswith('.md') or page=='index.md' or page.startswith('.wiki-doc/'):
-        raise WikiConflict('Invalid recovery page path')
-    expected=(page,'index.md',metadata_path(root,page).relative_to(root).as_posix())
+    if not isinstance(entries,list): raise WikiConflict('Invalid recovery write set')
+    if journal.get('kind','publication')=='catalogue':
+        expected=(INDEX_PATH,LINEAGE_PATH)
+    elif journal.get('kind','publication')=='publication' and len(entries) in (3,5):
+        page=entries[0].get('path','')
+        if not page.endswith('.md') or page=='index.md' or page.startswith(('.wiki-doc/','.tmp/')):
+            raise WikiConflict('Invalid recovery page path')
+        expected=(page,'index.md',metadata_path(root,page).relative_to(root).as_posix())
+        if len(entries)==5: expected+=(INDEX_PATH,LINEAGE_PATH)
+    else:
+        raise WikiConflict('Invalid recovery write set')
+    if len(entries)!=len(expected): raise WikiConflict('Invalid recovery write set')
     for i,entry in enumerate(entries):
         if entry.get('path')!=expected[i]: raise WikiConflict('Recovery target differs from managed write set')
         inside(root,entry['path'])
@@ -198,8 +206,6 @@ def publish(run_dir,wiki_root,*,project_root=None,profile_path=None,policy_path=
         if digest(current)!=plan['expected_index_sha256'] and not _index_rebase_safe(root,plan,current):
             raise WikiConflict('Index changed outside a verified concurrent append')
         return current
-    def hit(name):
-        if fault: fault(name)
     if dry_run:
         checked()
         current=snapshots()
@@ -210,6 +216,14 @@ def publish(run_dir,wiki_root,*,project_root=None,profile_path=None,policy_path=
         new_metadata=_metadata(run,root,plan,roots,profile_path,policy_path)
         name=meta.relative_to(root).as_posix()
         diff[name]=''.join(difflib.unified_diff((read_bytes(meta) or b'').decode('utf-8-sig').splitlines(True),json_bytes(new_metadata).decode().splitlines(True),fromfile=name,tofile=name))
+        records=[r for r in load_metadata(root) if r['page_id']!=plan['page_id']]+[new_metadata]
+        machine_index,lineage=build_catalogue(root,records=records,
+            previews={plan['page_id']:dict(run=run,project=roots['project'])})
+        for entry in machine_index['pages']:
+            if entry['page_id']==plan['page_id']: entry['page_state']='current'
+        for name,data in ((INDEX_PATH,machine_index),(LINEAGE_PATH,lineage)):
+            diff[name]=''.join(difflib.unified_diff((read_bytes(inside(root,name)) or b'').decode('utf-8-sig').splitlines(True),
+                json_bytes(data).decode().splitlines(True),fromfile=name,tofile=name))
         return dict(dry_run=True,changes=diff)
     with index_lock(root):
         recovered=_recover_locked(root)
@@ -224,6 +238,7 @@ def publish(run_dir,wiki_root,*,project_root=None,profile_path=None,policy_path=
                 from wiki_store import indexed_pages
                 if plan['page_id'] not in indexed_pages((read_bytes(index) or b'').decode('utf-8-sig')):
                     raise WikiConflict('Previously committed index entry is missing')
+                rebuild_locked(root)
                 return dict(published=True,idempotent=True,page_id=plan['page_id'])
         checked()
         current_index=snapshots()
@@ -236,42 +251,55 @@ def publish(run_dir,wiki_root,*,project_root=None,profile_path=None,policy_path=
             archived=evaluate_bundle(archive,roots={'wiki':root,'link_project':roots['project']},profile_path=profile_path,policy_path=policy_path)
             if not archived['publication_authorized'] or hash_file(archive/'manifest.json')!=hash_file(run/'manifest.json'):
                 raise WikiConflict('Existing archive does not match this run')
-        manifest=read_json(run/'manifest.json')
         metadata=_metadata(run,root,plan,roots,profile_path,policy_path)
-        transaction=inside(root,'.wiki-doc/transactions/'+plan['run_id'])
-        transaction.mkdir(parents=True,exist_ok=True)
-        journal=dict(schema_version=1,run_id=plan['run_id'],state='prepared',files=[])
-        entries=((page,(run/'page.draft.md').read_bytes()),(index,update_index(current_index,plan['page_id'])),(meta,json_bytes(metadata)))
-        for i,(target,data) in enumerate(entries):
-            old=read_bytes(target)
-            backup=transaction/f'{i}.old'
-            staged=transaction/f'{i}.staged'
-            if old is not None: atomic_bytes(backup,old)
-            atomic_bytes(staged,data)
-            journal['files'].append(dict(path=target.relative_to(root).as_posix(),old_sha256=digest(old),new_sha256=digest(data),
-                                         backup=backup.relative_to(root).as_posix(),staged=staged.relative_to(root).as_posix()))
-        journal_path=inside(root,'.wiki-doc/journal/'+plan['run_id']+'.json')
-        atomic_json(journal_path,journal)
-        try:
-            hit('prepared')
-            for i,entry in enumerate(journal['files']):
-                label=('page','index','metadata')[i]
-                hit('before_'+label)
-                target=inside(root,entry['path'])
-                if hash_file(target)!=entry['old_sha256']: raise WikiConflict(f'{label} changed immediately before replacement')
-                target.parent.mkdir(parents=True,exist_ok=True)
-                os.replace(inside(root,entry['staged']),target)
-                hit('after_'+label)
-                journal['state']=label+'_replaced'
-                atomic_json(journal_path,journal)
-            for entry in journal['files']:
-                if hash_file(inside(root,entry['path']))!=entry['new_sha256']: raise WikiConflict('Written publication bytes changed')
-            journal['state']='committed'
-            atomic_json(journal_path,journal)
-        except Exception:
-            _recover_locked(root)
-            raise
+        records=[r for r in load_metadata(root) if r['page_id']!=plan['page_id']]+[metadata]
+        machine_index,lineage=build_catalogue(root,records=records)
+        for entry in machine_index['pages']:
+            if entry['page_id']==plan['page_id']: entry['page_state']='current'
+        entries=((page,(run/'page.draft.md').read_bytes()),(index,update_index(current_index,plan['page_id'])),
+                 (meta,json_bytes(metadata)),(inside(root,INDEX_PATH),json_bytes(machine_index)),
+                 (inside(root,LINEAGE_PATH),json_bytes(lineage)))
+        journal_path=_commit_files(root,plan['run_id'],entries,fault=fault)
         return dict(published=True,page_id=plan['page_id'],archive=str(archive),journal=str(journal_path))
+
+
+def _commit_files(root,run_id,entries,*,kind='publication',fault=None):
+    """Caller holds index_lock; every file participates in commit and recovery."""
+    def hit(name):
+        if fault: fault(name)
+    transaction=inside(root,'.wiki-doc/transactions/'+run_id)
+    transaction.mkdir(parents=True,exist_ok=True)
+    journal=dict(schema_version=1,run_id=run_id,kind=kind,state='prepared',files=[])
+    for i,(target,data) in enumerate(entries):
+        old=read_bytes(target)
+        backup=transaction/f'{i}.old'
+        staged=transaction/f'{i}.staged'
+        if old is not None: atomic_bytes(backup,old)
+        atomic_bytes(staged,data)
+        journal['files'].append(dict(path=target.relative_to(root).as_posix(),old_sha256=digest(old),new_sha256=digest(data),
+                                     backup=backup.relative_to(root).as_posix(),staged=staged.relative_to(root).as_posix()))
+    journal_path=inside(root,'.wiki-doc/journal/'+run_id+'.json')
+    atomic_json(journal_path,journal)
+    try:
+        hit('prepared')
+        for i,entry in enumerate(journal['files']):
+            label=(('machine_index','lineage') if kind=='catalogue' else ('page','index','metadata','machine_index','lineage'))[i]
+            hit('before_'+label)
+            target=inside(root,entry['path'])
+            if hash_file(target)!=entry['old_sha256']: raise WikiConflict(f'{label} changed immediately before replacement')
+            target.parent.mkdir(parents=True,exist_ok=True)
+            os.replace(inside(root,entry['staged']),target)
+            hit('after_'+label)
+            journal['state']=label+'_replaced'
+            atomic_json(journal_path,journal)
+        for entry in journal['files']:
+            if hash_file(inside(root,entry['path']))!=entry['new_sha256']: raise WikiConflict('Written publication bytes changed')
+        journal['state']='committed'
+        atomic_json(journal_path,journal)
+    except Exception:
+        _recover_locked(root)
+        raise
+    return journal_path
 
 
 def _metadata(run,root,plan,roots,profile_path,policy_path):

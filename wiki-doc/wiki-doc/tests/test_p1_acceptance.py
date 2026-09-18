@@ -102,6 +102,11 @@ class RegressionAcceptanceTests(unittest.TestCase):
                 out,err=process.communicate(timeout=45)
                 self.assertEqual(process.returncode,0,(out,err))
             self.assertEqual((wiki/'index.md').read_text().count(']('),2)
+            catalogue=read_json(wiki/'.wiki-doc/index.json')
+            graph=read_json(wiki/'.wiki-doc/lineage.json')
+            self.assertEqual(len(catalogue['pages']),2)
+            self.assertEqual({p['canonical_key'] for p in catalogue['pages']},set(graph['nodes']))
+            self.assertEqual(catalogue['generated_at'],graph['generated_at'])
             self.assertTrue(lint(wiki)['valid'],lint(wiki))
 
     def test_text_and_coherent_formula_mutations_refused(self):

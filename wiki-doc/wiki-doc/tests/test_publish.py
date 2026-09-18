@@ -27,6 +27,8 @@ class PublishTests(unittest.TestCase):
     def test_dry_run_creates_nothing_in_wiki(self):
         result=publish(self.run_dir,self.wiki,dry_run=True)
         self.assertIn(PAGE_ID,result['changes'])
+        self.assertIn('.wiki-doc/index.json',result['changes'])
+        self.assertIn('.wiki-doc/lineage.json',result['changes'])
         self.assertFalse(self.wiki.exists())
 
     def test_publish_archive_repeat(self):
@@ -37,7 +39,8 @@ class PublishTests(unittest.TestCase):
         self.assertEqual((self.wiki/'index.md').read_text().count(']('),1)
 
     def test_faults_restore_exact_old_state(self):
-        for stage in ('prepared','before_page','after_page','before_index','after_index','before_metadata','after_metadata'):
+        for stage in ('prepared','before_page','after_page','before_index','after_index','before_metadata','after_metadata',
+                      'before_machine_index','after_machine_index','before_lineage','after_lineage'):
             with self.subTest(stage=stage):
                 def fault(label):
                     if label==stage: raise RuntimeError(stage)
@@ -45,16 +48,20 @@ class PublishTests(unittest.TestCase):
                 self.assertFalse((self.wiki/PAGE_ID).exists())
                 self.assertFalse((self.wiki/'index.md').exists())
                 self.assertFalse(metadata_path(self.wiki,PAGE_ID).exists())
+                self.assertFalse((self.wiki/'.wiki-doc/index.json').exists())
+                self.assertFalse((self.wiki/'.wiki-doc/lineage.json').exists())
 
     def test_process_death_and_recovery(self):
         code='from publish import publish; import os,sys; publish(sys.argv[1],sys.argv[2],fault=lambda s: os._exit(71) if s==sys.argv[3] else None)'
-        for stage in ('prepared','after_page','after_index','after_metadata'):
+        for stage in ('prepared','after_page','after_index','after_metadata','after_machine_index','after_lineage'):
             with self.subTest(stage=stage):
                 result=subprocess.run([sys.executable,'-B','-c',code,str(self.run_dir),str(self.wiki),stage],capture_output=True,timeout=30)
                 self.assertEqual(result.returncode,71,result.stderr.decode())
                 self.assertEqual(recover(self.wiki)[0]['state'],'rolled_back')
                 self.assertFalse((self.wiki/PAGE_ID).exists())
                 self.assertFalse((self.wiki/'index.md').exists())
+                self.assertFalse((self.wiki/'.wiki-doc/index.json').exists())
+                self.assertFalse((self.wiki/'.wiki-doc/lineage.json').exists())
 
     def test_foreign_edit_survives_recovery(self):
         def fault(label):

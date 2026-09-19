@@ -104,7 +104,7 @@ def reconstruct(manifest_path=None, *, project_root=None):
     errors = validate_schema(manifest, load_schemas()['migration_manifest'], 'migration_manifest')
     if errors:
         raise ArtifactInputError('; '.join(errors))
-    if manifest['dialect'] not in ('postgres','postgresql'):
+    if manifest['dialect'].lower() not in ('postgres','postgresql'):
         return dict(status='unsupported', tables={}, inputs=[], errors=['Unsupported migration dialect'])
     state, inputs, seen = {}, [], set()
     for relative in manifest['ordered_files']:

@@ -316,6 +316,7 @@ class EvidenceBoundaryTests(unittest.TestCase):
                                     ('doc-validator.md', 'skill_md_sha256'),
                                     ('references/identity.md', 'skill_md_sha256'),
                                     ('references/coverage.md', 'skill_md_sha256'),
+                                    ('docs/dialect-support.md', 'skill_md_sha256'),
                                     ('template/01-header-purpose.md', 'template_sha256'),
                                     ('references/check-policy.json', 'policy_sha256')):
                 path = package / relative

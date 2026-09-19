@@ -84,6 +84,9 @@ class RegressionAcceptanceTests(unittest.TestCase):
             self.assertFalse(list(Path(temp).rglob('*.expected.md')))
             self.assertFalse(list(Path(temp).rglob('expected')))
             self.assertFalse((package/'history').exists())
+            self.assertEqual((package/'docs/dialect-support.md').read_bytes(),
+                             (PACKAGE/'docs/dialect-support.md').read_bytes())
+            self.assertFalse((package/'docs/SKILL-OVERVIEW.md').exists())
             self.assertEqual({p.name for p in project.iterdir()},{'01_no_target_ddl.sql','context.sql'})
 
     def test_two_processes_keep_both_index_entries(self):

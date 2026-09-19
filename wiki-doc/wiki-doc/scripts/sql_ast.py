@@ -141,6 +141,11 @@ class Analyzer:
         if value not in self.notes:
             self.notes.append(value)
 
+    def check_merge_version(self, line):
+        major = self.version.split('.')[0]
+        if not major.isdigit() or int(major) < 15:
+            self.note(line, 'MERGE requires a confirmed PostgreSQL version >= 15')
+
     def item(self, kind, line, end=None, **details):
         key = (self.scope, kind)
         self.counts[key] = self.counts.get(key, 0) + 1
@@ -198,8 +203,8 @@ class Analyzer:
         if kind not in ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'PERFORM', 'CALL', 'RETURN', 'ASSIGN', 'IF'):
             self.note(line, f'Unsupported query AST: {cls}')
             return
-        if kind == 'MERGE' and (not self.version.split('.')[0].isdigit() or int(self.version.split('.')[0]) < 15):
-            self.note(line, 'MERGE requires a confirmed PostgreSQL version >= 15')
+        if kind == 'MERGE':
+            self.check_merge_version(line)
         target = getattr(node, 'relation', None)
         reads, calls = self.dependencies(node, env, line, exclude=(id(target),) if target else ())
         formulas, conditions, outputs = [], [], []
@@ -447,6 +452,8 @@ class Analyzer:
                 return
             node = statements[0].stmt
             item['details']['command_kind'] = type(node).__name__.removesuffix('Stmt').upper()
+            if isinstance(node, ast.MergeStmt):
+                self.check_merge_version(line)
             reads, calls = self.dependencies(node, {}, line, exclude=(id(getattr(node,'relation',None)),))
             item['reads'] = [r for r in reads if '__dynamic_' not in r]
             item['calls'] = calls

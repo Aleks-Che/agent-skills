@@ -68,6 +68,7 @@ CTE и алиас не являются самостоятельными физ�
 
 Передай найденный DDL через `--context`, порядок миграций через `--migration-manifest`
 в экстрактор и bundle. Матрица AST-разбора и типов: [sql-support.md](references/sql-support.md).
+Поддержка диалектов и версионные ограничения: [dialect-support.md](docs/dialect-support.md).
 При активном профиле передай его `profile.json` через `--profile` в план, bundle и gate.
 
 

@@ -1,4 +1,4 @@
-"""Annotated text-only and coherent mutations of all eleven regression cases."""
+"""Annotated text-only and coherent mutations of all thirteen regression cases."""
 import copy
 import json
 from pathlib import Path
@@ -28,6 +28,7 @@ def run_mutations(report_path,expected_root,output):
         original=read_json(run/'facts.json'); plan=read_json(run/'validation_plan.json'); manifest=read_json(run/'manifest.json')
         oracle=read_json(Path(expected_root)/case/'facts.json')['subjects'][record['subject']]
         for annotation in assertions['mutations']:
+            if annotation.get('subject',record['subject']) != record['subject']: continue
             changed=mutate(copy.deepcopy(original),annotation)
             page,coverage=render(changed,plan,changed['objects'][0].get('access_observations',[]))
             # Both arms retain real source paths and hashes. Reissue report/manifest so

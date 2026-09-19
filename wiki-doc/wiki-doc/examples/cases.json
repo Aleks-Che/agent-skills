@@ -147,6 +147,33 @@
       "profile": "profiles/ckr_gp/profile.json",
       "migration_manifest": null,
       "version": "unknown"
+    },
+    {
+      "id": "12",
+      "sql": "12_matview_index_grant.sql",
+      "context": [
+        "context.sql"
+      ],
+      "subjects": [
+        "materialized_view+demo+monthly_sales"
+      ],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15"
+    },
+    {
+      "id": "13",
+      "sql": "13_trigger_audit.sql",
+      "context": [
+        "context.sql"
+      ],
+      "subjects": [
+        "table+demo+audit_log",
+        "table+demo_src+orders"
+      ],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15"
     }
   ]
 }

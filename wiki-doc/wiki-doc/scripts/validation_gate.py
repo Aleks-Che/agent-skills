@@ -193,7 +193,8 @@ def _fact_checks(artifacts, rebuilt, required, draft):
         errors.append('facts canonical_key differs from independently resolved identity')
     operations = [o for o in facts['operations'] if o.get('scope') in documented]
     operation_kinds = ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'CALL', 'PERFORM', 'EXECUTE',
-                       'RETURN', 'CREATE', 'CTAS', 'CTE', 'ALTER', 'DROP', 'COMMENT', 'TRUNCATE', 'IF', 'ASSIGN')
+                       'RETURN', 'CREATE', 'CTAS', 'CTE', 'ALTER', 'DROP', 'COMMENT', 'TRUNCATE', 'IF', 'ASSIGN',
+                       'GRANT', 'REVOKE')
     items = [i for i in rebuilt['items'] if i['kind'] in operation_kinds]
     matched, item_facts = set(), {}
     for item in items:
@@ -214,8 +215,14 @@ def _fact_checks(artifacts, rebuilt, required, draft):
                 errors.append(f"facts {op['id']}: dynamic SQL template differs from independent inventory")
         elif op.get('dynamic') is not False:
             errors.append(f"facts {op['id']}: static SQL operation is marked dynamic")
-        structural = {k:v for k,v in item.get('details',{}).items() if k in
+        details = item.get('details', {})
+        structural = {k:v for k,v in details.items() if k in
                       ('branches','branch','ddl','temporary','lifetime','reference','confirmed_call_effects','group_by','arguments','command_kind','query','assignments','target_columns','into','assignment_target','return_expression','result_for')}
+        # Index/trigger/grant structure and ALTER constraints are nested one level.
+        if isinstance(details.get('structure'), dict):
+            structural.update(details['structure'])
+        if details.get('constraints'):
+            structural['constraints'] = details['constraints']
         if structural and op.get('structure') != structural:
             errors.append(f"facts {op['id']}: structure differs from independent SQL inventory")
         anchor = item['anchor']

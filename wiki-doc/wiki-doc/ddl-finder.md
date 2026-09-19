@@ -22,7 +22,8 @@ tools: read-only
    `gp/all/` и `001create_table/`; это необязательные соглашения профиля.
 2. **Независимо от результата** найди по содержимому проекта определения и изменения
    объекта: CREATE TABLE/VIEW/MATERIALIZED VIEW/FUNCTION/PROCEDURE, CTAS, ALTER,
-   COMMENT, DROP/RENAME и относящиеся к нему ограничения/индексы.
+   COMMENT, DROP/RENAME, CREATE INDEX/TRIGGER, GRANT/REVOKE и относящиеся к нему
+   ограничения/индексы.
 3. Обработай quoting, CREATE OR REPLACE, IF NOT EXISTS и search_path. Подтверждай
    совпадение схемы и типа по SQL, а не по имени файла. Если схема зависит от
    неизвестного search_path, сохрани кандидатов как неоднозначные.

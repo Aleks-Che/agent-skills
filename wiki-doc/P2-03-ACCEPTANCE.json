@@ -1,0 +1,367 @@
+{
+  "schema_version": 1,
+  "task": "P2-03",
+  "accepted": true,
+  "reviewed_at": "2026-09-19T10:37:44.690963+00:00",
+  "environment": {
+    "python": "3.12.7",
+    "executable": "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "dependencies": {
+      "jsonschema": "4.26.0",
+      "rfc3339-validator": "0.1.4",
+      "markdown-it-py": "3.0.0",
+      "pglast": "7.14",
+      "pytest": "9.0.3"
+    }
+  },
+  "tests": {
+    "command": "python -B -m pytest tests/ -q -p no:cacheprovider",
+    "collected": 617,
+    "passed": 616,
+    "failed": 0,
+    "skipped": [
+      {
+        "test": "tests.test_p0_gate_regressions.EvidenceBoundaryTests.test_symlink_escape_is_rejected",
+        "reason": "Symlink creation unavailable: [WinError 1314] Клиент не обладает требуемыми правами: 'C:\\\\Users\\\\Aleks\\\\AppData\\\\Local\\\\Temp\\\\tmp3efa08ns\\\\outside.sql' -> 'C:\\\\Users\\\\Aleks\\\\AppData\\\\Local\\\\Temp\\\\tmp3efa08ns\\\\project\\\\link.sql'"
+      }
+    ],
+    "subtests_passed": 156,
+    "by_file": {
+      "test_artifact_regressions.py": 49,
+      "test_artifacts.py": 30,
+      "test_check_policy.py": 37,
+      "test_coverage_gate.py": 87,
+      "test_evidence_bundle.py": 55,
+      "test_identity.py": 103,
+      "test_index_query.py": 29,
+      "test_inventory_plan.py": 22,
+      "test_metrics.py": 51,
+      "test_p0_gate_regressions.py": 36,
+      "test_p1_acceptance.py": 12,
+      "test_p2_model_review.py": 15,
+      "test_publish.py": 11,
+      "test_review_fixes.py": 41,
+      "test_sql_ast.py": 30,
+      "test_validation_gate.py": 9
+    }
+  },
+  "regression": {
+    "valid": true,
+    "mode": "reference",
+    "cycle": "semi-automatic-saved",
+    "full_agent_cycle_completed": false,
+    "cases": 13,
+    "subjects": 17,
+    "repeats": 3,
+    "outcome_variants": {
+      "01/function+demo+load_missing+()": 1,
+      "02/table+demo+events_log": 1,
+      "03/function+demo+fn_with_cte+(date)": 1,
+      "04/function+demo+refresh_summary+(bigint,integer)": 1,
+      "05/function+demo+fn_default_value+(character varying,character varying)": 1,
+      "06/function+archive+orders_summary+()": 1,
+      "06/function+core+orders_summary+()": 1,
+      "06/function+core+orders_summary+(bigint)": 1,
+      "07/function+demo+fn_dynamic+(text)": 1,
+      "08/migration+08_alter_migration.sql+08": 1,
+      "09/function+demo+total_for+(bigint)": 1,
+      "09/view+demo+order_totals": 1,
+      "10/ctas+demo+event_clock": 1,
+      "11/function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()": 1,
+      "12/materialized_view+demo+monthly_sales": 1,
+      "13/table+demo+audit_log": 1,
+      "13/table+demo_src+orders": 1
+    }
+  },
+  "mutations": {
+    "valid": true,
+    "count": 38,
+    "false_ready": 0,
+    "schema_rejections": 2,
+    "semantic_rejections": 36
+  },
+  "publication": {
+    "valid": true,
+    "published": 17,
+    "all_idempotent": true,
+    "lint": {
+      "files_checked": 18,
+      "issues": [],
+      "mappings": [
+        {
+          "canonical_key": "ctas+demo+event_clock",
+          "page_id": "ctas-demo-event-clock--09a5c8f9916c.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+archive+orders_summary+()",
+          "page_id": "function-archive-orders-summary--5112dc71493e.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+core+orders_summary+()",
+          "page_id": "function-core-orders-summary--49b5b11df21c.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+core+orders_summary+(bigint)",
+          "page_id": "function-core-orders-summary-bigint--507b29b47cb6.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+demo+fn_default_value+(character varying,character varying)",
+          "page_id": "function-demo-fn-default-value-character-varying-character-varying--a588519c697b.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+demo+fn_dynamic+(text)",
+          "page_id": "function-demo-fn-dynamic-text--e565a23d168e.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+demo+fn_with_cte+(date)",
+          "page_id": "function-demo-fn-with-cte-date--841efff072cb.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+demo+load_missing+()",
+          "page_id": "function-demo-load-missing--07969466b91d.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+demo+refresh_summary+(bigint,integer)",
+          "page_id": "function-demo-refresh-summary-bigint-integer--247a9c6119ba.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+demo+total_for+(bigint)",
+          "page_id": "function-demo-total-for-bigint--ef20fab8ac74.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()",
+          "page_id": "function-s-gp-p1024-dmr-svd-kb-ckr-demo-gp-core-audit-probe--a6245efa6881.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "materialized_view+demo+monthly_sales",
+          "page_id": "materialized-view-demo-monthly-sales--1a777221b8b6.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "migration+08_alter_migration.sql+08",
+          "page_id": "migration-08-alter-migration-sql-08--eae50cadc536.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "table+demo+audit_log",
+          "page_id": "table-demo-audit-log--379be3e0816e.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "table+demo+events_log",
+          "page_id": "table-demo-events-log--016b0abffc36.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "table+demo_src+orders",
+          "page_id": "table-demo-src-orders--d382436a2564.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "view+demo+order_totals",
+          "page_id": "view-demo-order-totals--e6419491b0b2.md",
+          "preserve_path": true,
+          "status": "managed"
+        }
+      ],
+      "publication_authorized": false,
+      "source_findings": [
+        {
+          "operation": "calls",
+          "page_id": "function-s-gp-p1024-dmr-svd-kb-ckr-demo-gp-core-audit-probe--a6245efa6881.md",
+          "reason": "Direct audit routine call exception",
+          "source_ref": {
+            "end_line": 15,
+            "path": "11_audit_access.sql",
+            "sha256": "c4ada0c34619e97564ce263c7cdafb5117285e2d4d78158d9f963a614f8fcc14",
+            "start_line": 15
+          },
+          "source_schema": "s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core",
+          "status": "allowed",
+          "target": "s_gp_p1024_dmr_svd_kb_ckr_audit_gp_core.add_log"
+        },
+        {
+          "operation": "reads",
+          "page_id": "function-s-gp-p1024-dmr-svd-kb-ckr-demo-gp-core-audit-probe--a6245efa6881.md",
+          "reason": "Profile access matrix SVD:SVD:other, target layer core",
+          "source_ref": {
+            "end_line": 16,
+            "path": "11_audit_access.sql",
+            "sha256": "c4ada0c34619e97564ce263c7cdafb5117285e2d4d78158d9f963a614f8fcc14",
+            "start_line": 16
+          },
+          "source_schema": "s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core",
+          "status": "unconfirmed",
+          "target": "s_gp_p1024_dmr_svd_kb_ckr_audit_gp_core.logs"
+        }
+      ],
+      "valid": true
+    }
+  },
+  "metrics": {
+    "schema_version": 1,
+    "generated_at": "2026-09-19T10:32:49.796953+00:00",
+    "period": {
+      "wiki": "current_published_snapshot",
+      "validation": "current_published_runs",
+      "validation_start": "2026-09-19T10:27:35.079173+00:00",
+      "validation_end": "2026-09-19T10:31:47.558451+00:00",
+      "regression": "supplied_mutation_report"
+    },
+    "pages": {
+      "managed": 17,
+      "legacy": 0,
+      "total": 17
+    },
+    "fresh_sources": {
+      "numerator": 17,
+      "denominator": 17,
+      "percent": 100.0,
+      "stale_pages": []
+    },
+    "full_coverage": {
+      "numerator": 17,
+      "denominator": 17,
+      "percent": 100.0,
+      "incomplete_pages": []
+    },
+    "first_pass_success": {
+      "numerator": 17,
+      "denominator": 17,
+      "percent": 100.0,
+      "measured": true,
+      "measured_pages": 17,
+      "unmeasured_pages": [],
+      "multi_pass_pages": []
+    },
+    "blocking_defects": {
+      "total": 0,
+      "by_page": []
+    },
+    "open_unknowns": {
+      "total": 9,
+      "by_page": [
+        {
+          "page_id": "view-demo-order-totals--e6419491b0b2.md",
+          "count": 1,
+          "unknown_ids": [
+            "fact:unknown_1"
+          ]
+        },
+        {
+          "page_id": "function-demo-fn-dynamic-text--e565a23d168e.md",
+          "count": 2,
+          "unknown_ids": [
+            "fact:unknown_1",
+            "fact:unknown_2"
+          ]
+        },
+        {
+          "page_id": "materialized-view-demo-monthly-sales--1a777221b8b6.md",
+          "count": 2,
+          "unknown_ids": [
+            "fact:unknown_1",
+            "fact:unknown_2"
+          ]
+        },
+        {
+          "page_id": "function-demo-fn-with-cte-date--841efff072cb.md",
+          "count": 2,
+          "unknown_ids": [
+            "fact:unknown_1",
+            "fact:unknown_2"
+          ]
+        },
+        {
+          "page_id": "function-demo-load-missing--07969466b91d.md",
+          "count": 2,
+          "unknown_ids": [
+            "fact:unknown_1",
+            "fact:unknown_2"
+          ]
+        }
+      ]
+    },
+    "outdated_pages": {
+      "total": 0,
+      "pages": []
+    },
+    "broken_links": {
+      "total": 0,
+      "by_page": []
+    },
+    "erroneous_ready": {
+      "numerator": 0,
+      "denominator": 38,
+      "percent": 0.0,
+      "measured": true,
+      "cases": []
+    },
+    "average_iterations": 1.0
+  },
+  "markdown_links": {
+    "valid": true,
+    "markdown_files": 50,
+    "local_links": 274,
+    "errors": []
+  },
+  "source_reports": {
+    "tests": {
+      "path": ".runtime/p2-03-review-final-tests.xml",
+      "sha256": "6cbdac542e8e18b2d48bb4aa6989076c79a83b49d00cd54f6fdb2320ca1df5b9"
+    },
+    "regression": {
+      "path": ".runtime/p2-03-review-final/regression-report.json",
+      "sha256": "068c3b2d154947e991622592e5e5aa5b8665c3a113e44cef627c45a7632a119d"
+    },
+    "mutations": {
+      "path": ".runtime/p2-03-review-final-mutations/mutation-report.json",
+      "sha256": "f4c956f7289807324f062c37aaf0899ce3d20b14df777a64e5769ec2b0ba16d3"
+    },
+    "publication": {
+      "path": ".runtime/p2-03-review-final/publication-report.json",
+      "sha256": "bac5eadd9e6bd4a062c9326bd532db79e30b6e62e7099b679ac73d442f58b166"
+    },
+    "metrics": {
+      "path": ".runtime/p2-03-review-final-metrics.json",
+      "sha256": "0ef0a1339b9511c7bc8e771305a4476f67f973a2a4ead2991415b37af178328b"
+    },
+    "links": {
+      "path": ".runtime/p2-03-review-final-links.json",
+      "sha256": "ddb3de195ee5b9b49dd13d9d9db1601b25f7c2ec75518b87178527d8a4b2730d"
+    }
+  },
+  "limitations": [
+    "Reference adapter and reviewed controlled claims; not a full LLM writer run.",
+    "Ordered migration reconstruction supports table DDL; INDEX/TRIGGER/GRANT in manifests remain unsupported.",
+    "Only explicit table/view privilege targets are modeled; schema-wide/function grants leave analysis gaps.",
+    "P2-04 and P2-05 remain unstarted."
+  ]
+}

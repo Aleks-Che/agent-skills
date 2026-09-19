@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from artifact_schema import read_json, validate_schema, load_schemas, ArtifactInputError
-from sql_ast import require_parser, columns_of, relation, type_name, sql
+from sql_ast import require_parser, columns_of, constraint_details, relation, type_name, sql
 
 
 def parse(text):
@@ -47,6 +47,18 @@ def apply_statement(state, node):
                 if subtype == 'AT_AlterColumnType': found['type'] = type_name(command.def_.typeName)
                 elif subtype == 'AT_ColumnDefault': found['default'] = sql(command.def_) or None
                 else: found['not_null'] = subtype == 'AT_SetNotNull'
+            elif subtype in ('AT_AddConstraint','AT_AddConstraintRecurse'):
+                constraint = command.def_
+                entry = constraint_details(constraint)
+                if entry['type'] in ('primary_key', 'unique') and not entry.get('columns'):
+                    raise ValueError('Constraint using an existing index requires index reconstruction')
+                for name in entry.get('columns', []):
+                    column = next((c for c in columns if c['name'] == name), None)
+                    if column is None:
+                        raise ValueError(f'Unknown constraint column {key}.{name}')
+                    if entry['type'] == 'primary_key':
+                        column.update(primary_key=True, not_null=True)
+                state[key].setdefault('constraints', []).append(entry)
             else:
                 raise ValueError(f'Unsupported ALTER action: {subtype}')
     elif isinstance(node, ast.RenameStmt):
@@ -118,6 +130,7 @@ def catalog(files, root):
     """Only actual CREATE declarations are type evidence; unordered ALTERs are gaps."""
     from pglast import ast
     result, functions, inputs, errors = {}, {}, [], []
+    final_states = {}
     root = Path(root).resolve()
     for path in files:
         path = Path(path).resolve()
@@ -125,19 +138,51 @@ def catalog(files, root):
         data = path.read_bytes()
         ref = dict(path=path.relative_to(root).as_posix(), sha256=hashlib.sha256(data).hexdigest())
         inputs.append(ref)
+        local_state = {}
+        touched = set()
         for raw in parse(data.decode('utf-8-sig')):
             node = raw.stmt
             if isinstance(node, ast.CreateStmt):
                 key = relation(node.relation)
-                value = dict(columns=columns_of(node), source_ref={**ref, 'start_line':1,'end_line':len(data.decode('utf-8-sig').splitlines())})
-                if key in result and result[key]['columns'] != value['columns']:
-                    errors.append(f'Conflicting unordered definitions for {key}')
-                result[key] = value
+                touched.add(key)
+                try:
+                    apply_statement(local_state, node)
+                    local_state[key]['source_ref'] = {**ref, 'start_line':1,'end_line':len(data.decode('utf-8-sig').splitlines())}
+                except ValueError as exc:
+                    errors.append(f'{ref["path"]}: {exc}')
             elif isinstance(node, ast.CreateFunctionStmt):
                 key = '.'.join(p.sval for p in node.funcname)
                 functions.setdefault(key, []).append(dict(signature=sql(node), source_ref={**ref,'start_line':1,'end_line':len(data.decode('utf-8-sig').splitlines())}))
             elif isinstance(node, (ast.AlterTableStmt,ast.RenameStmt,ast.DropStmt)):
-                errors.append(f'Unordered migration DDL in {ref["path"]}; provide migration manifest')
+                # DDL ordered inside one file is unambiguous; cross-file order is a gap.
+                if ((isinstance(node, ast.DropStmt) and node.removeType.name != 'OBJECT_TABLE') or
+                        (not isinstance(node, ast.DropStmt) and not isinstance(getattr(node, 'relation', None), ast.RangeVar))):
+                    errors.append(f'Unsupported catalog DDL in {ref["path"]}: {type(node).__name__}')
+                    continue
+                keys = (['.'.join(p.sval for p in parts) for parts in node.objects]
+                        if isinstance(node, ast.DropStmt) else [relation(node.relation)])
+                if all(key in local_state for key in keys):
+                    try:
+                        candidate = copy.deepcopy(local_state)
+                        apply_statement(candidate, node)
+                        touched.update(keys)
+                        touched.update(set(candidate) - set(local_state))
+                        local_state = candidate
+                    except ValueError as exc:
+                        errors.append(f'{ref["path"]}: {exc}')
+                else:
+                    errors.append(f'Unordered migration DDL in {ref["path"]}; provide migration manifest')
+        # Compare final per-file states, so a later ALTER or RENAME cannot silently
+        # overwrite an incompatible definition from a file of unknown order.
+        for key in touched:
+            value = local_state.get(key)
+            shape = {k:v for k,v in value.items() if k != 'source_ref'} if value is not None else None
+            if key in final_states and final_states[key] != shape:
+                errors.append(f'Conflicting unordered definitions for {key}')
+            else:
+                final_states[key] = shape
+                if value is not None:
+                    result[key] = value
     return dict(tables=result, functions=functions, inputs=inputs, errors=errors)
 
 

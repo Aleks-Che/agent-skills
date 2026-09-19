@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {
+      "group": "operations",
+      "subject": "table+demo+audit_log",
+      "selector": {
+        "kind": "ALTER"
+      },
+      "field": "structure.constraints.0.type",
+      "value": "unique",
+      "id": "wrong-constraint-type"
+    },
+    {
+      "group": "operations",
+      "subject": "table+demo+audit_log",
+      "selector": {
+        "kind": "GRANT"
+      },
+      "field": "structure.privileges.0",
+      "value": "delete",
+      "id": "invent-grant-privilege"
+    },
+    {
+      "group": "operations",
+      "subject": "table+demo_src+orders",
+      "selector": {
+        "order": 2
+      },
+      "field": "structure.timing",
+      "value": "BEFORE",
+      "id": "wrong-trigger-timing"
+    }
+  ]
+}

@@ -13,15 +13,35 @@ from coverage_gate import MarkdownDocument
 class WikiConflict(ValueError): pass
 
 
+def _wiki_path_spelling(path):
+    # On Windows, resolve() can retain the extended prefix when a file appears
+    # or becomes unavailable between its final-path lookups (notably index.lock).
+    # Compare ordinary drive/UNC spellings consistently, after resolving links.
+    if os.name=='nt':
+        text=str(path)
+        if text.startswith('\\\\?\\UNC\\'):
+            plain='\\\\'+text[8:]
+        elif text.startswith('\\\\?\\') and re.match(r'[A-Za-z]:\\',text[4:]):
+            plain=text[4:]
+        else:
+            return path
+        # Such names require extended-path semantics; do not change their meaning.
+        if not any(part.endswith(('.', ' ')) for part in Path(plain).parts[1:]):
+            return Path(plain)
+    return path
+
+
 def inside(root, relative):
     root=Path(root).resolve()
     rel=PurePosixPath(str(relative).replace('\\','/'))
     if rel.is_absolute() or '..' in rel.parts or ':' in str(rel):
         raise WikiConflict(f'Unsafe wiki-relative path: {relative}')
     path=(root / str(rel)).resolve()
-    if not path.is_relative_to(root) or path==root:
-        raise WikiConflict(f'Path escapes wiki: {relative}')
-    return path
+    root_key,path_key=_wiki_path_spelling(root),_wiki_path_spelling(path)
+    if not path_key.is_relative_to(root_key) or path_key==root_key:
+        raise WikiConflict(f'Path escapes wiki: {relative} (resolved {path!s}, root {root!s})')
+    # Keep the caller's resolved root spelling for downstream relative_to(root).
+    return root / path_key.relative_to(root_key)
 
 
 def digest(data): return hashlib.sha256(data).hexdigest() if data is not None else None

@@ -315,3 +315,35 @@ validation. В bundle create перечисли DDL/контекст через 
 1 — revise/blocked, 2 — ошибка контракта/JSON/чтения/зависимостей.
 Legacy-вызов с одним validation.json возвращает только диагностические метрики
 и `publication_authorized: false`, никогда код 0.
+
+### Единая CLI-обёртка
+
+Все команды доступны через `python scripts/wiki_doc.py <subcommand> [options]`:
+
+```text
+wiki_doc.py inventory   → sql_extract.py
+wiki_doc.py plan        → validation_plan.py
+wiki_doc.py validate    → coverage_gate.py
+wiki_doc.py gate        → validation_gate.py
+wiki_doc.py lint        → lint.py
+wiki_doc.py publish     → publish.py
+wiki_doc.py query       → query.py
+wiki_doc.py metrics     → metrics.py
+wiki_doc.py identity    → identity.py
+wiki_doc.py index       → index.py
+wiki_doc.py bundle      → bundle.py
+wiki_doc.py regression  → run_regression.py
+```
+
+Аргументы подкоманды передаются после имени: `wiki_doc.py gate --bundle <dir> --json`.
+Версия: `wiki_doc.py --version`. Справка: `wiki_doc.py <subcommand> --help`.
+Существующие standalone-скрипты остаются доступными для обратной совместимости.
+Обёртка не создаёт обходов допуска публикации.
+
+Режимы работы (одиночный/конкурентный): [docs/concurrent-mode.md](docs/concurrent-mode.md).
+Шаблоны ответов: [docs/answer-templates.md](docs/answer-templates.md).
+Журнал этапов: `.wiki-doc/journal.jsonl`; CLI записывает выдачу решения
+(`gate --write-decision --root wiki <wiki>`), публикацию и результаты recovery.
+`prepare`, `--dry-run`, повторная проверка gate без выдачи решения, Lint и Query
+не пишут этот журнал. Журнал диагностический; восстановление использует отдельные
+транзакционные записи `.wiki-doc/journal/<run_id>.json`.

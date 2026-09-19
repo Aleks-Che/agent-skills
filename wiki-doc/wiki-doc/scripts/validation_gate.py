@@ -27,6 +27,7 @@ from bundle import compute_tool_versions
 from evidence import resolve_reference
 from identity import ObjectDescriptor, canonical_key, resolve_page_id, IdentityError, _parse_arg_types
 from sql_syntax import split_top_level
+from stage_journal import record_stage
 import re
 
 STATUSES = {"ok", "defect", "inconclusive", "not_applicable"}
@@ -548,6 +549,14 @@ def main(argv=None):
             result = evaluate(read_json(args.report))
         except (ValueError, OSError) as exc:
             result = _gate_result('blocked', errors=[str(exc)], input_error=True)
+    # Rechecking a bundle is read-only. Journal only explicit decision issuance.
+    if args.bundle and args.write_decision and root_map.get('wiki'):
+        record_stage(root_map['wiki'], 'validation', run_dir=args.bundle,
+                     outcome=result['decision'], details={'input_error': result.get('input_error', False)})
+        record = result.get('decision_record')
+        if record:
+            record_stage(root_map['wiki'], 'decision', run_id=record['run_id'],
+                         page_id=record['page_id'], outcome=record['decision'])
     if args.json or args.report:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:

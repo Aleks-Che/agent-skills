@@ -28,7 +28,8 @@ python scripts/run_regression.py --mode adapter --output <new_workspace> --repea
 JSON версии 1 с `skill_root`, `project_root`, `output_dir`, `sql`, `context`, `subjects`,
 `version`, `profile` и `migration_manifest`. SQL/контекст копируются с сохранением
 относительных путей; package содержит только runtime-инструкции, шаблоны и скрипты,
-включая `docs/dialect-support.md` из ссылок SKILL.md. Матрица входит в хэш инструкций
+включая `docs/dialect-support.md`, `docs/concurrent-mode.md` и
+`docs/answer-templates.md` из ссылок SKILL.md. Эти документы входят в хэш инструкций
 manifest; исторический обзор из docs в изолированный пакет не копируется.
 В рабочем каталоге нет tests, history или expectations. Это изоляция контекста,
 не системная песочница для враждебного CLI. Адаптер должен соблюдать область входов.

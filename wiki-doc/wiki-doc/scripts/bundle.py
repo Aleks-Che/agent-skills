@@ -93,7 +93,7 @@ def compute_tool_versions(
             ('doc-writer.md', 'doc-validator.md', 'ddl-finder.md', 'rules.md',
              'references/facts.md', 'references/artifacts.md', 'references/identity.md', 'references/coverage.md',
              'references/sql-support.md', 'references/publication.md', 'references/regression.md', 'references/query.md',
-             'docs/dialect-support.md')]),
+             'docs/dialect-support.md', 'docs/concurrent-mode.md', 'docs/answer-templates.md')]),
         'template_sha256': tree_hash([template] + list((package_dir / 'template').glob('*.md'))),
         'policy_sha256': sha256_file(policy),
     }

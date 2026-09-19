@@ -95,7 +95,8 @@ def isolate(case,workspace,examples):
     for name in ('SKILL.md','template.md','doc-writer.md','doc-validator.md','ddl-finder.md','rules.md','requirements.txt','project-profile.md'):
         shutil.copy2(PACKAGE/name,package/name)
     (package/'docs').mkdir()
-    shutil.copy2(PACKAGE/'docs/dialect-support.md',package/'docs/dialect-support.md')
+    for name in ('dialect-support.md', 'concurrent-mode.md', 'answer-templates.md'):
+        shutil.copy2(PACKAGE/'docs'/name,package/'docs'/name)
     paths={case['sql'],*case['context']}
     if case.get('migration_manifest'):
         mm=inside(examples,case['migration_manifest']); migration=read_json(mm)

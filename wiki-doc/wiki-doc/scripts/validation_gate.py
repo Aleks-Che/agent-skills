@@ -194,7 +194,8 @@ def _fact_checks(artifacts, rebuilt, required, draft):
         errors.append('facts canonical_key differs from independently resolved identity')
     operations = [o for o in facts['operations'] if o.get('scope') in documented]
     operation_kinds = ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'CALL', 'PERFORM', 'EXECUTE',
-                       'RETURN', 'CREATE', 'CTAS', 'CTE', 'ALTER', 'DROP', 'COMMENT', 'TRUNCATE', 'IF', 'ASSIGN')
+                       'RETURN', 'CREATE', 'CTAS', 'CTE', 'ALTER', 'DROP', 'COMMENT', 'TRUNCATE', 'IF', 'ASSIGN',
+                       'TRIGGER', 'INDEX', 'GRANT', 'REVOKE')
     items = [i for i in rebuilt['items'] if i['kind'] in operation_kinds]
     matched, item_facts = set(), {}
     for item in items:
@@ -216,7 +217,10 @@ def _fact_checks(artifacts, rebuilt, required, draft):
         elif op.get('dynamic') is not False:
             errors.append(f"facts {op['id']}: static SQL operation is marked dynamic")
         structural = {k:v for k,v in item.get('details',{}).items() if k in
-                      ('branches','branch','ddl','temporary','lifetime','reference','confirmed_call_effects','group_by','arguments','command_kind','query','assignments','target_columns','into','assignment_target','return_expression','result_for')}
+                      ('branches','branch','ddl','temporary','lifetime','reference','confirmed_call_effects','group_by','arguments','command_kind','query','assignments','target_columns','into','assignment_target','return_expression','result_for',
+                       'extension_version','constraints','trigger_name','table','timing','events','for_each_row','function','is_constraint','when','update_columns',
+                       'index_name','unique','primary','access_method','columns','where','privileges','privilege_columns','object_type','grantees','targets','grant_option')
+                      and (k not in ('columns',) or item['kind'] == 'INDEX')}
         if structural and op.get('structure') != structural:
             errors.append(f"facts {op['id']}: structure differs from independent SQL inventory")
         anchor = item['anchor']
@@ -267,7 +271,7 @@ def _fact_checks(artifacts, rebuilt, required, draft):
         results = [c for c in artifacts['validation']['checks'] if c.get('plan_check_id') == required_check['id']]
         rule = required_check['rule_id']
         group = {'formula': 'formulas', 'condition': 'conditions', 'unknown': 'unknowns'}.get(rule)
-        ids = {op_id} if rule == 'operation' else set()
+        ids = {op_id} if rule in ('operation', 'trigger', 'index', 'constraint', 'access_rule') else set()
         if group:
             candidates = [f for f in facts[group] if op_id in f.get('operation_ids', f.get('related_facts', []))]
             if group in ('formulas', 'conditions'):

@@ -66,7 +66,7 @@ class RegressionAcceptanceTests(unittest.TestCase):
     def test_package_markdown_links_survive_resource_moves(self):
         from coverage_gate import MarkdownDocument
         from urllib.parse import urlsplit,unquote
-        paths=subprocess.run(['rg','--files','-g','*.md'],cwd=PACKAGE,capture_output=True,text=True,check=True).stdout.splitlines()
+        paths=sorted(path.relative_to(PACKAGE) for path in PACKAGE.rglob('*.md'))
         for relative in paths:
             path=PACKAGE/relative
             for link in MarkdownDocument(path.read_text(encoding='utf-8-sig')).links:

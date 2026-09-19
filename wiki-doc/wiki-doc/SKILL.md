@@ -264,6 +264,8 @@ SQL/DDL-хешей, противоречия коду и применимые с
 Используй контрольные случаи и порядок проверки из [examples/README.md](examples/README.md).
 Проверяй фактические операции, типы, условия и решение о публикации, а не совпадение
 формулировок с эталоном.
+Расширения TRIGGER/INDEX/constraints/GRANT/REVOKE используют `extension_version: 1`
+в facts v2: [контракт](references/facts.md), [границы SQL](references/sql-support.md).
 
 Исполняемый цикл, адаптер агента, три повторения и мутации:
 [regression.md](references/regression.md). Сохранённые детерминированные результаты

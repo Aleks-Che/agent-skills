@@ -1,0 +1,753 @@
+{
+  "schema_version": 1,
+  "status": "accepted",
+  "scope": "P2-03; regression verification of completed P0/P1/P2-01/P2-02",
+  "date": "2026-09-19",
+  "recorded_at": "2026-09-19T04:18:54.534514+00:00",
+  "environment": {
+    "platform": "Windows",
+    "python": "3.12.7",
+    "dependencies": {
+      "pglast": "7.14",
+      "jsonschema": "4.26.0",
+      "markdown-it-py": "3.0.0",
+      "pytest": "9.0.3"
+    }
+  },
+  "tool_versions": {
+    "scripts_sha256": "d67da2a65ac85f8c8f084f65c0d802157e13cac842c8c731b316ee2ca70ec513",
+    "skill_md_sha256": "e0b6eb4e1eae2a76a9addbc5eb19c604d3e89faeee128793c238ee247d0f09ac",
+    "template_sha256": "bf92174bbc499f279092568744e1c24bc04b0a112caedb61a49a2863a8716630",
+    "policy_sha256": "ad38848f1c20858d314fc294ef54b274ccc70b2eb685733824ce6b89873c1bf8"
+  },
+  "tests": {
+    "command": "python -B -m pytest tests -q -p no:cacheprovider",
+    "total": 625,
+    "passed": 624,
+    "skipped": 1,
+    "failed": 0,
+    "subtests_passed": 159,
+    "elapsed_seconds": 349.56,
+    "skip_reason": "Windows symlink creation unavailable",
+    "p2_03_tests": 44
+  },
+  "regression": {
+    "cases": 12,
+    "subjects": 15,
+    "repeats": 3,
+    "bundles": 45,
+    "reference_valid": true,
+    "saved_valid": true,
+    "cycle": "semi-automatic-saved",
+    "full_agent_cycle_completed": false,
+    "outcome_variants": {
+      "01/function+demo+load_missing+()": 1,
+      "02/table+demo+events_log": 1,
+      "03/function+demo+fn_with_cte+(date)": 1,
+      "04/function+demo+refresh_summary+(bigint,integer)": 1,
+      "05/function+demo+fn_default_value+(character varying,character varying)": 1,
+      "06/function+archive+orders_summary+()": 1,
+      "06/function+core+orders_summary+()": 1,
+      "06/function+core+orders_summary+(bigint)": 1,
+      "07/function+demo+fn_dynamic+(text)": 1,
+      "08/migration+08_alter_migration.sql+08": 1,
+      "09/function+demo+total_for+(bigint)": 1,
+      "09/view+demo+order_totals": 1,
+      "10/ctas+demo+event_clock": 1,
+      "11/function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()": 1,
+      "12/table+demo+accounts": 1
+    }
+  },
+  "mutations": {
+    "total": 44,
+    "p2_03_total": 16,
+    "false_ready": 0,
+    "false_ready_rate": 0.0,
+    "results": [
+      {
+        "case": "01",
+        "subject": "function+demo+load_missing+()",
+        "mutation": "invent-target-type",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: col_2.type_target"
+        ],
+        "oracle_errors": [
+          "column demo.missing_target.loaded_at"
+        ]
+      },
+      {
+        "case": "01",
+        "subject": "function+demo+load_missing+()",
+        "mutation": "invent-target-type",
+        "mode": "coherent",
+        "decision": "blocked",
+        "false_ready": false,
+        "errors": [
+          "facts: columns.1.type_evidence.type_target: required field is missing"
+        ],
+        "oracle_errors": [
+          "column demo.missing_target.loaded_at"
+        ]
+      },
+      {
+        "case": "02",
+        "subject": "table+demo+events_log",
+        "mutation": "swap-target-and-expression-type",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: col_3.type_target"
+        ],
+        "oracle_errors": [
+          "column demo.events_log.event_value"
+        ]
+      },
+      {
+        "case": "02",
+        "subject": "table+demo+events_log",
+        "mutation": "swap-target-and-expression-type",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts column col_3: target type is not established by SQL/ordered DDL"
+        ],
+        "oracle_errors": [
+          "column demo.events_log.event_value"
+        ]
+      },
+      {
+        "case": "03",
+        "subject": "function+demo+fn_with_cte+(date)",
+        "mutation": "cte-as-physical",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: obj_3.physical"
+        ],
+        "oracle_errors": [
+          "local objects cte"
+        ]
+      },
+      {
+        "case": "03",
+        "subject": "function+demo+fn_with_cte+(date)",
+        "mutation": "cte-as-physical",
+        "mode": "coherent",
+        "decision": "blocked",
+        "false_ready": false,
+        "errors": [
+          "facts: objects.2.physical: False was expected"
+        ],
+        "oracle_errors": [
+          "local objects cte"
+        ]
+      },
+      {
+        "case": "04",
+        "subject": "function+demo+refresh_summary+(bigint,integer)",
+        "mutation": "wrong-update-assignment",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: op_2.structure"
+        ],
+        "oracle_errors": [
+          "operation structure UPDATE"
+        ]
+      },
+      {
+        "case": "04",
+        "subject": "function+demo+refresh_summary+(bigint,integer)",
+        "mutation": "wrong-update-assignment",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts op_2: structure differs from independent SQL inventory"
+        ],
+        "oracle_errors": [
+          "operation structure UPDATE"
+        ]
+      },
+      {
+        "case": "05",
+        "subject": "function+demo+fn_default_value+(character varying,character varying)",
+        "mutation": "invent-default",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: obj_1.parameters"
+        ],
+        "oracle_errors": [
+          "declaration.parameters"
+        ]
+      },
+      {
+        "case": "05",
+        "subject": "function+demo+fn_default_value+(character varying,character varying)",
+        "mutation": "invent-default",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts parameters differs from SQL declaration"
+        ],
+        "oracle_errors": [
+          "declaration.parameters"
+        ]
+      },
+      {
+        "case": "06",
+        "subject": "function+core+orders_summary+()",
+        "mutation": "wrong-return-type",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: obj_1.returns"
+        ],
+        "oracle_errors": [
+          "declaration.returns"
+        ]
+      },
+      {
+        "case": "06",
+        "subject": "function+core+orders_summary+()",
+        "mutation": "wrong-return-type",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts returns differs from SQL declaration"
+        ],
+        "oracle_errors": [
+          "declaration.returns"
+        ]
+      },
+      {
+        "case": "06",
+        "subject": "function+archive+orders_summary+()",
+        "mutation": "wrong-return-type",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: obj_1.returns"
+        ],
+        "oracle_errors": [
+          "declaration.returns"
+        ]
+      },
+      {
+        "case": "06",
+        "subject": "function+archive+orders_summary+()",
+        "mutation": "wrong-return-type",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts returns differs from SQL declaration"
+        ],
+        "oracle_errors": [
+          "declaration.returns"
+        ]
+      },
+      {
+        "case": "06",
+        "subject": "function+core+orders_summary+(bigint)",
+        "mutation": "wrong-return-type",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: obj_1.returns"
+        ],
+        "oracle_errors": [
+          "declaration.returns"
+        ]
+      },
+      {
+        "case": "06",
+        "subject": "function+core+orders_summary+(bigint)",
+        "mutation": "wrong-return-type",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts returns differs from SQL declaration"
+        ],
+        "oracle_errors": [
+          "declaration.returns"
+        ]
+      },
+      {
+        "case": "07",
+        "subject": "function+demo+fn_dynamic+(text)",
+        "mutation": "invent-dynamic-name",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: op_1.structure"
+        ],
+        "oracle_errors": [
+          "operation structure EXECUTE"
+        ]
+      },
+      {
+        "case": "07",
+        "subject": "function+demo+fn_dynamic+(text)",
+        "mutation": "invent-dynamic-name",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts op_1: structure differs from independent SQL inventory"
+        ],
+        "oracle_errors": [
+          "operation structure EXECUTE"
+        ]
+      },
+      {
+        "case": "08",
+        "subject": "migration+08_alter_migration.sql+08",
+        "mutation": "stale-migration-type",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: col_15.type_target"
+        ],
+        "oracle_errors": [
+          "column demo_migration.orders.amount"
+        ]
+      },
+      {
+        "case": "08",
+        "subject": "migration+08_alter_migration.sql+08",
+        "mutation": "stale-migration-type",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts column col_15: target type is not established by SQL/ordered DDL"
+        ],
+        "oracle_errors": [
+          "column demo_migration.orders.amount"
+        ]
+      },
+      {
+        "case": "09",
+        "subject": "view+demo+order_totals",
+        "mutation": "multiply-to-add",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: formula_1.expression"
+        ],
+        "oracle_errors": [
+          "formulas: price * quantity"
+        ]
+      },
+      {
+        "case": "09",
+        "subject": "view+demo+order_totals",
+        "mutation": "multiply-to-add",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts formula_1: expression has no independent SQL occurrence",
+          "formula:SELECT:e7cf83ebe032759c: result lacks a matching formula fact"
+        ],
+        "oracle_errors": [
+          "formulas: price * quantity"
+        ]
+      },
+      {
+        "case": "09",
+        "subject": "function+demo+total_for+(bigint)",
+        "mutation": "multiply-to-add",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: formula_1.expression"
+        ],
+        "oracle_errors": [
+          "formulas: price * quantity"
+        ]
+      },
+      {
+        "case": "09",
+        "subject": "function+demo+total_for+(bigint)",
+        "mutation": "multiply-to-add",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts formula_1: expression has no independent SQL occurrence",
+          "formula:SELECT:d5b5cba43ed70e90: result lacks a matching formula fact"
+        ],
+        "oracle_errors": [
+          "formulas: price * quantity"
+        ]
+      },
+      {
+        "case": "10",
+        "subject": "ctas+demo+event_clock",
+        "mutation": "wrong-ctas-type",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: col_3.type_target"
+        ],
+        "oracle_errors": [
+          "column demo.event_clock.cutoff"
+        ]
+      },
+      {
+        "case": "10",
+        "subject": "ctas+demo+event_clock",
+        "mutation": "wrong-ctas-type",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts column col_3: target type is not established by SQL/ordered DDL"
+        ],
+        "oracle_errors": [
+          "column demo.event_clock.cutoff"
+        ]
+      },
+      {
+        "case": "11",
+        "subject": "function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()",
+        "mutation": "audit-read-as-call-exception",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: obj_1.access_observations"
+        ],
+        "oracle_errors": [
+          "source access reads"
+        ]
+      },
+      {
+        "case": "11",
+        "subject": "function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()",
+        "mutation": "audit-read-as-call-exception",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Source access observations differ from verified profile; source defects are separate from doc defects"
+        ],
+        "oracle_errors": [
+          "source access reads"
+        ]
+      },
+      {
+        "case": "12",
+        "subject": "table+demo+accounts",
+        "mutation": "trigger-timing",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: op_4.structure"
+        ],
+        "oracle_errors": [
+          "operation structure TRIGGER"
+        ]
+      },
+      {
+        "case": "12",
+        "subject": "table+demo+accounts",
+        "mutation": "trigger-timing",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts op_4: structure differs from independent SQL inventory"
+        ],
+        "oracle_errors": [
+          "operation structure TRIGGER"
+        ]
+      },
+      {
+        "case": "12",
+        "subject": "table+demo+accounts",
+        "mutation": "trigger-events",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: op_4.structure"
+        ],
+        "oracle_errors": [
+          "operation structure TRIGGER"
+        ]
+      },
+      {
+        "case": "12",
+        "subject": "table+demo+accounts",
+        "mutation": "trigger-events",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts op_4: structure differs from independent SQL inventory"
+        ],
+        "oracle_errors": [
+          "operation structure TRIGGER"
+        ]
+      },
+      {
+        "case": "12",
+        "subject": "table+demo+accounts",
+        "mutation": "index-uniqueness",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: op_2.structure"
+        ],
+        "oracle_errors": [
+          "operation structure INDEX"
+        ]
+      },
+      {
+        "case": "12",
+        "subject": "table+demo+accounts",
+        "mutation": "index-uniqueness",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts op_2: structure differs from independent SQL inventory"
+        ],
+        "oracle_errors": [
+          "operation structure INDEX"
+        ]
+      },
+      {
+        "case": "12",
+        "subject": "table+demo+accounts",
+        "mutation": "index-expression",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: op_2.structure"
+        ],
+        "oracle_errors": [
+          "operation structure INDEX"
+        ]
+      },
+      {
+        "case": "12",
+        "subject": "table+demo+accounts",
+        "mutation": "index-expression",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts op_2: structure differs from independent SQL inventory"
+        ],
+        "oracle_errors": [
+          "operation structure INDEX"
+        ]
+      },
+      {
+        "case": "12",
+        "subject": "table+demo+accounts",
+        "mutation": "inline-primary-key",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: op_1.structure"
+        ],
+        "oracle_errors": [
+          "operation structure CREATE"
+        ]
+      },
+      {
+        "case": "12",
+        "subject": "table+demo+accounts",
+        "mutation": "inline-primary-key",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts op_1: structure differs from independent SQL inventory"
+        ],
+        "oracle_errors": [
+          "operation structure CREATE"
+        ]
+      },
+      {
+        "case": "12",
+        "subject": "table+demo+accounts",
+        "mutation": "check-expression",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: op_5.structure"
+        ],
+        "oracle_errors": [
+          "operation structure ALTER"
+        ]
+      },
+      {
+        "case": "12",
+        "subject": "table+demo+accounts",
+        "mutation": "check-expression",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts op_5: structure differs from independent SQL inventory"
+        ],
+        "oracle_errors": [
+          "operation structure ALTER"
+        ]
+      },
+      {
+        "case": "12",
+        "subject": "table+demo+accounts",
+        "mutation": "grant-privileges",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: op_7.structure"
+        ],
+        "oracle_errors": [
+          "operation structure GRANT"
+        ]
+      },
+      {
+        "case": "12",
+        "subject": "table+demo+accounts",
+        "mutation": "grant-privileges",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts op_7: structure differs from independent SQL inventory"
+        ],
+        "oracle_errors": [
+          "operation structure GRANT"
+        ]
+      },
+      {
+        "case": "12",
+        "subject": "table+demo+accounts",
+        "mutation": "revoke-grantee",
+        "mode": "text-only",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "Page claim differs/missing: op_8.structure"
+        ],
+        "oracle_errors": [
+          "operation structure REVOKE"
+        ]
+      },
+      {
+        "case": "12",
+        "subject": "table+demo+accounts",
+        "mutation": "revoke-grantee",
+        "mode": "coherent",
+        "decision": "revise",
+        "false_ready": false,
+        "errors": [
+          "facts op_8: structure differs from independent SQL inventory"
+        ],
+        "oracle_errors": [
+          "operation structure REVOKE"
+        ]
+      }
+    ]
+  },
+  "publication": {
+    "valid": true,
+    "published": 15,
+    "all_idempotent": true,
+    "lint_valid": true,
+    "lint_issues": []
+  },
+  "metrics": {
+    "schema_valid": true,
+    "pages": {
+      "changed": 0,
+      "current": 15,
+      "legacy": 0,
+      "managed": 15,
+      "missing": 0,
+      "total": 15
+    },
+    "checks": {
+      "blocked": 0,
+      "blocking_defect_total": 0,
+      "blocking_inconclusive_total": 0,
+      "first_ready_at": "2026-09-19T04:14:35.758644+00:00",
+      "ready": 15,
+      "ready_ratio": 1.0,
+      "revise": 0,
+      "total_decisions": 15
+    },
+    "decision_accuracy": {
+      "erroneous_ready": 0,
+      "erroneous_ready_ratio": 0.0,
+      "total_mutations_tested": 44
+    },
+    "broken_links": {
+      "details": [],
+      "files_affected": 0,
+      "total": 0
+    }
+  },
+  "materialized_view_smoke": {
+    "sql": "CREATE MATERIALIZED VIEW demo.mv AS SELECT 1::integer AS id WITH NO DATA;",
+    "positive_decision": "ready",
+    "coherent_column_expression_mutation": "2::integer",
+    "mutation_decision": "revise"
+  },
+  "inputs": {
+    "cases_sha256": "a4af3177395d4e6c193e24bb7dce26cd2d83d1139726600db571b108f38ffb54",
+    "example_12_sha256": "ba78b2b19dbabfabbdf491965b0bcea1387c9992016edf1e8bbbd408848c0a60",
+    "expected_12": {
+      "checks.json": "b4d3d1b0d9a819b36734dea7888110e7ca9c9609e969639a751e84ebef4a6822",
+      "decision.json": "c59e4e4bf2016b27fe28667d8f7690d26252d3d7cdb90098ccac661aa76d6a29",
+      "facts.json": "dd324672d29614dc6f32d1c718a1ccaccb17ece575da0d61fed7139826d7ccda",
+      "page_assertions.json": "16ddaa3f8dc1d067db8490d57437a6febed0b9fb96667689219b01b9b8f45006"
+    }
+  },
+  "artifacts": {
+    "regression": ".runtime/p2-review/final/regression-report.json",
+    "mutations": ".runtime/p2-review/final-mutations/mutation-report.json",
+    "publication": ".runtime/p2-review/final/publication-report.json",
+    "metrics": ".runtime/p2-review/final/metrics-report.json"
+  },
+  "limitations": [
+    "Reference/saved adapter, not an LLM writer run.",
+    "SQL was parsed statically; no database execution.",
+    "Unresolved USING INDEX and unsupported access targets remain blocking analysis gaps.",
+    "P2-04 and P2-05 have not been started."
+  ]
+}

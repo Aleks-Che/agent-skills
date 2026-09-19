@@ -147,6 +147,17 @@
       "profile": "profiles/ckr_gp/profile.json",
       "migration_manifest": null,
       "version": "unknown"
+    },
+    {
+      "id": "12",
+      "sql": "12_triggers_indexes.sql",
+      "context": [],
+      "subjects": [
+        "table+demo+accounts"
+      ],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15"
     }
   ]
 }

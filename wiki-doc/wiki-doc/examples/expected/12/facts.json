@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "table+demo+accounts": {
+      "operations": {"CREATE": 1, "INDEX": 2, "TRIGGER": 1, "ALTER": 2, "GRANT": 1, "REVOKE": 1},
+      "reads": [],
+      "writes": ["demo.accounts"],
+      "calls": ["demo.audit_account"],
+      "exact_columns": {"demo.accounts": ["id", "email", "balance", "created_at"]},
+      "columns": [
+        {"object": "demo.accounts", "name": "id", "type_target": "integer", "primary_key": true, "nullable": false},
+        {"object": "demo.accounts", "name": "balance", "type_target": "numeric(15, 2)", "nullable": false},
+        {"object": "demo.accounts", "name": "email", "type_target": "text", "nullable": false}
+      ],
+      "structures": [
+        {"kind": "CREATE", "extension_version": 1, "constraints": [
+          {"name": null, "type": "PRIMARY_KEY", "columns": ["id"], "ddl": "PRIMARY KEY"},
+          {"name": null, "type": "NOT_NULL", "columns": ["email"], "ddl": "NOT NULL"},
+          {"name": null, "type": "NOT_NULL", "columns": ["balance"], "ddl": "NOT NULL"},
+          {"name": null, "type": "DEFAULT", "columns": ["created_at"], "expression": "now()", "ddl": "DEFAULT now()"}
+        ]},
+        {"kind": "TRIGGER", "extension_version": 1, "trigger_name": "trg_accounts_audit", "timing": "AFTER", "events": ["INSERT", "UPDATE"], "function": "demo.audit_account", "for_each_row": true},
+        {"kind": "INDEX", "extension_version": 1, "index_name": "idx_accounts_email", "unique": true, "columns": ["lower(email)"], "access_method": "btree", "where": null},
+        {"kind": "INDEX", "index_name": "idx_accounts_balance", "unique": false, "columns": ["balance"], "where": "balance > 0"},
+        {"kind": "ALTER", "extension_version": 1, "constraints": [{"name": "positive_balance", "type": "CHECK", "expression": "balance >= 0", "ddl": "CONSTRAINT positive_balance CHECK (balance >= 0)"}]},
+        {"kind": "ALTER", "constraints": [{"name": "fk_account_owner", "type": "FOREIGN_KEY", "columns": ["id"], "referenced_table": "demo.owners", "referenced_columns": ["id"], "ddl": "CONSTRAINT fk_account_owner FOREIGN KEY (id) REFERENCES demo.owners (id)"}]},
+        {"kind": "GRANT", "extension_version": 1, "object_type": "TABLE", "targets": ["demo.accounts"], "privileges": ["select"], "grantees": ["reader"], "grant_option": false},
+        {"kind": "REVOKE", "extension_version": 1, "object_type": "TABLE", "targets": ["demo.accounts"], "privileges": ["insert"], "grantees": ["writer"], "grant_option": false}
+      ]
+    }
+  }
+}

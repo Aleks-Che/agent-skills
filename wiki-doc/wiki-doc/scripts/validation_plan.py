@@ -71,6 +71,10 @@ def _build_context(inventory, object_kind, object_key=''):
         item.get('details', {}).get('dynamic')
         for item in items
     )
+    has_triggers = any(item['kind'] == 'TRIGGER' for item in items)
+    has_indexes = any(item['kind'] == 'INDEX' for item in items)
+    has_constraints = any(item.get('details', {}).get('constraints') for item in items)
+    has_access_rules = any(item['kind'] in ('GRANT', 'REVOKE') for item in items)
 
     return {
         'object_key': object_key,
@@ -82,6 +86,10 @@ def _build_context(inventory, object_kind, object_key=''):
         'has_conditions': has_conditions,
         'has_dynamic_sql': has_dynamic_sql,
         'has_unknowns': has_unknowns,
+        'has_triggers': has_triggers,
+        'has_indexes': has_indexes,
+        'has_constraints': has_constraints,
+        'has_access_rules': has_access_rules,
         'has_date_boundaries': any(i.get('details', {}).get('has_date_boundary') for i in items),
         'returns_table': any(i.get('details', {}).get('returns_table') for i in items),
         'source_count': len({ref for item in items for ref in item.get('reads', [])}),

@@ -2,7 +2,8 @@
 
 Зависимость: `pglast==7.14` (libpg_query), закреплена в `requirements.txt`.
 Парсер разбирает PostgreSQL SQL и PL/pgSQL без подключения к БД. Совместимость
-проверена на 11 случаях в [manifest](../examples/cases.json). Regex-сканер сохранён
+проверена на 12 случаях в [manifest](../examples/cases.json), включая
+[12_triggers_indexes.sql](../examples/12_triggers_indexes.sql). Regex-сканер сохранён
 для стабильных якорей прежнего простого поднабора; сначала всегда выполняется AST-разбор.
 Ошибка AST не может разрешить публикацию через regex fallback.
 
@@ -16,12 +17,29 @@
 | VIEW / MATERIALIZED VIEW / CTAS | Выходные имена и выражения; CTAS создаёт и заполняет цель |
 | PL/pgSQL IF / ELSE / ASSIGN / INTO / RETURN | Условие, ветка, цель присваивания, переменные INTO, возвращаемое выражение |
 | EXECUTE constant / format | Шаблон, аргументы, тип команды и статически видимые источники; runtime-имена неизвестны |
+| TRIGGER | Имя, таблица, timing (BEFORE/AFTER/INSTEAD OF), события, FOR EACH ROW, вызываемая функция |
+| INDEX | Имя, таблица, UNIQUE/PRIMARY, access method, колонки/выражения, частичный WHERE |
+| CONSTRAINT (CREATE TABLE и ALTER TABLE ADD) | Имя, тип, колонки, выражение/ссылка и полный DDL; отдельное обязательство на каждое ограничение |
+| GRANT / REVOKE на явные relations | Привилегии и колонки, тип объекта, объекты, роли (включая PUBLIC), grant option |
 | CREATE / ALTER / DROP / RENAME / DEFAULT / COMMENT | Состояние таблиц по явному порядку, PK/NOT NULL и комментарии колонок |
 
-`ddl.py` применяет только `ordered_files` отдельного migration manifest, разрешая пути
+Каждой конструкции соответствует правило каталога проверок (`trigger`, `index`,
+`constraint`, `access_rule`) и конкретное обязательство в `validation_plan.json`;
+GRANT/REVOKE и ALTER ADD CONSTRAINT не сворачиваются в одну общую проверку.
+
+Детали расширений сохраняются в `operations.structure` с `extension_version: 1`
+в оболочке facts v2; схема проверяет обязательные поля, gate сверяет их с AST.
+Неподдержанные GRANT на схемы, routines и ALL ... IN SCHEMA оставляют блокирующий
+пробел анализа. Regex fallback не подтверждает полноту этих конструкций.
+`ADD CONSTRAINT ... USING INDEX` блокируется до реализации разрешения колонок
+готового индекса; свойства PK/NOT NULL не выводятся по догадке.
+
+`ddl.py` применяет `ordered_files` отдельного migration manifest, разрешая пути
 от его каталога внутри project root. mtime не используется. Нет установленного порядка —
 `ambiguous`; неподдержанный шаг — `unsupported`, без допуска. Несколько файлов при
 установленном порядке не означают неоднозначное определение.
+Добавление ограничения после CREATE той же таблицы в одном SQL-файле использует
+порядок операторов этого файла. ALTER из другого файла по-прежнему требует manifest.
 
 `sql_types.py` разделяет тип назначения и выражения. Доказательства — CREATE/упорядоченный
 DDL, явный cast, узкий каталог встроенных выражений (`now`, `count`, `to_date`) и

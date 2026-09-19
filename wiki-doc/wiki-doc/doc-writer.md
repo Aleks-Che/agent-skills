@@ -79,6 +79,11 @@ tools: read-only
 
 ## Исполняемые контракты P1
 
+Триггеры, индексы, права и ограничения CREATE/ALTER описывай по
+`operations.structure` с `extension_version: 1`; поля и правила связи с планом —
+в [references/facts.md](references/facts.md). Сохраняй timing/events, выражения
+индексов, WHERE, типы ограничений, привилегии и роли, а также полный DDL.
+
 Сохраняй параметры/RETURNS/volatility, назначения UPDATE/MERGE, INTO/ASSIGN/RETURN,
 область CTE/temp и подтверждённые эффекты вызова из AST-инвентаря. Покажи связи формул
 и условий с операциями, а не разрозненный список выражений. PRIMARY KEY отличается

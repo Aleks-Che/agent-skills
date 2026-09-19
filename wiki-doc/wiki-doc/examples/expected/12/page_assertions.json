@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {"id": "trigger-timing", "group": "operations", "selector": {"kind": "TRIGGER"}, "field": "structure.timing", "value": "BEFORE"},
+    {"id": "trigger-events", "group": "operations", "selector": {"kind": "TRIGGER"}, "field": "structure.events", "value": ["DELETE"]},
+    {"id": "index-uniqueness", "group": "operations", "selector": {"kind": "INDEX"}, "field": "structure.unique", "value": false},
+    {"id": "index-expression", "group": "operations", "selector": {"kind": "INDEX"}, "field": "structure.columns", "value": ["upper(email)"]},
+    {"id": "inline-primary-key", "group": "operations", "selector": {"kind": "CREATE"}, "field": "structure.constraints.0.type", "value": "UNIQUE"},
+    {"id": "check-expression", "group": "operations", "selector": {"kind": "ALTER"}, "field": "structure.constraints.0.expression", "value": "balance < 0"},
+    {"id": "grant-privileges", "group": "operations", "selector": {"kind": "GRANT"}, "field": "structure.privileges", "value": ["insert"]},
+    {"id": "revoke-grantee", "group": "operations", "selector": {"kind": "REVOKE"}, "field": "structure.grantees", "value": ["reader"]}
+  ]
+}

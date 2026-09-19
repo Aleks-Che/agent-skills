@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-09-19T08:47:11.175761+00:00",
+  "task": "P2-02",
+  "accepted": true,
+  "environment": {
+    "python": "3.12.7",
+    "executable": "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "dependencies": {
+      "jsonschema": "4.26.0",
+      "rfc3339-validator": "0.1.4",
+      "markdown-it-py": "3.0.0",
+      "pglast": "7.14",
+      "pytest": "9.0.3"
+    }
+  },
+  "tests": {
+    "command": "python -B -m pytest tests/ -q -p no:cacheprovider",
+    "collected": 592,
+    "passed": 591,
+    "skipped": [
+      {
+        "test": "tests.test_p0_gate_regressions.EvidenceBoundaryTests.test_symlink_escape_is_rejected",
+        "reason": "Symlink creation unavailable: [WinError 1314] Клиент не обладает требуемыми правами: 'C:\\\\Users\\\\Aleks\\\\AppData\\\\Local\\\\Temp\\\\tmp7msylmyv\\\\outside.sql' -> 'C:\\\\Users\\\\Aleks\\\\AppData\\\\Local\\\\Temp\\\\tmp7msylmyv\\\\project\\\\link.sql'"
+      }
+    ],
+    "failed": 0,
+    "errors": 0,
+    "subtests_passed": 137,
+    "elapsed_seconds": 424.203,
+    "by_file": {
+      "test_artifact_regressions.py": 49,
+      "test_artifacts.py": 30,
+      "test_check_policy.py": 37,
+      "test_coverage_gate.py": 87,
+      "test_evidence_bundle.py": 55,
+      "test_identity.py": 103,
+      "test_index_query.py": 29,
+      "test_inventory_plan.py": 22,
+      "test_metrics.py": 51,
+      "test_p0_gate_regressions.py": 36,
+      "test_p1_acceptance.py": 12,
+      "test_publish.py": 11,
+      "test_review_fixes.py": 41,
+      "test_sql_ast.py": 20,
+      "test_validation_gate.py": 9
+    }
+  },
+  "regression": {
+    "valid": true,
+    "mode": "reference",
+    "cycle": "semi-automatic-saved",
+    "full_agent_cycle_completed": false,
+    "cases": 11,
+    "subjects": 14,
+    "repeats": 3,
+    "outcome_variants": {
+      "01/function+demo+load_missing+()": 1,
+      "02/table+demo+events_log": 1,
+      "03/function+demo+fn_with_cte+(date)": 1,
+      "04/function+demo+refresh_summary+(bigint,integer)": 1,
+      "05/function+demo+fn_default_value+(character varying,character varying)": 1,
+      "06/function+archive+orders_summary+()": 1,
+      "06/function+core+orders_summary+()": 1,
+      "06/function+core+orders_summary+(bigint)": 1,
+      "07/function+demo+fn_dynamic+(text)": 1,
+      "08/migration+08_alter_migration.sql+08": 1,
+      "09/function+demo+total_for+(bigint)": 1,
+      "09/view+demo+order_totals": 1,
+      "10/ctas+demo+event_clock": 1,
+      "11/function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()": 1
+    }
+  },
+  "mutations": {
+    "valid": true,
+    "count": 28,
+    "erroneous_ready": {
+      "numerator": 0,
+      "denominator": 28,
+      "percent": 0.0,
+      "measured": true,
+      "cases": []
+    }
+  },
+  "publication": {
+    "valid": true,
+    "published": 14,
+    "lint_valid": true
+  },
+  "metrics_read_only": {
+    "valid": true,
+    "read_only": true,
+    "wiki_files": 284,
+    "known_unknowns": 7
+  },
+  "metrics": {
+    "schema_version": 1,
+    "generated_at": "2026-09-19T08:44:05.535006+00:00",
+    "period": {
+      "wiki": "current_published_snapshot",
+      "validation": "current_published_runs",
+      "validation_start": "2026-09-19T08:38:13.717867+00:00",
+      "validation_end": "2026-09-19T08:42:22.318818+00:00",
+      "regression": "supplied_mutation_report"
+    },
+    "pages": {
+      "managed": 14,
+      "legacy": 0,
+      "total": 14
+    },
+    "fresh_sources": {
+      "numerator": 14,
+      "denominator": 14,
+      "percent": 100.0,
+      "stale_pages": []
+    },
+    "full_coverage": {
+      "numerator": 14,
+      "denominator": 14,
+      "percent": 100.0,
+      "incomplete_pages": []
+    },
+    "first_pass_success": {
+      "numerator": 14,
+      "denominator": 14,
+      "percent": 100.0,
+      "measured": true,
+      "measured_pages": 14,
+      "unmeasured_pages": [],
+      "multi_pass_pages": []
+    },
+    "blocking_defects": {
+      "total": 0,
+      "by_page": []
+    },
+    "open_unknowns": {
+      "total": 7,
+      "by_page": [
+        {
+          "page_id": "view-demo-order-totals--e6419491b0b2.md",
+          "count": 1,
+          "unknown_ids": [
+            "fact:unknown_1"
+          ]
+        },
+        {
+          "page_id": "function-demo-fn-dynamic-text--e565a23d168e.md",
+          "count": 2,
+          "unknown_ids": [
+            "fact:unknown_1",
+            "fact:unknown_2"
+          ]
+        },
+        {
+          "page_id": "function-demo-fn-with-cte-date--841efff072cb.md",
+          "count": 2,
+          "unknown_ids": [
+            "fact:unknown_1",
+            "fact:unknown_2"
+          ]
+        },
+        {
+          "page_id": "function-demo-load-missing--07969466b91d.md",
+          "count": 2,
+          "unknown_ids": [
+            "fact:unknown_1",
+            "fact:unknown_2"
+          ]
+        }
+      ]
+    },
+    "outdated_pages": {
+      "total": 0,
+      "pages": []
+    },
+    "broken_links": {
+      "total": 0,
+      "by_page": []
+    },
+    "erroneous_ready": {
+      "numerator": 0,
+      "denominator": 28,
+      "percent": 0.0,
+      "measured": true,
+      "cases": []
+    },
+    "average_iterations": 1.0
+  },
+  "static_checks": {
+    "json_schemas_valid": 13,
+    "skill_valid": true
+  },
+  "tool_versions": {
+    "scripts_sha256": "df1337c10a137e4d70c04c9cf9fc6af172cdb1a3e0b2118e0244ce36d8fb0129",
+    "skill_md_sha256": "e649b7381facb9dec863b1d2a761ba056c54090722eb9253c98aea305c794a7f",
+    "template_sha256": "bf92174bbc499f279092568744e1c24bc04b0a112caedb61a49a2863a8716630",
+    "policy_sha256": "fd344d286a01e2c6a20eb7764af8ae36f8164071cbf1b48cc0a80f832b18e186"
+  },
+  "evidence": [
+    {
+      "path": ".runtime/p2-02-final-tests.xml",
+      "sha256": "2b6402b9af30ccd4c98cfbc130769bd35b29b49b5b785f01c0c09ce1a7cba410"
+    },
+    {
+      "path": ".runtime/p2-02-final/regression-report.json",
+      "sha256": "2a3417d286f259fcbfd4669d6ee655ad6369363f3e06eaa9e5e208c2286b1382"
+    },
+    {
+      "path": ".runtime/p2-02-final-mutations/mutation-report.json",
+      "sha256": "cabd4012b49d396d02ffc5fecf3ab501399658c7d01220549b57a515a5bf6cf6"
+    },
+    {
+      "path": ".runtime/p2-02-final/publication-report.json",
+      "sha256": "d1f449926469423d8f5c267a30e2ef26b7657663d98d7fa2e0991443908bbbd9"
+    },
+    {
+      "path": ".runtime/p2-02-final-metrics.json",
+      "sha256": "0501ec68a18f2c0f4caa83b2f48d5fe739f9eb2c8796e50c98f744df4c24fcd0"
+    },
+    {
+      "path": ".runtime/p2-02-final-metrics-check.json",
+      "sha256": "25d2f0f39e7e5d7dc146f27680b110318c7c3e1bedeef168c7ad9f0fa7a064e4"
+    }
+  ],
+  "remaining_plan_items": [
+    "P2-03",
+    "P2-04",
+    "P2-05"
+  ],
+  "limitations": [
+    "Deterministic reference regression, not a full LLM adapter run.",
+    "Metrics cover current managed publications; missing historical gate observations stay unmeasured.",
+    "The symlink test is skipped because Windows symlink creation is unavailable."
+  ]
+}

@@ -42,7 +42,8 @@ def run_mutations(report_path,expected_root,output):
                               project_root=project,profile_path=record.get('profile'),migration_manifest=project/manifest['migration_manifest']['path'] if manifest.get('migration_manifest') else None)
                 oracle_errors=check_expected(changed,oracle)
                 results.append(dict(case=case,subject=record['subject'],mutation=annotation['id'],mode=mode,decision=result['decision'],
-                                    false_ready=result['publication_authorized'],errors=result['errors'],oracle_errors=oracle_errors,run_dir=str(dest)))
+                                    false_ready=result['publication_authorized'],evaluated=True,input_error=result.get('input_error',False),
+                                    errors=result['errors'],oracle_errors=oracle_errors,run_dir=str(dest)))
     false_ready=sum(r['false_ready'] for r in results)
     summary=dict(schema_version=1,valid=bool(results) and false_ready==0,mutations=len(results),false_ready=false_ready,
                  false_ready_rate=false_ready/len(results) if results else None,results=results)

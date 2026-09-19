@@ -4,3 +4,6 @@ wiki-doc/sql/
 wiki-doc/docs/
 wiki-doc/.runtime/
 wiki-doc/.p1-runs/
+__pycache__/
+*.pyc
+.pytest_cache/

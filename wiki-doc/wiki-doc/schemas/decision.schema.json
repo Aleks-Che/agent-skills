@@ -96,10 +96,36 @@
       },
       "uniqueItems": true
     },
+    "validation_history": {"$ref": "#/$defs/validation_history"},
     "timestamp": {
       "type": "string",
       "format": "date-time"
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "validation_history": {
+      "type": "object",
+      "required": ["schema_version", "run_id", "page_id", "complete", "attempts"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "page_id": {"type": "string", "minLength": 1},
+        "complete": {"type": "boolean"},
+        "attempts": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["decision", "recorded_at"],
+            "properties": {
+              "decision": {"enum": ["ready", "revise", "blocked"]},
+              "recorded_at": {"type": "string", "format": "date-time"}
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
 }

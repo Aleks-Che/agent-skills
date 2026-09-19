@@ -88,9 +88,10 @@ class RegressionAcceptanceTests(unittest.TestCase):
             self.assertFalse((package/'history').exists())
             self.assertFalse((package/'tests').exists())
             self.assertFalse((package/'examples').exists())
-            self.assertEqual({p.name for p in (package/'docs').iterdir()}, {'dialect-support.md'})
-            self.assertEqual((package/'docs/dialect-support.md').read_bytes(),
-                             (PACKAGE/'docs/dialect-support.md').read_bytes())
+            docs = {'dialect-support.md', 'agent-response-templates.md', 'operations.md'}
+            self.assertEqual({p.name for p in (package/'docs').iterdir()}, docs)
+            for name in ['VERSION', 'CHANGELOG.md', *('docs/' + name for name in docs)]:
+                self.assertEqual((package/name).read_bytes(), (PACKAGE/name).read_bytes())
             self.assertEqual({p.name for p in project.iterdir()},{'01_no_target_ddl.sql','context.sql'})
 
     def test_two_processes_keep_both_index_entries(self):

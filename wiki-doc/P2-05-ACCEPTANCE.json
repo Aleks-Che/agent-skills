@@ -1,0 +1,307 @@
+{
+  "schema_version": 1,
+  "task": "P2-05",
+  "accepted": true,
+  "reviewed_at": "2026-09-19T13:33:58.758118+00:00",
+  "package_version": "1.0.0",
+  "environment": {
+    "python": "3.12.7",
+    "executable": "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "parser_postgresql_version": [
+      17,
+      7
+    ],
+    "dependencies": {
+      "jsonschema": "4.26.0",
+      "rfc3339-validator": "0.1.4",
+      "markdown-it-py": "3.0.0",
+      "pglast": "7.14",
+      "pytest": "9.0.3"
+    }
+  },
+  "tests": {
+    "command": "python -B -m pytest tests/ -q -p no:cacheprovider --junitxml=../.runtime/p2-05-acceptance-tests.xml",
+    "collected": 662,
+    "passed": 661,
+    "failed": 0,
+    "skipped": [
+      {
+        "test": "tests.test_p0_gate_regressions.EvidenceBoundaryTests.test_symlink_escape_is_rejected",
+        "reason": "Symlink creation unavailable: [WinError 1314] Клиент не обладает требуемыми правами: 'C:\\\\Users\\\\Aleks\\\\AppData\\\\Local\\\\Temp\\\\tmpc16y8hc5\\\\outside.sql' -> 'C:\\\\Users\\\\Aleks\\\\AppData\\\\Local\\\\Temp\\\\tmpc16y8hc5\\\\project\\\\link.sql'"
+      }
+    ],
+    "subtests_passed": 196,
+    "by_file": {
+      "test_artifact_regressions.py": 49,
+      "test_artifacts.py": 30,
+      "test_check_policy.py": 37,
+      "test_coverage_gate.py": 87,
+      "test_evidence_bundle.py": 55,
+      "test_identity.py": 103,
+      "test_index_query.py": 29,
+      "test_inventory_plan.py": 22,
+      "test_metrics.py": 51,
+      "test_p0_gate_regressions.py": 36,
+      "test_p1_acceptance.py": 12,
+      "test_p2_model_review.py": 15,
+      "test_publish.py": 13,
+      "test_review_fixes.py": 41,
+      "test_sql_ast.py": 43,
+      "test_validation_gate.py": 9,
+      "test_wiki_doc_cli.py": 30
+    }
+  },
+  "regression": {
+    "valid": true,
+    "mode": "reference",
+    "cycle": "semi-automatic-saved",
+    "full_agent_cycle_completed": false,
+    "cases": 13,
+    "subjects": 17,
+    "repeats": 3,
+    "outcome_variants": {
+      "01/function+demo+load_missing+()": 1,
+      "02/table+demo+events_log": 1,
+      "03/function+demo+fn_with_cte+(date)": 1,
+      "04/function+demo+refresh_summary+(bigint,integer)": 1,
+      "05/function+demo+fn_default_value+(character varying,character varying)": 1,
+      "06/function+archive+orders_summary+()": 1,
+      "06/function+core+orders_summary+()": 1,
+      "06/function+core+orders_summary+(bigint)": 1,
+      "07/function+demo+fn_dynamic+(text)": 1,
+      "08/migration+08_alter_migration.sql+08": 1,
+      "09/function+demo+total_for+(bigint)": 1,
+      "09/view+demo+order_totals": 1,
+      "10/ctas+demo+event_clock": 1,
+      "11/function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()": 1,
+      "12/materialized_view+demo+monthly_sales": 1,
+      "13/table+demo+audit_log": 1,
+      "13/table+demo_src+orders": 1
+    }
+  },
+  "mutations": {
+    "valid": true,
+    "count": 38,
+    "false_ready": 0,
+    "schema_rejections": 2,
+    "semantic_rejections": 36
+  },
+  "publication": {
+    "valid": true,
+    "published": 17,
+    "all_idempotent": true,
+    "lint": {
+      "files_checked": 18,
+      "issues": [],
+      "mappings": [
+        {
+          "canonical_key": "ctas+demo+event_clock",
+          "page_id": "ctas-demo-event-clock--09a5c8f9916c.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+archive+orders_summary+()",
+          "page_id": "function-archive-orders-summary--5112dc71493e.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+core+orders_summary+()",
+          "page_id": "function-core-orders-summary--49b5b11df21c.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+core+orders_summary+(bigint)",
+          "page_id": "function-core-orders-summary-bigint--507b29b47cb6.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+demo+fn_default_value+(character varying,character varying)",
+          "page_id": "function-demo-fn-default-value-character-varying-character-varying--a588519c697b.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+demo+fn_dynamic+(text)",
+          "page_id": "function-demo-fn-dynamic-text--e565a23d168e.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+demo+fn_with_cte+(date)",
+          "page_id": "function-demo-fn-with-cte-date--841efff072cb.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+demo+load_missing+()",
+          "page_id": "function-demo-load-missing--07969466b91d.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+demo+refresh_summary+(bigint,integer)",
+          "page_id": "function-demo-refresh-summary-bigint-integer--247a9c6119ba.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+demo+total_for+(bigint)",
+          "page_id": "function-demo-total-for-bigint--ef20fab8ac74.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()",
+          "page_id": "function-s-gp-p1024-dmr-svd-kb-ckr-demo-gp-core-audit-probe--a6245efa6881.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "materialized_view+demo+monthly_sales",
+          "page_id": "materialized-view-demo-monthly-sales--1a777221b8b6.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "migration+08_alter_migration.sql+08",
+          "page_id": "migration-08-alter-migration-sql-08--eae50cadc536.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "table+demo+audit_log",
+          "page_id": "table-demo-audit-log--379be3e0816e.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "table+demo+events_log",
+          "page_id": "table-demo-events-log--016b0abffc36.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "table+demo_src+orders",
+          "page_id": "table-demo-src-orders--d382436a2564.md",
+          "preserve_path": true,
+          "status": "managed"
+        },
+        {
+          "canonical_key": "view+demo+order_totals",
+          "page_id": "view-demo-order-totals--e6419491b0b2.md",
+          "preserve_path": true,
+          "status": "managed"
+        }
+      ],
+      "publication_authorized": false,
+      "source_findings": [
+        {
+          "operation": "calls",
+          "page_id": "function-s-gp-p1024-dmr-svd-kb-ckr-demo-gp-core-audit-probe--a6245efa6881.md",
+          "reason": "Direct audit routine call exception",
+          "source_ref": {
+            "end_line": 15,
+            "path": "11_audit_access.sql",
+            "sha256": "c4ada0c34619e97564ce263c7cdafb5117285e2d4d78158d9f963a614f8fcc14",
+            "start_line": 15
+          },
+          "source_schema": "s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core",
+          "status": "allowed",
+          "target": "s_gp_p1024_dmr_svd_kb_ckr_audit_gp_core.add_log"
+        },
+        {
+          "operation": "reads",
+          "page_id": "function-s-gp-p1024-dmr-svd-kb-ckr-demo-gp-core-audit-probe--a6245efa6881.md",
+          "reason": "Profile access matrix SVD:SVD:other, target layer core",
+          "source_ref": {
+            "end_line": 16,
+            "path": "11_audit_access.sql",
+            "sha256": "c4ada0c34619e97564ce263c7cdafb5117285e2d4d78158d9f963a614f8fcc14",
+            "start_line": 16
+          },
+          "source_schema": "s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core",
+          "status": "unconfirmed",
+          "target": "s_gp_p1024_dmr_svd_kb_ckr_audit_gp_core.logs"
+        }
+      ],
+      "valid": true
+    }
+  },
+  "cli_acceptance": {
+    "tests": 30,
+    "new_review_tests": 16,
+    "commands": [
+      "inventory",
+      "plan",
+      "prepare",
+      "validate",
+      "lint",
+      "publish",
+      "recover",
+      "query",
+      "metrics",
+      "identity",
+      "version"
+    ],
+    "relative_paths_context_and_run_id": true,
+    "ordered_migrations": true,
+    "profile_and_custom_policy_through_publication": true,
+    "tampered_artifacts_rejected": true,
+    "dry_run_and_read_only_preserve_wiki": true,
+    "legacy_identity_registry": true,
+    "input_error_exit_codes": true,
+    "stage_journal": {
+      "opt_in": true,
+      "success_failure_interruption": true,
+      "concurrent_invocations": true,
+      "not_authorization_evidence": true
+    },
+    "isolated_version_and_docs": true
+  },
+  "skill_quick_validate": true,
+  "source_reports": {
+    "tests": {
+      "path": ".runtime/p2-05-acceptance-tests.xml",
+      "sha256": "f79782f8b697c675fd40762b9c2d561c417929a7bb0fe730eb2552d7119dcf91"
+    },
+    "regression": {
+      "path": ".runtime/p2-05-acceptance/regression-report.json",
+      "sha256": "d0325a000b80687cb6512d3e13f6936bd905460ab9af2f3bc0877c8f8ad4f038"
+    },
+    "mutations": {
+      "path": ".runtime/p2-05-acceptance-mutations/mutation-report.json",
+      "sha256": "697ac8470a62d1bfdf9a37adc0599bf0213d90a5023e2ca5f98a659c762d43c3"
+    },
+    "publication": {
+      "path": ".runtime/p2-05-acceptance/publication-report.json",
+      "sha256": "78e7b6e2ceb8030da05f20cfe84a3d54feee546ea7ab79636ebe08f16124eb06"
+    }
+  },
+  "reviewed_files": {
+    "SKILL.md": "7be53ec6570149de1ac7338cfcf8f6b557ca8a72d37254b31ae3096a3e26b6a1",
+    "VERSION": "59854984853104df5c353e2f681a15fc7924742f9a2e468c29af248dce45ce03",
+    "CHANGELOG.md": "9bba809351cf1a74da89e3660be5fe2a7c9feef5938eeba63afe29d8b290e093",
+    "docs/agent-response-templates.md": "b4d13a39139b06ab3a7abefdd1a7a74e9f03881d54a7aea33a7def989ed96ff4",
+    "docs/operations.md": "99000d3034b09ff1f1967be640ef8bb35658de5e68439dd9fb71759b7830c799",
+    "references/regression.md": "b2dbcdced407043b8c713d3208f03e97b71c1d3bff18e6f9f9b482fec7c305f5",
+    "scripts/wiki_doc.py": "7689c559da9903e6562f121b9bc6e1566a91c8f4a34a62a9d97bf3b14d39461f",
+    "scripts/stage_journal.py": "67f558f1dc499d68205fc8c7f512d14326e690b06291c2fa73fa53420d687cd0",
+    "scripts/sql_extract.py": "8d1fa13e9280ff1184feea31a4525f13c98f58f30189b1f6156c722286060dab",
+    "scripts/validation_plan.py": "c557212692e069b086baba5ba2ef89e605e807d0b638c0fd0a9548f10dc83374",
+    "scripts/run_regression.py": "08f0e547f5c49f20ac27c778750844f60757b595f8826e20533daf56592f522e",
+    "tests/test_wiki_doc_cli.py": "a9f17750ea2072c0eb44d4fe7c166741f852e53de89b2b03396198351146a0d1",
+    "tests/test_p1_acceptance.py": "ca4880ecdddba6524ddf17acd18380c85c1604d96cb1eb6033c0bfb8e9507e5f"
+  },
+  "limitations": [
+    "Static reference cycle; no database server or full LLM writer execution.",
+    "The reference harness exercises core scripts; wrapper behavior is separately covered by 30 CLI tests.",
+    "Stage journal records opted-in CLI invocations, not unobserved manual writer activity.",
+    "Journal output must be outside the inspected wiki for strict read-only commands.",
+    "Supported SQL constructions and dialect limits remain those of docs/dialect-support.md.",
+    "One Windows symlink test was skipped because the required privilege is unavailable."
+  ]
+}

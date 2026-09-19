@@ -588,7 +588,7 @@ def _note_to_dict(note: CoverageNote) -> dict:
     }
 
 
-def main():
+def main(argv=None):
     import argparse
 
     parser = argparse.ArgumentParser(description=__doc__)
@@ -600,8 +600,9 @@ def main():
     parser.add_argument('--project-root', type=Path, help='Store paths relative to the SQL project root')
     parser.add_argument('--context', type=Path, nargs='*', default=[])
     parser.add_argument('--migration-manifest', type=Path)
+    parser.add_argument('-o', '--output', type=Path, help='Write UTF-8 inventory JSON instead of stdout')
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     try:
         path = Path(args.sql_file)
@@ -623,7 +624,11 @@ def main():
         result = enrich_inventory(result, context_files=args.context, project_root=args.project_root,
                                   migration_manifest=args.migration_manifest)
 
-        print(json.dumps(result, indent=2, ensure_ascii=False))
+        payload = json.dumps(result, indent=2, ensure_ascii=False)
+        if args.output:
+            args.output.write_text(payload + '\n', encoding='utf-8')
+        else:
+            print(payload)
 
     except Exception as exc:
         print(json.dumps({'error': str(exc)}, ensure_ascii=False), file=sys.stderr)

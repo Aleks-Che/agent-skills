@@ -14,6 +14,7 @@ from validation_gate import evaluate_bundle
 from wiki_store import (WikiConflict, inside, digest, read_bytes, hash_file, atomic_bytes,
                         atomic_json, json_bytes, metadata_path, merge_page, update_index, load_metadata)
 from index import build_catalogue, rebuild_locked, INDEX_PATH, LINEAGE_PATH
+from stage_journal import record_stage
 
 
 @contextlib.contextmanager
@@ -338,14 +339,28 @@ def main(argv=None):
     parser.add_argument('--cleanup-run',action='store_true',help='After commit, remove only this wiki/.tmp/<run_id>')
     args=parser.parse_args(argv)
     if args.mode!='recover' and not args.run_dir: parser.error('run_dir is required')
+    if args.mode!='publish' and (args.dry_run or args.cleanup_run):
+        parser.error('--dry-run and --cleanup-run require publish mode')
     try:
         if args.mode=='prepare': result=prepare(args.run_dir,args.wiki)
         elif args.mode=='recover': result=recover(args.wiki)
         else: result=publish(args.run_dir,args.wiki,project_root=args.project_root,profile_path=args.profile,policy_path=args.policy,dry_run=args.dry_run)
-        if args.cleanup_run and args.mode=='publish' and not args.dry_run: cleanup_run(args.run_dir,args.wiki)
+        if args.mode=='publish' and not args.dry_run:
+            # Capture identity before optional cleanup removes the run manifest.
+            record_stage(args.wiki, 'publish', run_dir=args.run_dir,
+                         page_id=result['page_id'], outcome='published',
+                         details={'mode': args.mode, 'idempotent': result.get('idempotent', False)})
+            if args.cleanup_run: cleanup_run(args.run_dir,args.wiki)
+        elif args.mode=='recover':
+            for recovered in result:
+                record_stage(args.wiki, 'publish', run_id=recovered['run_id'],
+                             outcome=recovered['state'], details={'mode': 'recover'})
         print(json.dumps(result,ensure_ascii=True,indent=2))
         return 0
     except (WikiConflict,ArtifactInputError,OSError,ValueError) as exc:
+        if args.mode!='prepare' and not args.dry_run:
+            record_stage(args.wiki, 'error', run_dir=args.run_dir,
+                         outcome='error', details={'mode': args.mode, 'error': str(exc)})
         print(json.dumps(dict(published=False,error=str(exc)),ensure_ascii=True))
         return 1
 

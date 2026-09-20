@@ -66,7 +66,10 @@ def build(sql_path,run_dir,*,project_root,subject,context=(),migration_manifest=
         details=item.get('details',{}); ref=item['source_ref']; oid=f'op_{len(facts["operations"])+1}'
         entry=dict(id=oid,kind=item['kind'],scope='obj_1',order=len(facts['operations'])+1,source_refs=[ref],condition_ids=[],dynamic=False)
         for field in ('reads','writes','calls'): entry[field]=[obj(name,ref) for name in item.get(field,[])]
-        structural={k:v for k,v in details.items() if k in ('branches','branch','ddl','temporary','lifetime','reference','confirmed_call_effects','group_by','arguments','command_kind','query','assignments','target_columns','into','assignment_target','return_expression','result_for')}
+        structural={k:v for k,v in details.items() if k in ('branches','branch','ddl','temporary','lifetime','reference','confirmed_call_effects','group_by','arguments','command_kind','query','assignments','target_columns','into','assignment_target','return_expression','result_for',
+                    'extension_version','constraints','trigger_name','table','timing','events','for_each_row','function','is_constraint','when','update_columns',
+                    'index_name','unique','primary','access_method','columns','where','privileges','privilege_columns','object_type','grantees','targets','grant_option')
+                    and (k != 'columns' or item['kind'] == 'INDEX')}
         if structural: entry['structure']=structural
         if item['kind']=='EXECUTE':
             entry['dynamic']=dict(template=details.get('template') or 'unresolved',unresolved_parts=details.get('unresolved_parts',['unknown runtime target']))

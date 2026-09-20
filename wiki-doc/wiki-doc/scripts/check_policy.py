@@ -261,11 +261,22 @@ def derive_inventory_checks(policy, inventory_items, object_key=''):
     checks = []
     operation_kinds = {'SELECT','INSERT','UPDATE','DELETE','MERGE','DDL','PERFORM','CALL','EXECUTE','RETURN','OTHER','CTE','TEMP_TABLE',
                        'CREATE','CTAS','ALTER','DROP','COMMENT','TRUNCATE','IF','ASSIGN'}
+    # Constructs that carry their own obligation rule instead of the generic operation rule.
+    kind_rules = {'TRIGGER': 'trigger', 'INDEX': 'index',
+                  'GRANT': 'access_rule', 'REVOKE': 'access_rule'}
     for item in inventory_items:
         kind, details = item['kind'], item.get('details', {})
         anchor = {'path': item.get('source_ref', {}).get('path', item['anchor'].get('path', '')),
                   **{k: item['anchor'][k] for k in ('object_or_scope','construct','ordinal')}}
-        features = [('operation', 0)] if kind in operation_kinds else []
+        if kind in kind_rules:
+            features = [(kind_rules[kind], 0)]
+        elif kind in operation_kinds:
+            features = [('operation', 0)]
+        else:
+            features = []
+        # Constraints are embedded in ALTER TABLE ... ADD CONSTRAINT details.
+        for index in range(1, len(details.get('constraints', [])) + 1):
+            features.append(('constraint', index))
         for group, flag, rule in (('formulas','has_formula','formula'), ('conditions','has_condition','condition')):
             expressions = details.get(group, [None] if details.get(flag) else [])
             features.extend((rule, i) for i in range(1, len(expressions) + 1))

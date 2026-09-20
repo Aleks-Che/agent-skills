@@ -18,7 +18,9 @@
     "unknowns"
   ],
   "properties": {
-    "page_contract": {"const": "claims-v1"},
+    "page_contract": {
+      "const": "claims-v1"
+    },
     "schema_version": {
       "const": 2
     },
@@ -263,10 +265,17 @@
           ]
         },
         "volatility": {
-          "enum": ["immutable", "stable", "volatile"]
+          "enum": [
+            "immutable",
+            "stable",
+            "volatile"
+          ]
         },
         "access_observations": {
-          "type": "array", "items": {"type": "object"}
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
         }
       },
       "additionalProperties": false,
@@ -419,6 +428,8 @@
             "ALTER",
             "DROP",
             "COMMENT",
+            "TRIGGER",
+            "INDEX",
             "GRANT",
             "REVOKE",
             "CTAS",
@@ -530,7 +541,155 @@
           "pattern": "\\S"
         },
         "structure": {
-          "type": "object"
+          "type": "object",
+          "properties": {
+            "extension_version": {
+              "const": 1
+            },
+            "constraints": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "type",
+                  "ddl"
+                ],
+                "properties": {
+                  "name": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "ddl": {
+                    "type": "string"
+                  },
+                  "columns": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "referenced_table": {
+                    "type": "string"
+                  },
+                  "referenced_columns": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "expression": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "ddl": {
+              "type": "string"
+            },
+            "trigger_name": {
+              "type": "string"
+            },
+            "index_name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "table": {
+              "type": "string"
+            },
+            "timing": {
+              "enum": [
+                "BEFORE",
+                "AFTER",
+                "INSTEAD OF"
+              ]
+            },
+            "events": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "for_each_row": {
+              "type": "boolean"
+            },
+            "function": {
+              "type": "string"
+            },
+            "is_constraint": {
+              "type": "boolean"
+            },
+            "when": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "update_columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "unique": {
+              "type": "boolean"
+            },
+            "primary": {
+              "type": "boolean"
+            },
+            "access_method": {
+              "type": "string"
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "where": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "privileges": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "grantees": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "targets": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "object_type": {
+              "type": "string"
+            },
+            "grant_option": {
+              "type": "boolean"
+            }
+          },
+          "dependentRequired": {
+            "constraints": [
+              "extension_version"
+            ]
+          }
         }
       },
       "additionalProperties": false,
@@ -548,6 +707,100 @@
               "kind_detail"
             ]
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "TRIGGER"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "structure"
+            ],
+            "properties": {
+              "structure": {
+                "required": [
+                  "extension_version",
+                  "ddl",
+                  "trigger_name",
+                  "table",
+                  "timing",
+                  "events",
+                  "for_each_row",
+                  "function",
+                  "is_constraint",
+                  "when",
+                  "update_columns"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "INDEX"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "structure"
+            ],
+            "properties": {
+              "structure": {
+                "required": [
+                  "extension_version",
+                  "ddl",
+                  "index_name",
+                  "table",
+                  "unique",
+                  "primary",
+                  "access_method",
+                  "columns",
+                  "where"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "GRANT",
+                  "REVOKE"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "structure"
+            ],
+            "properties": {
+              "structure": {
+                "required": [
+                  "extension_version",
+                  "ddl",
+                  "privileges",
+                  "grantees",
+                  "targets",
+                  "object_type",
+                  "grant_option"
+                ]
+              }
+            }
+          }
         }
       ]
     },
@@ -562,8 +815,16 @@
         "source_refs"
       ],
       "properties": {
-        "expression_status": {"enum": ["known", "unknown", "not_applicable"]},
-        "primary_key": {"type": "boolean"},
+        "expression_status": {
+          "enum": [
+            "known",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "primary_key": {
+          "type": "boolean"
+        },
         "id": {
           "type": "string",
           "minLength": 1,

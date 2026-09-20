@@ -37,6 +37,11 @@ tools: read-only
 все определения вспомогательного context.sql. Для каждого реального оператора в этой области проверь наличие
 в реестре с правильной областью видимости, порядком, reads/writes/calls и условиями.
 Включи UPDATE FROM, DELETE USING, MERGE USING, CTAS, CTE, выражения, вызовы и динамический SQL.
+Для TRIGGER/INDEX/GRANT/REVOKE и ограничений CREATE/ALTER сверяй также все поля
+`operations.structure` версии `extension_version: 1`, включая полный DDL.
+Каждое обязательство `trigger`, `index`, `constraint`, `access_rule` должно иметь
+результат с `fact_ids` соответствующей операции; поля описаны в
+[references/facts.md](references/facts.md).
 Не засчитывай комментарии или текст внутри неисполняемой строки как отдельную операцию.
 Проверь и обратное: в реестре нет вымышленных операций.
 

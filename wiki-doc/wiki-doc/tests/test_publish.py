@@ -55,7 +55,7 @@ class PublishTests(unittest.TestCase):
         code='from publish import publish; import os,sys; publish(sys.argv[1],sys.argv[2],fault=lambda s: os._exit(71) if s==sys.argv[3] else None)'
         for stage in ('prepared','after_page','after_index','after_metadata','after_machine_index','after_lineage'):
             with self.subTest(stage=stage):
-                result=subprocess.run([sys.executable,'-B','-c',code,str(self.run_dir),str(self.wiki),stage],capture_output=True,timeout=30)
+                result=subprocess.run([sys.executable,'-B','-c',code,str(self.run_dir),str(self.wiki),stage],cwd=PACKAGE/'scripts',capture_output=True,timeout=30)
                 self.assertEqual(result.returncode,71,result.stderr.decode())
                 self.assertEqual(recover(self.wiki)[0]['state'],'rolled_back')
                 self.assertFalse((self.wiki/PAGE_ID).exists())
@@ -93,7 +93,8 @@ class PublishTests(unittest.TestCase):
 
     def test_recovery_rejects_unowned_backup_path(self):
         code='from publish import publish; import os,sys; publish(sys.argv[1],sys.argv[2],fault=lambda s: os._exit(71) if s=="after_page" else None)'
-        subprocess.run([sys.executable,'-B','-c',code,str(self.run_dir),str(self.wiki)],capture_output=True,timeout=30)
+        result=subprocess.run([sys.executable,'-B','-c',code,str(self.run_dir),str(self.wiki)],cwd=PACKAGE/'scripts',capture_output=True,timeout=30)
+        self.assertEqual(result.returncode,71,result.stderr.decode())
         journal=next((self.wiki/'.wiki-doc/journal').glob('*.json'))
         value=read_json(journal); value['files'][0]['backup']='index.md'; journal.write_text(json.dumps(value))
         with self.assertRaises(WikiConflict): recover(self.wiki)

@@ -197,6 +197,50 @@
       "subject_pattern": "{object_key}/analysis_gap",
       "source": "inventory",
       "conditions": {}
+    },
+    {
+      "id": "trigger",
+      "description": "Trigger (timing, events, function) is documented correctly",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/trigger",
+      "source": "inventory",
+      "conditions": {
+        "has_triggers": true
+      }
+    },
+    {
+      "id": "index",
+      "description": "Index (columns, type, uniqueness) is documented correctly",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/index",
+      "source": "inventory",
+      "conditions": {
+        "has_indexes": true
+      }
+    },
+    {
+      "id": "constraint",
+      "description": "Constraint (type, columns, references) is documented correctly",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/constraint",
+      "source": "inventory",
+      "conditions": {
+        "has_constraints": true
+      }
+    },
+    {
+      "id": "access_rule",
+      "description": "Access control (GRANT/REVOKE) is documented correctly",
+      "category": "technical",
+      "blocking_default": true,
+      "subject_pattern": "{object_key}/access_rule",
+      "source": "inventory",
+      "conditions": {
+        "has_access_rules": true
+      }
     }
   ],
   "object_type_groups": {
@@ -212,6 +256,10 @@
         "writes",
         "formula",
         "condition",
+        "trigger",
+        "index",
+        "constraint",
+        "access_rule",
         "unknown",
         "section",
         "profile_check"

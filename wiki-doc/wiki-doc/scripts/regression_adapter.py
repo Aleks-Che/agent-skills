@@ -14,7 +14,7 @@ def main():
         result=build(root/request['sql'],out/str(i),project_root=root,subject=subject,
                      context=[root/p for p in request['context']],version=request['version'],
                      migration_manifest=root/request['migration_manifest'] if request.get('migration_manifest') else None,
-                     profile=request.get('profile'))
+                     profile=request.get('profile'),dialect=request.get('dialect','postgres'))
         results.append(dict(subject=subject,run_dir=str(i),profile=result['profile']))
     atomic_json(out/'runs.json',dict(schema_version=1,runs=results))
     return 0

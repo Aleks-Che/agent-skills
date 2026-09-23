@@ -657,6 +657,13 @@ def extract_inventory(sql_text, file_path, file_sha256, dialect='postgres', vers
         if sub_reason:
             fallback['coverage_notes'].append({'source_ref': {'path': file_path, 'sha256': file_sha256,
                 'start_line': 1, 'end_line': max(1, len(sql_text.splitlines()))}, 'reason': sub_reason})
+        # Greenplum residue diagnostics survive the AST failure with their
+        # localized ranges; unknown GP syntax is never silently dropped.
+        from sql_gp import prepare as gp_prepare
+        _, _, gp_notes = gp_prepare(sql_text, dialect)
+        for note_line, reason in gp_notes:
+            fallback['coverage_notes'].append({'source_ref': {'path': file_path, 'sha256': file_sha256,
+                'start_line': note_line, 'end_line': note_line}, 'reason': reason})
         return fallback
     try:
         previous = _extract_inventory_legacy(sql_text, file_path, file_sha256, dialect, version, documented_subjects)

@@ -26,7 +26,9 @@ python scripts/run_regression.py --mode adapter --output <new_workspace> --repea
 
 `--adapter` — JSON-массив argv; shell не используется. `{request}` заменяется путём к
 JSON версии 1 с `skill_root`, `project_root`, `output_dir`, `sql`, `context`, `subjects`,
-`version`, `profile` и `migration_manifest`. SQL/контекст копируются с сохранением
+`version`, `profile`, `migration_manifest` и необязательным `dialect` (по умолчанию
+`postgres`). Для GP явно передавай `greenplum`, не выводи диалект из профиля.
+SQL/контекст копируются с сохранением
 относительных путей; package содержит только runtime-инструкции, шаблоны и скрипты,
 включая `docs/dialect-support.md`, `docs/concurrent-mode.md` и
 `docs/answer-templates.md` из ссылок SKILL.md. Эти документы входят в хэш инструкций

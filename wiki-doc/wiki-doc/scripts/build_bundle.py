@@ -25,7 +25,8 @@ from wiki_store import atomic_json,atomic_bytes
 PACKAGE=Path(__file__).resolve().parents[1]
 
 
-def build(sql_path,run_dir,*,project_root,subject,context=(),migration_manifest=None,profile=None,version='15',wiki_root=None):
+def build(sql_path,run_dir,*,project_root,subject,context=(),migration_manifest=None,profile=None,version=None,wiki_root=None,dialect='postgres'):
+    version = version if version is not None else ('unknown' if dialect.lower()=='greenplum' else '15')
     root,run=Path(project_root).resolve(),Path(run_dir).resolve()
     source=Path(sql_path).resolve(); context=[Path(p).resolve() for p in context]
     migration_manifest=Path(migration_manifest).resolve() if migration_manifest else None
@@ -33,7 +34,7 @@ def build(sql_path,run_dir,*,project_root,subject,context=(),migration_manifest=
         ordered=reconstruct(migration_manifest,project_root=root)
         context=list(dict.fromkeys(context+[root/r['path'] for r in ordered['inputs'] if root/r['path']!=source]))
     inv=extract_inventory(source.read_text(encoding='utf-8-sig'),source.relative_to(root).as_posix(),sha256_file(source),
-                          version=version,documented_subjects=[subject])
+                          dialect=dialect,version=version,documented_subjects=[subject])
     inv['run_id']=str(uuid.uuid4())
     enrich_inventory(inv,context_files=context,project_root=root,migration_manifest=migration_manifest)
     chosen=detect_profile(inv,profile)
@@ -44,7 +45,7 @@ def build(sql_path,run_dir,*,project_root,subject,context=(),migration_manifest=
                documented_object_ids=['obj_1'],inputs=inv['inputs'],page_contract='claims-v1',**{g:[] for g in FACT_ARRAYS})
     main=dict(id='obj_1',kind=d['object_kind'],schema=d['schema'],name=d['name'],signature=d.get('signature'),
               canonical_key=d['canonical_key'],page_id=pid,source_refs=[declaration['source_ref']])
-    for field in ('parameters','returns','volatility'):
+    for field in ('parameters','returns','volatility','execute_on','gp_extension_version'):
         if field in d: main[field]=d[field]
     facts['objects'].append(main)
     objects={f"{d['schema']}.{d['name']}":'obj_1'}
@@ -68,7 +69,8 @@ def build(sql_path,run_dir,*,project_root,subject,context=(),migration_manifest=
         for field in ('reads','writes','calls'): entry[field]=[obj(name,ref) for name in item.get(field,[])]
         structural={k:v for k,v in details.items() if k in ('branches','branch','ddl','temporary','lifetime','reference','confirmed_call_effects','group_by','arguments','command_kind','query','assignments','target_columns','into','assignment_target','return_expression','result_for',
                     'extension_version','constraints','trigger_name','table','timing','events','for_each_row','function','is_constraint','when','update_columns',
-                    'index_name','unique','primary','access_method','columns','where','privileges','privilege_columns','object_type','grantees','targets','grant_option')
+                    'index_name','unique','primary','access_method','columns','where','privileges','privilege_columns','object_type','grantees','targets','grant_option',
+                    'distributed','storage_parameters','gp_extension_version')
                     and (k != 'columns' or item['kind'] == 'INDEX')}
         if structural: entry['structure']=structural
         if item['kind']=='EXECUTE':
@@ -103,6 +105,8 @@ def build(sql_path,run_dir,*,project_root,subject,context=(),migration_manifest=
             definition['structure']=local['details'].get('query',local['details'].get('ddl'))
         if d['object_kind']=='migration' and table:
             state=d['reconstruction']; definition.update(revision=state.get('target_revision'),migration_order=[r['path'] for r in state['inputs']])
+        if table:
+            definition.update({k:table[k] for k in ('distributed','storage_parameters','gp_extension_version') if k in table})
         facts['definitions'].append(definition)
         for column in table['columns'] if table else []:
             cid=f'col_{len(facts["columns"])+1}'; mapping=mappings.get((name,column['name']))
@@ -204,10 +208,11 @@ def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--sql',required=True); p.add_argument('--run-dir',required=True); p.add_argument('--project-root',required=True)
     p.add_argument('--subject',required=True); p.add_argument('--context',nargs='*',default=[]); p.add_argument('--migration-manifest')
-    p.add_argument('--profile'); p.add_argument('--version',default='15')
+    p.add_argument('--profile'); p.add_argument('--version')
+    p.add_argument('--dialect',default='postgres')
     a=p.parse_args(argv)
     try:
-        result=build(a.sql,a.run_dir,project_root=a.project_root,subject=a.subject,context=a.context,migration_manifest=a.migration_manifest,profile=a.profile,version=a.version)
+        result=build(a.sql,a.run_dir,project_root=a.project_root,subject=a.subject,context=a.context,migration_manifest=a.migration_manifest,profile=a.profile,version=a.version,dialect=a.dialect)
         print(json.dumps(result,ensure_ascii=True,indent=2)); return 0 if result['publication_authorized'] else 1
     except (ValueError,OSError) as exc: print(json.dumps({'error':str(exc)})); return 2
 

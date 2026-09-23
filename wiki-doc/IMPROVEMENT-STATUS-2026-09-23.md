@@ -4,24 +4,30 @@
 Этот файл — журнал выполнения задач Q-01…Q-09. История предыдущего этапа находится
 в [IMPLEMENTATION-STATUS.md](IMPLEMENTATION-STATUS.md).
 
-**Текущий итог:** Q-02 выполнена. Q-01 выполнена в основном объёме (фикстуры,
-независимые ожидания, матрица D01–D12, воспроизведение аварии) и остаётся
-`in_progress`: ошибки старой документации закреплены ожиданиями, но комплект
-проверок старой сохранённой страницы ещё не выполнен. Это незакрытая приёмка
-Q-01; новый LLM-результат отдельно относится к Q-08. Q-03…Q-09 не начаты.
-Следующее действие — Q-03 (ограниченный адаптер Greenplum).
+**Текущий итог:** Q-02 и Q-03 выполнены. Q-03 — ограниченный адаптер Greenplum:
+`EXECUTE ON MASTER/ANY/ALL SEGMENTS` стал атрибутом объявления, `DISTRIBUTED BY/RANDOMLY/
+REPLICATED` и параметры `WITH` разбираются в инвентаре и DDL-каталоге; малые
+положительные GP-примеры и контрольный q05 проходят анализ и полный gate;
+подмена/удаление MASTER и DISTRIBUTED обнаруживаются gate; неизвестные
+GP-расширения блокируются с локализованной причиной. Q-01 остаётся `in_progress`
+(незакрытая приёмка — комплект проверок ошибок старой сохранённой страницы
+`test-sql-wiki`). Q-04…Q-09 не начаты. Следующее действие — Q-04 (полный анализ
+тела, зависимостей и DDL до контрольного объекта).
 
+Повторное ревью выявило и исправило ложные ready, потери GP-атрибутов,
+ошибку Unicode-смещений, контроль версии и пробелы контракта/инструкций:
+[REVIEW-Q03.md](REVIEW-Q03.md), [Q03-REVIEW.json](Q03-REVIEW.json).
+Итог: **835 tests (834 passed, 1 skipped), 0 failed**; все 24 модуля unittest
+в отдельных процессах, четыре процесса одновременно, 140.609s.
+Q-03 — 30 исходных + 35 тестов повторного ревью; Q-01 — 30; Q-02 — 30.
+Q-набор — 125 тестов. Reference/saved: по 45/45 результатов
+(15 объектов × 3 повтора); q05: 3/3 изолированных reference-gate при `unknown`.
+**Настоящий LLM-прогон не выполнялся** (Q-08).
+
+Предыдущая итерация (история): результат 764 tests / 1 skipped относится к Q-01/Q-02.
 Повторная проверка Codex выявила и исправила ошибки Q-фикстур, диагностик и
 тестов; подробности — [REVIEW-Q01-Q02.md](REVIEW-Q01-Q02.md).
-Результат 757 tests / 1 skipped ниже относится к предыдущей сессии.
-**Настоящий LLM-прогон не выполнялся.**
-
-**Итог повторной проверки:** полный набор — 764 теста, 1 skipped, 0 failed
-(все 22 модуля unittest в отдельных процессах). Q-01 — 30 тестов, Q-02 — 27.
-Reference/saved исторических сценариев 01–12 — по 15/15 объектов, один повтор.
-Большой SQL с закреплённым SHA-256: исходный extractor — код 2, текущий — код 0
-с блокирующими причинами. Команды, версии, хеши и результаты каждого модуля —
-[Q01-Q02-REVIEW.json](Q01-Q02-REVIEW.json).
+Команды, версии, хеши и результаты — [Q01-Q02-REVIEW.json](Q01-Q02-REVIEW.json).
 
 ## Как обновлять файл
 
@@ -43,7 +49,7 @@ Reference/saved исторических сценариев 01–12 — по 15/
 |---|---|---|
 | Q-01 | Независимые ожидания и воспроизведение дефектов | in_progress |
 | Q-02 | Диагностика вместо аварии fallback | done |
-| Q-03 | Поддержка необходимого поднабора Greenplum | planned |
+| Q-03 | Поддержка необходимого поднабора Greenplum | done |
 | Q-04 | Анализ тела функции, зависимостей и DDL | planned |
 | Q-05 | Проверяемый запуск и происхождение результата | planned |
 | Q-06 | Генерация больших страниц без потери логики | planned |
@@ -58,6 +64,7 @@ Reference/saved исторических сценариев 01–12 — по 15/
 **Статус:** in_progress.
 **Обновлено:** 2026-09-23.
 **Исполнитель:** opencode (`xiaomi-token-plan-sgp/mimo-v2.6-pro`).
+
 **Повторная проверка и исправления:** Codex, 2026-09-23.
 
 **Выполнено:**
@@ -147,9 +154,10 @@ workspace; это гарантия переданного комплекта, н
 
 **Блокировки:** не зафиксированы.
 
-**Следующее действие:** Q-03 — явный ограниченный адаптер Greenplum поверх
-pglast: `EXECUTE ON MASTER` как атрибут объявления, `DISTRIBUTED BY/RANDOMLY` и
-параметры хранения в `ddl.py`, без подмены `dialect=greenplum` на `postgres`.
+**Следующее действие:** Q-04 — полный анализ тела, зависимостей и DDL до
+контрольного объекта (`ckr_uup_db_onboarding.sql`): связь параметр → присваивание →
+условие IF → операции ветки, все PL/pgSQL-блоки, области CTE, точные детали
+выражений и восстановление DDL по доказанному порядку миграций.
 
 ### Q-02. Устранить аварийное завершение анализа
 
@@ -189,7 +197,7 @@ pglast: `EXECUTE ON MASTER` как атрибут объявления, `DISTRIB
 
 **Изменённые файлы реализации/тестов:** `scripts/sql_extract.py`,
 `scripts/ddl.py`, `scripts/sql_ast.py`, `scripts/sql_syntax.py`,
-`references/sql-support.md`, новый `tests/test_q02_fallback_diagnostics.py` (27 тестов),
+`references/sql-support.md`, новый `tests/test_q02_fallback_diagnostics.py` (30 тестов после Q-03-обзора; в коммите Q-02 было 27),
 `tests/test_q01_expectations.py` (CrashReproductionTests).
 
 **Приёмка:**
@@ -242,4 +250,193 @@ pglast: `EXECUTE ON MASTER` как атрибут объявления, `DISTRIB
 
 **Блокировки:** не зафиксированы.
 
-**Следующее действие:** Q-03 — явный ограниченный адаптер Greenplum.
+**Следующее действие (обновлено после Q-03):** Q-04 — полный анализ тела,
+зависимостей и DDL до контрольного объекта.
+
+### Q-03. Поддержать необходимый поднабор Greenplum
+
+**Статус:** done.
+**Обновлено:** 2026-09-23.
+**Исполнитель:** opencode (`xiaomi-token-plan-sgp/mimo-v2.6-pro`).
+
+**Повторное ревью Q-03:** Codex, 2026-09-23. Статус done подтверждён после
+исправлений ниже; исходный отчёт «замечаний нет» не подтвердился.
+Подробности, команды и воспроизведения: [REVIEW-Q03.md](REVIEW-Q03.md),
+[Q03-REVIEW.json](Q03-REVIEW.json).
+
+- Исправлены перенос атрибутов между объявлениями на одной строке и Unicode:
+  символьные смещения pglast переводятся в байтовые диапазоны конкретного RawStmt.
+- Проверяются владелец, позиция, границы токенов, дубли EXECUTE ON/DISTRIBUTED,
+  идентификаторы BY и порядок WITH. Ошибочные клаузы не удаляются.
+- CREATE/CTAS, контекст, миграции и definitions сохраняют GP-атрибуты.
+  Противоречащие явные определения и повторы storage parameter блокируются;
+  контекст только с колонками не стирает более полное GP-определение.
+- Переименование колонки обновляет BY; удаление/смена типа колонки распределения
+  возвращает unsupported до реализации анализа перераспределения.
+- Прямой/динамический GP MERGE блокируется независимо от GP-версии;
+  PostgreSQL сохраняет свой порог >= 15. GP-версия по умолчанию — unknown.
+- Добавлена явная `gp_extension_version: 1` и проверка fields в definitions.
+  Контракт и инструкции обновлены в текущей задаче, без отсрочки до Q-09.
+- Добавлены 35 тестов `test_q03_review.py`, включая мутации claims с актуальными
+  хешами evidence/manifest и согласованную подмену facts + inventory + page.
+**Выполнено:**
+
+- Новый модуль `scripts/sql_gp.py` — явно включаемый лексический адаптер
+  ограниченного GP-поднабора (только при `dialect='greenplum'`; для остальных
+  диалектов `prepare()` — тождество входа):
+  - `EXECUTE ON {MASTER|ANY|ALL SEGMENTS}` разбирается как **атрибут объявления**
+    функции, а не как динамический EXECUTE тела; `GRANT/REVOKE
+    EXECUTE ON FUNCTION / ALL FUNCTIONS` не маскируется и не считается
+    GP-атрибутом.
+  - `DISTRIBUTED BY (колонки)` / `DISTRIBUTED RANDOMLY` / `DISTRIBUTED REPLICATED`;
+    параметры `WITH (...)` остаются в parse view и сохраняются из AST как
+    `storage_parameters` (`appendonly`, `compresstype`, `compresslevel`, …).
+  - Маскирование только распознанных конструкций по лексическим границам:
+    паттерны ищутся вне строк, dollar-quoted тел, комментариев и quoted
+    identifiers; замена — пробелами с сохранением LF/CR; UTF-8 длина байтов и
+    номера строк идентичны оригиналу. Исходные байты и хеши в evidence/manifest
+    не меняются (тесты `GreenplumMaskingTests`).
+  - Неизвестный текст **не удаляется и не маскируется**: `EXECUTE ON COORDINATOR`,
+    нераспознанный `DISTRIBUTED` и т.п. остаются в parse view и дают
+    локализованную coverage note (`Unrecognized Greenplum …`); диагностика
+    переживает и отказ AST — добавляется в fallback (`sql_extract.py`).
+- `scripts/sql_ast.py`: при `dialect='greenplum'` вход нормализуется адаптером
+  перед `pglast.parse_sql`/`parse_plpgsql` (parse_plpgsql получает маскированный
+  snippet, source_ref/snippets — оригинал). `execute_on` сохраняется в деталях
+  DECLARATION; `distributed`/`storage_parameters` — в деталях CREATE/CTAS.
+  `dialect=greenplum` **не подменяется** на `postgres`: имя и версия хранятся как
+  заданы входом, `unknown` не становится подтверждённой. Поддерживаемые имена —
+  `postgres`, `postgresql`, `greenplum`; остальные — прежняя блокировка.
+- `scripts/ddl.py`: `catalog`/`reconstruct`/`parse` используют тот же адаптер;
+  контекстный DDL (`q_context_gp.sql`) каталогизируется с `distributed` и
+  `storage_parameters` на состояниях таблиц; manifest миграций принимает
+  `greenplum` (mysql и прочие по-прежнему `unsupported`). `sql_types.column_catalog`
+  повторно парсит исходники через тот же адаптер.
+- `scripts/build_bundle.py`, `scripts/validation_gate.py`,
+  `scripts/regression_adapter.py`, `scripts/run_regression.py`: сквозная передача
+  `dialect` (повторный разбор gate и reference-адаптер включены); `execute_on`
+  попадает в facts objects, `distributed`/`storage_parameters` — в facts operation
+  structure (добавлены в оба независимых structure-whitelist сверки).
+- Контракт схем — расширение v2 с обязательной `gp_extension_version: 1`
+  при наличии GP-полей. Старые PostgreSQL-артефакты совместимы; GP-комплекты
+  до расширения нужно перестроить из исходного SQL, а не дописать метку:
+  `schemas/facts.schema.json` — `objects[].execute_on` (enum MASTER/ANY/ALL SEGMENTS),
+  `operations[].structure.distributed` (mode BY/RANDOMLY/REPLICATED + columns),
+  `operations[].structure.storage_parameters`; поля таблиц сохраняются также
+  в `definitions[]`. Все новые поля проверяются
+  downstream: `validation_gate._fact_checks` сверяет `execute_on` с независимым
+  объявлением (пропуск, подмена и выдумка — ошибки; тесты ниже), structure
+  сверяется как раньше. `references/check-policy.json`: правило `signature`
+  явно включает declaration execution attributes (Greenplum EXECUTE ON).
+- Ожидания Q-01 синхронизированы с границей Q-03: `cases-q.json` для q05 прямо
+  фиксировал `must_not_crash_and_must_block_until_q03`; после Q-03
+  `expected/q05/decision.json` — `ready`, `expectation_mode` — `must_pass_analysis`;
+  `examples/expected/_authoring.py` обновлён как источник генерации ожиданий.
+  A4/A5 (`assertions.json`) не тронуты: «before Q-03 it stays blocked» и запрет
+  обещать совместимость при `version=unknown` остаются в силе.
+
+**Изменённые файлы реализации/тестов:**
+
+- новые: `scripts/sql_gp.py`, `tests/test_q03_greenplum.py` (30 тестов)
+- изменены: `scripts/sql_ast.py`, `scripts/sql_extract.py`, `scripts/ddl.py`,
+  `scripts/sql_types.py`, `scripts/build_bundle.py`, `scripts/validation_gate.py`,
+  `scripts/regression_adapter.py`, `scripts/run_regression.py`,
+  `schemas/facts.schema.json`, `references/check-policy.json`,
+  `examples/cases-q.json`, `examples/expected/q05/decision.json`,
+  `examples/expected/_authoring.py`, `tests/test_dialect_matrix.py`,
+  `tests/test_q02_fallback_diagnostics.py`, `tests/test_q01_expectations.py`
+
+**Приёмка:**
+
+- [x] Малые положительные GP-примеры проходят анализ и полный gate:
+      `test_gp_function_with_master_full_gate_ready` (EXECUTE ON MASTER; gate
+      `ready`, `publication_authorized=true`) и
+      `test_gp_table_with_distribution_full_gate_ready` (DISTRIBUTED BY + WITH).
+      Контрольный `q05_gp_master_nested.sql` (фактический SHA-256 в Q03-REVIEW.json;
+      acceptance-large.json фиксирует другой, большой SQL):
+      анализ без coverage notes — `execute_on=MASTER`, вложенные производные
+      таблицы и физический read `q_src.events` сохранены, EXECUTE-операция из
+      атрибута не создаётся; полный reference-gate `ready` и на `version=unknown`,
+      и на `6.25.3`.
+- [x] Удаление/подмена MASTER и DISTRIBUTED в документации обнаруживаются:
+      по facts (`test_removing/replacing_execute_on…`, `test_inventing_execute_on…`,
+      `test_removing/replacing_distributed…`) и по отрендеренным claims страницы
+      (`test_replacing_master_in_page_claims_is_detected`); каждая мутация даёт
+      `blocked`/`revise` и `publication_authorized=false`.
+- [x] Неизвестные GP-расширения блокируются с локализованной причиной:
+      `EXECUTE ON COORDINATOR` → `Unrecognized Greenplum EXECUTE ON target:
+      COORDINATOR`; `DISTRIBUTED` без распознаваемого хвоста →
+      `Unrecognized Greenplum DISTRIBUTED clause`; `CREATE EXTERNAL TABLE` →
+      локализованная ошибка синтаксиса; оба пути (AST и fallback) сохраняют
+      диагностику (`test_unknown_gp_extension_stays_blocked_with_localized_reason`,
+      `test_unknown_gp_context_file_yields_localized_ddl_diagnostic`).
+- [x] Тесты прежнего намеренного отказа Greenplum обновлены без ослабления правил
+      для других диалектов: postgres по-прежнему отвергает `EXECUTE ON MASTER` и
+      `DISTRIBUTED BY` (`test_greenplum_specific_syntax_blocks_postgres_analysis`,
+      `test_postgres_dialect_still_rejects_gp_syntax`,
+      `test_postgres_context_parse_still_rejects_gp_ddl`); mysql/oracle/mssql/sqlite
+      остаются `Unsupported dialect` в инвентаре, gate и миграциях
+      (`test_unsupported_dialect_in_inventory_blocks_gate`,
+      `test_mysql_migration_manifest_still_unsupported`); MERGE-гейт версии не
+      менялся. Замены имён: `test_greenplum_dialect_creates_note` →
+      `test_greenplum_dialect_supported_subset_has_no_unsupported_note`,
+      `test_greenplum_specific_syntax_blocks_analysis` →
+      `test_greenplum_specific_syntax_blocks_postgres_analysis` +
+      `test_greenplum_adapter_accepts_bounded_subset` +
+      `test_greenplum_unknown_extension_stays_blocked`;
+      `test_path_a_gp_table_context_stays_blocked` →
+      `test_path_a_gp_table_context_parses_with_adapter` +
+      `test_path_a_unknown_gp_table_extension_stays_blocked`.
+- [x] Тот же адаптер в повторном разборе gate:
+      `test_gate_reanalysis_uses_the_same_greenplum_adapter` — пересобранный
+      инвентарь восстанавливает атрибут и отличается от подделанного сохранённого.
+- [x] Нормализация не удаляет неизвестный текст и сохраняет байты/строки:
+      `test_mask_preserves_utf8_byte_length_and_line_count`,
+      `test_mask_never_touches_dollar_bodies_or_strings`,
+      `test_original_input_hash_and_source_ref_keep_original_bytes`.
+
+**Проверки:**
+
+| Команда | Каталог | Результат |
+|---|---|---|
+| `python -B -m unittest discover -s tests -p "test_q0*.py"` | wiki-doc/wiki-doc | 90 passed (Q-01/Q-02/Q-03) |
+| `python -B -m unittest discover -s tests -p "test_q03_greenplum.py"` | wiki-doc/wiki-doc | 30 passed |
+| `python -B -m unittest discover -s tests -p "test_dialect_matrix.py"` | wiki-doc/wiki-doc | 41 passed |
+| `python -B -m unittest discover -s tests` (полный набор) | wiki-doc/wiki-doc | 800 tests, 1 skipped, 0 failed (382s) |
+
+Таблица выше — результаты исходной реализации до повторного ревью.
+После исправлений: все 24 unit-модуля — 835 tests / 1 skipped / 0 failed,
+Q-набор — 125 tests; reference/saved исторических 01–12 — по 45/45
+(три повтора каждого из 15 предметов). q05 с обоими исходными контекстами —
+3/3 изолированных reference-gate. Quick skill validation и diff --check пройдены.
+Настоящий LLM-прогон — **нет** (Q-08).
+
+**Ограничения:**
+
+- Поддержан только перечисленный GP-поднабор. Семантика GP-версий, системные
+  каталоги и поведение функций не проверялись; совместимость с версией сервера
+  не подтверждается — q05-A5/D12 остаётся в силе (`version=unknown` — честный
+  unknown, совместимость не обещается).
+- Вывод типов (`sql_types`/`identity`) оставлен PostgreSQL-общим; отдельные
+  GP-типы/алиасы не добавлялись и не выдумываются (вывод типов отделён от
+  поддержки разбора, как и требовал план).
+- Подмена MASTER/DISTRIBUTED в произвольной поясняющей прозе вне claims-контракта
+  — предмет Q-07; здесь механически закрыты facts и rendered claims (`claims-v1`).
+- Матрица, SQL-support, facts, SKILL, writer/validator и regression instructions
+  синхронизированы с Q-03. Исторический прогон Q-02 выше сохраняет прежние имена.
+- GP-DDL внутри dollar-quoted тела, BY с opclass, partition после распределения
+  и серверная совместимость не заявлены. Большой SQL с закреплённым хешем
+  даёт inventory и 179 coverage notes; это диагностика, не приёмка Q-04.
+- `run_regression.check_run` сравнивает gate с ожидаемым решением через
+  `publication_authorized` и потому не принимает ожидаемый `blocked`; для Q-набора
+  после Q-03 (все решения `ready`) это не мешает, но проявится на отрицательных
+  сценариях Q-08 — отнести к Q-08.
+
+**Блокировки:** не зафиксированы.
+
+**Следующее действие:** Q-04 — довести анализ тела, зависимостей и DDL до
+контрольного объекта `ckr_uup_db_onboarding.sql`: связь параметр → присваивание →
+условие IF → операции ветки (p_retro/v_retro), все PL/pgSQL-блоки, области CTE,
+точные детали выражений, восстановление DDL по доказанному порядку миграций;
+приёмка — 77 INSERT / 77 DELETE / 1 UPDATE, 36 KPI и 68 пар KPI/структура,
+30 уникальных физических источников.

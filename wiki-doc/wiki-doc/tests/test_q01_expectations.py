@@ -201,10 +201,16 @@ class OracleConsistencyTests(unittest.TestCase):
     def test_positive_controls_are_not_all_blocked(self):
         """'Always blocked' must not pass as an improvement (plan section 5)."""
         ready = [c for c in Q_IDS if load_expected(c, 'decision.json')['decision'] == 'ready']
-        self.assertGreaterEqual(len(ready), 10, ready)
+        self.assertGreaterEqual(len(ready), 11, ready)
 
-    def test_negative_control_q05_stays_blocked(self):
-        self.assertEqual(load_expected('q05', 'decision.json')['decision'], 'blocked')
+    def test_q05_greenplum_expectation_tracks_q03_boundary(self):
+        """Pre-Q-03 q05 was the intentional GP refusal; since Q-03 the bounded
+        adapter parses it and the expected gate decision is ready. Unknown GP
+        extensions stay blocked in test_q03_greenplum / test_dialect_matrix."""
+        self.assertEqual(load_expected('q05', 'decision.json')['decision'], 'ready')
+        case = load_case('q05')
+        self.assertEqual(case['dialect'], 'greenplum')
+        self.assertEqual(case['version'], 'unknown')
 
 
 class AssertionChecks(unittest.TestCase):
@@ -522,9 +528,13 @@ class CrashReproductionTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stderr)
         payload = json.loads(completed.stdout)
         reasons = ' | '.join(n['reason'] for n in payload['coverage_notes'])
-        self.assertTrue(payload['coverage_notes'], 'blocked reason required')
-        self.assertRegex(reasons, r'(?i)(unsupported dialect|analysis failed|greenplum|master)')
         self.assertFalse(payload.get('documented_subjects') == [])
+        if payload['coverage_notes']:
+            self.assertRegex(reasons, r'(?i)(unsupported dialect|analysis failed|greenplum|master)')
+        # Q-03: the attribute is a declaration fact, not a dynamic EXECUTE.
+        declaration = next(i for i in payload['items'] if i['kind'] == 'DECLARATION')
+        self.assertEqual(declaration['details'].get('execute_on'), 'MASTER')
+        self.assertFalse([i for i in payload['items'] if i['kind'] == 'EXECUTE'])
 
     def test_postive_control_cli_stays_clean(self):
         completed = self.run_cli('q02')

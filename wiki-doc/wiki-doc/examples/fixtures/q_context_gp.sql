@@ -18,5 +18,5 @@ CREATE TABLE q_out.gp_events (
 CREATE TABLE q_out.gp_store (
     id      bigint,
     payload text
-) DISTRIBUTED BY (id)
-  WITH (appendonly = true, compresstype = zlib, compresslevel = 5);
+) WITH (appendonly = true, compresstype = zlib, compresslevel = 5)
+  DISTRIBUTED BY (id);

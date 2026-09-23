@@ -69,6 +69,10 @@ CTE и алиас не являются самостоятельными физ�
 Передай найденный DDL через `--context`, порядок миграций через `--migration-manifest`
 в экстрактор и bundle. Матрица AST-разбора и типов: [sql-support.md](references/sql-support.md).
 Поддержка диалектов и версионные ограничения: [dialect-support.md](docs/dialect-support.md).
+Для GP передавай `--dialect greenplum` и подтверждённую версию либо `unknown`.
+Адаптер сохраняет EXECUTE ON, DISTRIBUTED и storage parameters;
+неизвестные расширения и GP MERGE блокируют анализ. Контракт GP-полей —
+`gp_extension_version: 1` в [facts.md](references/facts.md).
 При активном профиле передай его `profile.json` через `--profile` в план, bundle и gate.
 
 

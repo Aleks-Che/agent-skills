@@ -2,6 +2,7 @@
 from pathlib import Path
 from ddl import catalog, reconstruct
 from sql_ast import sql, type_name, relation, walk, require_parser
+from sql_gp import prepare as gp_prepare
 
 
 def infer_expression(expression,tables,variables=None,aliases=None):
@@ -35,10 +36,11 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
     leaves arithmetic/operator/function type resolution to a DB-aware reviewer.
     """
     root=Path(root).resolve()
+    dialect=inventory.get('dialect',{}).get('name','postgres')
     files=list(dict.fromkeys(Path(p).resolve() for p in [*sql_files,*context_files]))
     migration=reconstruct(migration_manifest,project_root=root) if migration_manifest else None
     ordered={(root/r['path']).resolve() for r in migration['inputs']} if migration else set()
-    context=catalog([p for p in files if p not in ordered],root)
+    context=catalog([p for p in files if p not in ordered],root,dialect=dialect)
     if context['errors']: raise ValueError('; '.join(context['errors']))
     tables=dict(context['tables'])
     if migration and migration['status']=='resolved':
@@ -50,7 +52,7 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
     for item in inventory['items']:
         details=item.get('details',{})
         if item['kind']=='CREATE' and details.get('columns'):
-            tables[details.get('reference',item.get('writes',[''])[0])]=dict(columns=details['columns'],source_ref=item['source_ref'])
+            tables[details.get('reference',item.get('writes',[''])[0])]=dict(columns=details['columns'],source_ref=item['source_ref'], **{k:details[k] for k in ('distributed','storage_parameters','gp_extension_version') if k in details})
     mappings=[]
     from pglast import ast, parse_sql, parse_plpgsql
     def inspect(node,ref):
@@ -88,9 +90,10 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
             for child in value: pl(child,ref)
     for path in sql_files:
         text=Path(path).read_text(encoding='utf-8-sig')
+        parse_text,_,_=gp_prepare(text, dialect)
         ref=next(r for r in inventory['inputs'] if r['path']==Path(path).resolve().relative_to(root).as_posix())
         ref={**ref,'start_line':1,'end_line':len(text.splitlines())}
-        for raw in parse_sql(text):
+        for raw in parse_sql(parse_text):
             node=raw.stmt
             if isinstance(node,ast.CreateFunctionStmt):
                 parts=[p.sval for p in node.funcname]
@@ -105,14 +108,16 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
         target=f"{d['schema']}.{d['name']}"
         aliases={}
         for path in sql_files:
-            for raw in parse_sql(Path(path).read_text(encoding='utf-8-sig')):
+            parse_text,_,_=gp_prepare(Path(path).read_text(encoding='utf-8-sig'), dialect)
+            for raw in parse_sql(parse_text):
                 n=raw.stmt
                 selected=(isinstance(n,ast.ViewStmt) and relation(n.view)==target) or (isinstance(n,ast.CreateTableAsStmt) and relation(n.into.rel)==target)
                 if selected: aliases={r.alias.aliasname if r.alias else r.relname:relation(r) for r in walk(n.query) if isinstance(r,ast.RangeVar)}
         for out in d.get('output_columns',[]):
             name=out['name'] or out['expression']
             mappings.append(dict(table=target,name=name,expression=out['expression'],source_ref=declaration['source_ref'],aliases=aliases))
-        tables[target]=dict(columns=[dict(name=m['name'],type=infer_expression(m['expression'],tables,aliases=aliases),default=None,not_null=False)
+        attributes = {k:i['details'][k] for i in inventory['items'] if i['kind']=='CTAS' and i.get('details',{}).get('reference')==target for k in ('distributed','storage_parameters','gp_extension_version') if k in i['details']}
+        tables[target]=dict(**attributes, columns=[dict(name=m['name'],type=infer_expression(m['expression'],tables,aliases=aliases),default=None,not_null=False)
                                     for m in mappings if m['table']==target],source_ref=declaration['source_ref'],derived=True)
     variables={p['name']:p['type'] for p in d.get('parameters',[]) if p.get('name')}
     for mapping in mappings:
@@ -154,6 +159,12 @@ def check_types(facts,catalogue):
         if table and (oid in documented or facts.get('page_contract')=='claims-v1'):
             if {c['name'] for c in facts['columns'] if c['object_id']==oid}!={c['name'] for c in table['columns']}:
                 errors.append(f'facts columns differ from complete declared structure: {key}')
+        definitions=[d for d in facts['definitions'] if d['object_id']==oid]
+        for attribute in ('distributed', 'storage_parameters', 'gp_extension_version'):
+            expected = (table or {}).get(attribute)
+            if expected is not None or any(attribute in d for d in definitions):
+                if len(definitions) != 1 or definitions[0].get(attribute) != expected:
+                    errors.append(f'facts definition {attribute} differs from available SQL: {key}')
         if facts.get('page_contract')=='claims-v1':
             definitions=[d for d in facts['definitions'] if d['object_id']==oid]
             resolved=bool(table or oid in documented or obj['kind'] in ('cte','temp_table') or len(catalogue['functions'].get(key,[]))==1)

@@ -6,22 +6,26 @@ import json
 from pathlib import Path
 
 from artifact_schema import read_json, validate_schema, load_schemas, ArtifactInputError
-from sql_ast import require_parser, columns_of, relation, type_name, sql
+from sql_ast import quote, require_parser, columns_of, relation, type_name, sql
+from sql_gp import identifier_name, statement_byte_span, distributed_in_bytes, is_greenplum, prepare as gp_prepare, storage_parameters_of
 
 
-def parse(text):
+def parse(text, dialect='postgres'):
     require_parser()
     from pglast import parse_sql
-    return parse_sql(text)
+    parse_text, _, notes = gp_prepare(text, dialect)
+    if notes:
+        raise ValueError('; '.join(f'line {line}: {reason}' for line, reason in notes))
+    return parse_sql(parse_text)
 
 
-def apply_statement(state, node):
+def apply_statement(state, node, gp_attributes=None):
     from pglast import ast
     if isinstance(node, ast.CreateStmt):
         key = relation(node.relation)
         if key in state and not node.if_not_exists:
             raise ValueError(f'Duplicate CREATE TABLE without established replacement: {key}')
-        state.setdefault(key, dict(columns=columns_of(node)))
+        state.setdefault(key, dict(columns=columns_of(node), **(gp_attributes or {})))
     elif isinstance(node, ast.AlterTableStmt):
         key = relation(node.relation)
         if key not in state:
@@ -38,13 +42,18 @@ def apply_statement(state, node):
                 fake = ast.CreateStmt(tableElts=(column,))
                 columns.extend(columns_of(fake))
             elif subtype == 'AT_DropColumn':
+                if command.name in [identifier_name(c) for c in state[key].get('distributed', {}).get('columns', [])]:
+                    raise ValueError('Dropping a Greenplum distribution column requires unsupported redistribution analysis')
                 if found is None and not command.missing_ok:
                     raise ValueError(f'Unknown column {key}.{command.name}')
                 if found: columns.remove(found)
             elif subtype in ('AT_AlterColumnType','AT_ColumnDefault','AT_SetNotNull','AT_DropNotNull'):
                 if found is None:
                     raise ValueError(f'Unknown column {key}.{command.name}')
-                if subtype == 'AT_AlterColumnType': found['type'] = type_name(command.def_.typeName)
+                if subtype == 'AT_AlterColumnType':
+                    if command.name in [identifier_name(c) for c in state[key].get('distributed', {}).get('columns', [])]:
+                        raise ValueError('Changing a Greenplum distribution column type requires unsupported redistribution analysis')
+                    found['type'] = type_name(command.def_.typeName)
                 elif subtype == 'AT_ColumnDefault': found['default'] = sql(command.def_) or None
                 else: found['not_null'] = subtype == 'AT_SetNotNull'
             elif subtype == 'AT_AddConstraint' and isinstance(command.def_, ast.Constraint):
@@ -69,6 +78,9 @@ def apply_statement(state, node):
             if col is None or any(c['name'] == node.newname for c in state[key]['columns']):
                 raise ValueError(f'Ambiguous column rename in {key}')
             col['name'] = node.newname
+            distribution = state[key].get('distributed', {})
+            if 'columns' in distribution:
+                distribution['columns'] = [quote(node.newname) if identifier_name(c) == node.subname else c for c in distribution['columns']]
         elif node.renameType.name == 'OBJECT_TABLE':
             new_key = (node.relation.schemaname + '.' if node.relation.schemaname else '') + node.newname
             if new_key in state: raise ValueError(f'Rename collision: {new_key}')
@@ -95,6 +107,21 @@ def apply_statement(state, node):
         raise ValueError(f'Unsupported migration node: {type(node).__name__}')
 
 
+
+def gp_table_attributes(raw, constructs, parse_text):
+    start, stop = statement_byte_span(raw, parse_text)
+    value = {}
+    distributed = distributed_in_bytes(constructs, start, stop)
+    if distributed:
+        value['distributed'] = distributed
+    storage = storage_parameters_of(raw.stmt)
+    if storage:
+        value['storage_parameters'] = storage
+    if value:
+        value['gp_extension_version'] = 1
+    return value
+
+
 def reconstruct(manifest_path=None, *, project_root=None):
     if manifest_path is None:
         return dict(status='ambiguous', tables={}, inputs=[], errors=['Migration order is not established; provide a manifest'])
@@ -104,8 +131,9 @@ def reconstruct(manifest_path=None, *, project_root=None):
     errors = validate_schema(manifest, load_schemas()['migration_manifest'], 'migration_manifest')
     if errors:
         raise ArtifactInputError('; '.join(errors))
-    if manifest['dialect'].lower() not in ('postgres','postgresql'):
+    if manifest['dialect'].lower() not in ('postgres', 'postgresql', 'greenplum'):
         return dict(status='unsupported', tables={}, inputs=[], errors=['Unsupported migration dialect'])
+    migration_dialect = manifest['dialect']
     state, inputs, seen = {}, [], set()
     for relative in manifest['ordered_files']:
         source = (path.parent / relative).resolve()
@@ -117,19 +145,24 @@ def reconstruct(manifest_path=None, *, project_root=None):
         inputs.append(reference)
         try:
             candidate = copy.deepcopy(state)
-            for raw in parse(data.decode('utf-8-sig')):
-                apply_statement(candidate, raw.stmt)
+            text = data.decode('utf-8-sig')
+            parse_text, constructs, _ = gp_prepare(text, migration_dialect)
+            from pglast import ast
+            for raw in parse(text, migration_dialect):
+                attributes = gp_table_attributes(raw, constructs, parse_text) if is_greenplum(migration_dialect) and isinstance(raw.stmt, ast.CreateStmt) else None
+                apply_statement(candidate, raw.stmt, attributes)
             state = candidate
         except Exception as exc:
             return dict(status='unsupported', tables=state, inputs=inputs, errors=[f'{relative}: {exc}'])
     return dict(status='resolved', tables=state, inputs=inputs, errors=[], target_revision=manifest.get('target_revision'))
 
 
-def catalog(files, root):
+def catalog(files, root, dialect='postgres'):
     """CREATE is type evidence; constraint additions after the same-file CREATE are ordered."""
     from pglast import ast
     result, functions, inputs, errors, notes = {}, {}, [], [], []
     root = Path(root).resolve()
+    gp_enabled = is_greenplum(dialect)
     for path in files:
         path = Path(path).resolve()
         if not path.is_relative_to(root): raise ArtifactInputError(f'Context file outside project: {path}')
@@ -143,8 +176,13 @@ def catalog(files, root):
                                           'end_line': max(1, len(text.splitlines()))},
                               reason=message))
         local_tables = set()
+        parse_text, gp_constructs, gp_notes = gp_prepare(text, dialect)
+        for line_no, reason in gp_notes:
+            errors.append(f'{ref["path"]}:{line_no}: {reason}')
+            notes.append(dict(source_ref={**ref, 'start_line': line_no, 'end_line': line_no},
+                              reason=reason))
         try:
-            statements = list(parse(text))
+            statements = list(parse(text, dialect))
         except Exception as exc:
             # A dialect-specific context file must yield a blocking diagnostic
             # instead of an uncaught crash of the whole extraction run.
@@ -155,8 +193,22 @@ def catalog(files, root):
             if isinstance(node, ast.CreateStmt):
                 key = relation(node.relation)
                 value = dict(columns=columns_of(node), source_ref={**ref, 'start_line':1,'end_line':len(data.decode('utf-8-sig').splitlines())})
-                if key in result and result[key]['columns'] != value['columns']:
-                    note(f'Conflicting unordered definitions for {key}')
+                if gp_enabled:
+                    try:
+                        value.update(gp_table_attributes(raw, gp_constructs, parse_text))
+                    except ValueError as exc:
+                        note(str(exc))
+                if key in result:
+                    previous = result[key]
+                    # A plain column-only context is weaker evidence; it cannot
+                    # erase explicit GP attributes from another matching CREATE.
+                    attributes = ('distributed', 'storage_parameters')
+                    if previous['columns'] != value['columns'] or any(k in previous and k in value and previous[k] != value[k] for k in attributes):
+                        note(f'Conflicting unordered definitions for {key}')
+                    elif any(k in previous for k in attributes) and not any(k in value for k in attributes):
+                        value = previous
+                    elif any(k in previous and k not in value for k in attributes) and any(k in value for k in attributes):
+                        note(f'Incomplete overlapping Greenplum definitions for {key}')
                 result[key] = value
                 local_tables.add(key)
             elif isinstance(node, ast.CreateFunctionStmt):
@@ -175,10 +227,11 @@ def catalog(files, root):
 
 def enrich_inventory(inventory, *, context_files=(), project_root=None, migration_manifest=None):
     root = Path(project_root).resolve() if project_root else Path.cwd()
+    dialect = inventory.get('dialect', {}).get('name', 'postgres')
     migrations = reconstruct(migration_manifest, project_root=root) if migration_manifest else None
     ordered = {(root / ref['path']).resolve() for ref in migrations['inputs']} if migrations else set()
     static_context = [p for p in context_files if Path(p).resolve() not in ordered]
-    context = catalog(static_context, root) if static_context else dict(tables={}, functions={}, inputs=[], errors=[])
+    context = catalog(static_context, root, dialect=dialect) if static_context else dict(tables={}, functions={}, inputs=[], errors=[])
     inventory['coverage_notes'].extend(context.get('coverage_notes', []))
     declarations = [i for i in inventory['items'] if i['kind'] == 'DECLARATION']
     for declaration in declarations:
@@ -199,10 +252,12 @@ def enrich_inventory(inventory, *, context_files=(), project_root=None, migratio
             candidates = context['functions'].get(call, [])
             # No overload guessing. Effects remain separate from direct operation writes.
             if len(candidates) == 1:
-                from sql_ast import analyze
+                from sql_ast import quote, analyze
                 source = candidates[0]['source_ref']
                 try:
-                    callee = analyze(candidates[0]['signature'], source['path'], source['sha256'], version=inventory['dialect']['version'])
+                    callee = analyze(candidates[0]['signature'], source['path'], source['sha256'],
+                                     dialect=inventory.get('dialect', {}).get('name', 'postgres'),
+                                     version=inventory['dialect']['version'])
                     if not callee['coverage_notes']:
                         effects.append(dict(call=call, reads=sorted({r for op in callee['items'] for r in op.get('reads',[])}),
                                             writes=sorted({r for op in callee['items'] for r in op.get('writes',[])}), source_ref=source))

@@ -78,11 +78,11 @@ class DialectInventoryTests(unittest.TestCase):
         notes = [n for n in inv['coverage_notes'] if 'Unsupported dialect' in n['reason']]
         self.assertTrue(notes, 'Expected unsupported dialect note for mysql')
 
-    def test_greenplum_dialect_creates_note(self):
-        inv = self._inv(dialect='greenplum')
+    def test_greenplum_dialect_supported_subset_has_no_unsupported_note(self):
+        inv = self._inv(dialect='greenplum', version='6.25.3')
         self.assertEqual(inv['dialect']['name'], 'greenplum')
         notes = [n for n in inv['coverage_notes'] if 'Unsupported dialect' in n['reason']]
-        self.assertTrue(notes, 'Expected unsupported dialect note for greenplum')
+        self.assertEqual(notes, [], 'greenplum supports the declared bounded subset')
 
     def test_unknown_dialect_creates_note(self):
         for dialect in ('oracle', 'mssql', 'sqlite', 'mariadb', 'unknown'):
@@ -97,21 +97,42 @@ class DialectInventoryTests(unittest.TestCase):
                 inv = self._inv(version=v)
                 self.assertEqual(inv['dialect']['version'], v)
 
-    def test_greenplum_specific_syntax_blocks_analysis(self):
-        """GP-only clauses are not parseable by libpg_query under any declared dialect."""
+    def test_greenplum_specific_syntax_blocks_postgres_analysis(self):
+        """GP-only clauses stay outside the PostgreSQL dialect subset."""
         clauses = (
             'CREATE TABLE demo.t (a int) DISTRIBUTED BY (a);',
-            'CREATE FUNCTION demo.f() RETURNS int AS $$ SELECT 1; $$ LANGUAGE SQL EXECUTE ON MASTER;',
+            'CREATE FUNCTION demo.f() RETURNS int AS $q$ SELECT 1; $q$ LANGUAGE SQL EXECUTE ON MASTER;',
         )
-        for dialect in ('greenplum', 'postgres'):
-            for sql in clauses:
-                with self.subTest(dialect=dialect, sql=sql):
-                    inv = extract_inventory(sql, 'gp.sql',
-                                            hashlib.sha256(sql.encode()).hexdigest(),
-                                            dialect=dialect, version='unknown')
-                    reasons = [n['reason'] for n in inv['coverage_notes']]
-                    self.assertTrue(any('analysis failed' in r.lower() for r in reasons),
-                                    f'Expected AST parse failure, got {reasons}')
+        for sql in clauses:
+            with self.subTest(dialect='postgres', sql=sql):
+                inv = extract_inventory(sql, 'gp.sql',
+                                        hashlib.sha256(sql.encode()).hexdigest(),
+                                        dialect='postgres', version='unknown')
+                reasons = [n['reason'] for n in inv['coverage_notes']]
+                self.assertTrue(any('analysis failed' in r.lower() for r in reasons),
+                                f'Expected AST parse failure, got {reasons}')
+
+    def test_greenplum_adapter_accepts_bounded_subset(self):
+        cases = (
+            ('CREATE TABLE demo.t (a int) DISTRIBUTED BY (a);', 'CREATE'),
+            ('CREATE TABLE demo.t (a int) DISTRIBUTED RANDOMLY;', 'CREATE'),
+            ('CREATE FUNCTION demo.f() RETURNS int AS $q$ SELECT 1; $q$ LANGUAGE SQL EXECUTE ON MASTER;',
+             'DECLARATION'),
+        )
+        for sql, kind in cases:
+            with self.subTest(sql=sql):
+                inv = extract_inventory(sql, 'gp.sql',
+                                        hashlib.sha256(sql.encode()).hexdigest(),
+                                        dialect='greenplum', version='6.25.3')
+                self.assertEqual(inv['coverage_notes'], [])
+                self.assertTrue(any(i['kind'] == kind for i in inv['items']))
+
+    def test_greenplum_unknown_extension_stays_blocked(self):
+        sql = 'CREATE FUNCTION demo.f() RETURNS int AS $q$ SELECT 1; $q$ LANGUAGE SQL EXECUTE ON COORDINATOR;'
+        inv = extract_inventory(sql, 'gp.sql', hashlib.sha256(sql.encode()).hexdigest(),
+                                dialect='greenplum', version='6.25.3')
+        reasons = [n['reason'] for n in inv['coverage_notes']]
+        self.assertTrue(any('COORDINATOR' in r for r in reasons), reasons)
 
 
 class MergeVersionGatingTests(unittest.TestCase):
@@ -246,6 +267,9 @@ class MigrationDialectTests(unittest.TestCase):
             with self.subTest(dialect=dialect):
                 self.assertEqual(self.reconstruct_with_dialect(dialect)['status'], 'resolved')
 
+    def test_migration_greenplum_accepted(self):
+        self.assertEqual(self.reconstruct_with_dialect('greenplum')['status'], 'resolved')
+
     def test_column_comment_in_ordered_migration(self):
         source = self.root / 'comments.sql'
         source.write_text("CREATE TABLE demo.t (id int); COMMENT ON COLUMN demo.t.id IS 'Identifier';",
@@ -271,7 +295,7 @@ class GateDialectTests(unittest.TestCase):
         self.assertEqual(result['decision'], 'ready')
 
     def test_unsupported_dialect_in_inventory_blocks_gate(self):
-        for dialect in ('mysql', 'greenplum', 'oracle', 'mssql', 'sqlite'):
+        for dialect in ('mysql', 'oracle', 'mssql', 'sqlite'):
             with self.subTest(dialect=dialect):
                 self.rebuild_inventory(dialect=dialect)
                 self.assert_analysis_block(seal(self.run), 'Unsupported dialect: ' + dialect)

@@ -13,6 +13,7 @@ inventory. Deleting coverage_notes from a saved file does not unblock the
 re-analysis gate.
 """
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -53,6 +54,19 @@ $$ LANGUAGE plpgsql EXECUTE ON MASTER;
 
 CRASH_MIN_GP_TABLE = """
 CREATE TABLE demo.t (a int) DISTRIBUTED BY (a);
+"""
+
+CRASH_MIN_GP_TABLE_BAD = """
+CREATE TABLE demo.t (a int) DISTRIBUTED;
+"""
+
+CRASH_UNKNOWN_GP = """
+CREATE OR REPLACE FUNCTION demo.repro()
+RETURNS bigint LANGUAGE plpgsql AS $$
+BEGIN
+    RETURN 1;
+END;
+$$ LANGUAGE plpgsql EXECUTE ON COORDINATOR;
 """
 
 
@@ -121,7 +135,7 @@ class LegacyFallbackSafetyTests(unittest.TestCase):
     def test_auxiliary_value_error_after_ast_failure_is_a_gap(self):
         with patch('sql_extract._extract_inventory_legacy', side_effect=ValueError('list failed')):
             inventory = extract_inventory(CRASH_MIN, 'repro.sql', '6' * 64,
-                                          dialect='greenplum')
+                                          dialect='postgres')
         self.assertEqual(inventory['items'][0]['kind'], 'ANALYSIS_GAP')
         reasons = [note['reason'] for note in inventory['coverage_notes']]
         self.assertTrue(any('PostgreSQL AST analysis failed:' in reason for reason in reasons))
@@ -143,8 +157,11 @@ class LegacyFallbackSafetyTests(unittest.TestCase):
 
 class DualPathTests(unittest.TestCase):
     def test_path_a_ast_failure_falls_back_without_crash(self):
-        for dialect in ('greenplum', 'postgres'):
-            inventory = extract_inventory(CRASH_MIN, 'repro.sql', '2' * 64,
+        # postgres: the GP attribute is still a parse failure (dialect rules unchanged).
+        # greenplum: an unknown EXECUTE ON target keeps the AST failure path alive.
+        cases = (('postgres', CRASH_MIN), ('greenplum', CRASH_UNKNOWN_GP))
+        for dialect, sql in cases:
+            inventory = extract_inventory(sql, 'repro.sql', '2' * 64,
                                          dialect=dialect, version='unknown')
             reasons = ' | '.join(n['reason'] for n in inventory['coverage_notes'])
             self.assertTrue(inventory['coverage_notes'], dialect)
@@ -152,11 +169,27 @@ class DualPathTests(unittest.TestCase):
             self.assertFalse(any('Unbalanced' in n['reason']
                                  for n in inventory['coverage_notes']), reasons)
 
-    def test_path_a_gp_table_context_stays_blocked(self):
+    def test_path_a_greenplum_attribute_is_handled_by_adapter_not_fallback(self):
+        inventory = extract_inventory(CRASH_MIN, 'repro.sql', '2' * 64,
+                                      dialect='greenplum', version='6.25.3')
+        self.assertEqual(inventory['coverage_notes'], [])
+        declaration = next(i for i in inventory['items'] if i['kind'] == 'DECLARATION')
+        self.assertEqual(declaration['details']['execute_on'], 'MASTER')
+        self.assertFalse([i for i in inventory['items'] if i['kind'] == 'EXECUTE'])
+
+    def test_path_a_gp_table_context_parses_with_adapter(self):
         inventory = extract_inventory(CRASH_MIN_GP_TABLE, 't.sql', '3' * 64,
-                                     dialect='greenplum', version='unknown')
+                                     dialect='greenplum', version='6.25.3')
+        self.assertEqual(inventory['coverage_notes'], [])
+        create = next(i for i in inventory['items'] if i['kind'] == 'CREATE')
+        self.assertEqual(create['details']['distributed'], {'mode': 'BY', 'columns': ['a']})
+
+    def test_path_a_unknown_gp_table_extension_stays_blocked(self):
+        inventory = extract_inventory(CRASH_MIN_GP_TABLE_BAD, 't.sql', '3' * 64,
+                                     dialect='greenplum', version='6.25.3')
         self.assertTrue(inventory['coverage_notes'])
         self.assertFalse(any(n['reason'] == '' for n in inventory['coverage_notes']))
+        self.assertTrue(any('DISTRIBUTED' in n['reason'] for n in inventory['coverage_notes']))
 
     def test_path_b_native_success_survives_legacy_failure(self):
         """AST succeeds; a broken auxiliary legacy scan must not discard native."""
@@ -224,20 +257,21 @@ class CliContractTests(unittest.TestCase):
         self.assertFalse(crashed(completed.stdout))
         self.assertEqual(completed.returncode, 0, completed.stderr)
         payload = json.loads(completed.stdout)
-        self.assertTrue(payload['coverage_notes'])
+        self.assertEqual(payload['coverage_notes'], [])
         self.assertTrue(payload['items'])
-        reasons = ' | '.join(n['reason'] for n in payload['coverage_notes'])
-        self.assertRegex(reasons, r'(?i)analysis failed')
-        self.assertRegex(reasons, r'(?i)(unsupported dialect|greenplum|master)')
+        declaration = next(i for i in payload['items'] if i['kind'] == 'DECLARATION')
+        self.assertEqual(declaration['details']['execute_on'], 'MASTER')
+        self.assertFalse([i for i in payload['items'] if i['kind'] == 'EXECUTE'])
 
     def test_q05_cli_blocks_with_an_explicit_reason(self):
         completed = self.run_cli(FIXTURES / 'q05_gp_master_nested.sql',
                                  ('--dialect', 'greenplum', '--version', 'unknown'))
         self.assertEqual(completed.returncode, 0, completed.stderr)
         payload = json.loads(completed.stdout)
-        self.assertTrue(payload['coverage_notes'], 'explicit blocking reason required')
         self.assertEqual(payload['documented_subjects'],
                          ['function+q_out+gp_master_probe+(text)'])
+        reads = {r for i in payload['items'] for r in i.get('reads', [])}
+        self.assertIn('q_src.events', reads)
 
     def test_gp_distributed_context_file_does_not_crash_cli(self):
         completed = self.run_cli(FIXTURES / 'q05_gp_master_nested.sql',
@@ -247,14 +281,26 @@ class CliContractTests(unittest.TestCase):
         self.assertFalse(crashed(completed.stdout))
         self.assertEqual(completed.returncode, 0, completed.stderr)
         payload = json.loads(completed.stdout)
-        note = next(n for n in payload['coverage_notes'] if 'DDL parse failed' in n['reason'])
-        self.assertIn('DISTRIBUTED', note['reason'])
-        self.assertEqual(note['source_ref'], {
-            'path': 'examples/fixtures/q_context_gp.sql',
-            'sha256': sha256_file(FIXTURES / 'q_context_gp.sql'),
-            'start_line': 1,
-            'end_line': len((FIXTURES / 'q_context_gp.sql').read_text().splitlines()),
-        })
+        self.assertFalse([n for n in payload['coverage_notes'] if 'DDL parse failed' in n['reason']])
+        declaration = next(i for i in payload['items'] if i['kind'] == 'DECLARATION')
+        tables = declaration['details']['context_tables']
+        self.assertEqual(tables['q_src.events']['distributed'],
+                         {'mode': 'BY', 'columns': ['id']})
+
+    def test_unknown_gp_context_file_yields_localized_ddl_diagnostic(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / 'gp.sql'
+            shutil.copy2(FIXTURES / 'q05_gp_master_nested.sql', source)
+            broken = root / 'ctx.sql'
+            broken.write_text('CREATE TABLE demo.x (a int) DISTRIBUTED BY (a+\n', encoding='utf-8')
+            completed = self.run_cli(source, ('--dialect', 'greenplum',
+                                              '--context', str(broken),
+                                              '--project-root', str(root)))
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        payload = json.loads(completed.stdout)
+        reasons = ' | '.join(n['reason'] for n in payload['coverage_notes'])
+        self.assertRegex(reasons, r'(?i)(DDL parse failed|DISTRIBUTED)')
 
     def test_broken_sql_does_not_get_ready(self):
         with tempfile.TemporaryDirectory() as directory:

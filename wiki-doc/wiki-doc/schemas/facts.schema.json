@@ -271,11 +271,23 @@
             "volatile"
           ]
         },
+        "execute_on": {
+          "description": "Greenplum declaration execution attribute (EXECUTE ON MASTER/ANY/ALL); verified against the SQL declaration by the gate",
+          "enum": [
+            "MASTER",
+            "ANY",
+            "ALL SEGMENTS"
+          ]
+        },
         "access_observations": {
           "type": "array",
           "items": {
             "type": "object"
           }
+        },
+        "gp_extension_version": {
+          "type": "integer",
+          "const": 1
         }
       },
       "additionalProperties": false,
@@ -306,6 +318,34 @@
                 "const": false
               }
             }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "execute_on"
+            ]
+          },
+          "then": {
+            "required": [
+              "gp_extension_version"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "gp_extension_version"
+            ]
+          },
+          "then": {
+            "anyOf": [
+              {
+                "required": [
+                  "execute_on"
+                ]
+              }
+            ]
           }
         }
       ]
@@ -373,6 +413,64 @@
             "string",
             "null"
           ]
+        },
+        "distributed": {
+          "description": "Greenplum table distribution clause (DISTRIBUTED BY/RANDOMLY/REPLICATED); compared with the independent SQL inventory",
+          "type": "object",
+          "required": [
+            "mode"
+          ],
+          "properties": {
+            "mode": {
+              "enum": [
+                "BY",
+                "RANDOMLY",
+                "REPLICATED"
+              ]
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "mode": {
+                    "const": "BY"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "columns"
+                ]
+              }
+            }
+          ]
+        },
+        "storage_parameters": {
+          "description": "Table WITH storage/relop options (including Greenplum appendonly/compress* parameters); compared with the independent SQL inventory",
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "gp_extension_version": {
+          "type": "integer",
+          "const": 1
         }
       },
       "additionalProperties": false,
@@ -391,6 +489,51 @@
                 "minItems": 1
               }
             }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "distributed"
+            ]
+          },
+          "then": {
+            "required": [
+              "gp_extension_version"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "storage_parameters"
+            ]
+          },
+          "then": {
+            "required": [
+              "gp_extension_version"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "gp_extension_version"
+            ]
+          },
+          "then": {
+            "anyOf": [
+              {
+                "required": [
+                  "distributed"
+                ]
+              },
+              {
+                "required": [
+                  "storage_parameters"
+                ]
+              }
+            ]
           }
         }
       ]
@@ -683,13 +826,118 @@
             },
             "grant_option": {
               "type": "boolean"
+            },
+            "distributed": {
+              "description": "Greenplum table distribution clause (DISTRIBUTED BY/RANDOMLY/REPLICATED); compared with the independent SQL inventory",
+              "type": "object",
+              "required": [
+                "mode"
+              ],
+              "properties": {
+                "mode": {
+                  "enum": [
+                    "BY",
+                    "RANDOMLY",
+                    "REPLICATED"
+                  ]
+                },
+                "columns": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "\\S"
+                  },
+                  "minItems": 1,
+                  "uniqueItems": true
+                }
+              },
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "mode": {
+                        "const": "BY"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "columns"
+                    ]
+                  }
+                }
+              ]
+            },
+            "storage_parameters": {
+              "description": "Table WITH storage/relop options (including Greenplum appendonly/compress* parameters); compared with the independent SQL inventory",
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "gp_extension_version": {
+              "type": "integer",
+              "const": 1
             }
           },
           "dependentRequired": {
             "constraints": [
               "extension_version"
             ]
-          }
+          },
+          "allOf": [
+            {
+              "if": {
+                "required": [
+                  "distributed"
+                ]
+              },
+              "then": {
+                "required": [
+                  "gp_extension_version"
+                ]
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "storage_parameters"
+                ]
+              },
+              "then": {
+                "required": [
+                  "gp_extension_version"
+                ]
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "gp_extension_version"
+                ]
+              },
+              "then": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "distributed"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "storage_parameters"
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
         }
       },
       "additionalProperties": false,

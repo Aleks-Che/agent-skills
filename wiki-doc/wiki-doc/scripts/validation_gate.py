@@ -177,6 +177,14 @@ def _fact_checks(artifacts, rebuilt, required, draft):
     for field in ('parameters','returns','volatility'):
         if field in obj and obj[field] != declaration['details'].get(field):
             errors.append(f'facts {field} differs from SQL declaration')
+    if obj.get('gp_extension_version') != declaration['details'].get('gp_extension_version'):
+        errors.append('facts gp_extension_version differs from SQL declaration')
+    declared_execute_on = declaration['details'].get('execute_on')
+    if declared_execute_on is not None:
+        if obj.get('execute_on') != declared_execute_on:
+            errors.append('facts execute_on differs from SQL declaration')
+    elif 'execute_on' in obj:
+        errors.append('facts execute_on has no independent SQL occurrence')
     if signature:
         try:
             declared = obj.get('signature') or ''
@@ -220,7 +228,8 @@ def _fact_checks(artifacts, rebuilt, required, draft):
         structural = {k:v for k,v in item.get('details',{}).items() if k in
                       ('branches','branch','ddl','temporary','lifetime','reference','confirmed_call_effects','group_by','arguments','command_kind','query','assignments','target_columns','into','assignment_target','return_expression','result_for',
                        'extension_version','constraints','trigger_name','table','timing','events','for_each_row','function','is_constraint','when','update_columns',
-                       'index_name','unique','primary','access_method','columns','where','privileges','privilege_columns','object_type','grantees','targets','grant_option')
+                       'index_name','unique','primary','access_method','columns','where','privileges','privilege_columns','object_type','grantees','targets','grant_option',
+                       'distributed','storage_parameters','gp_extension_version')
                       and (k not in ('columns',) or item['kind'] == 'INDEX')}
         if structural and op.get('structure') != structural:
             errors.append(f"facts {op['id']}: structure differs from independent SQL inventory")

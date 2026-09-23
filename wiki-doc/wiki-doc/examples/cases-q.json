@@ -61,8 +61,8 @@
       "version": "unknown",
       "dialect": "greenplum",
       "review_ids": ["D05", "D12"],
-      "expectation_mode": "must_not_crash_and_must_block_until_q03",
-      "known_issue": "legacy fallback raised 'Unbalanced SQL list' (exit 2) on pre-Q-02 builds; see history/Q01-REPRODUCTION.md"
+      "expectation_mode": "must_pass_analysis",
+      "known_issue": "legacy fallback raised 'Unbalanced SQL list' (exit 2) on pre-Q-02 builds; see history/Q01-REPRODUCTION.md. Pre-Q-03 the case stayed blocked with an explicit reason; since Q-03 the bounded Greenplum adapter parses it and the gate decision is ready while version stays an honest unknown."
     },
     {
       "id": "q06",

@@ -228,7 +228,7 @@ CASES = {
     },
     'q05': {
         'subject': 'function+q_out+gp_master_probe+(text)',
-        'decision': 'blocked',
+        'decision': 'ready',
         'required_rules': ['identity', 'signature', 'sql_registry', 'registry_document',
                            'operation', 'reads', 'writes', 'calls', 'condition', 'section', 'analysis_gap'],
         'expectation': {

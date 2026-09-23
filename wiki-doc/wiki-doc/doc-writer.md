@@ -90,6 +90,13 @@ tools: read-only
 от NOT NULL; `expression_status: not_applicable` отличается от неизвестного типа.
 Матрица анализа: [sql-support.md](references/sql-support.md).
 
+Для Greenplum сохраняй `execute_on` в объекте и `distributed`/
+`storage_parameters` в структуре CREATE/CTAS и определениях таблиц, включая
+контекст и восстановленные миграции. Указывай `gp_extension_version: 1`.
+Эти атрибуты должны быть видимы в claims страницы; EXECUTE ON не является
+динамической командой тела. Версию Greenplum сохраняй как `unknown`, если
+нет подтверждения; номер версии PostgreSQL из него не выводится.
+
 Для управляемого обновления используй одну пару маркеров из
 [publication.md](references/publication.md). Итоговое слияние выполняется до проверки.
 Технический reference adapter использует `page_contract: claims-v1` и видимые таблицы

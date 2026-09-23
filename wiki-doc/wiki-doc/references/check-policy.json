@@ -31,7 +31,7 @@
     },
     {
       "id": "signature",
-      "description": "Function/procedure signature (parameters, types, return) is correct",
+      "description": "Function/procedure signature (parameters, types, return, declaration execution attributes such as Greenplum EXECUTE ON) is correct",
       "category": "technical",
       "blocking_default": true,
       "subject_pattern": "{object_key}/signature",

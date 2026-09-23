@@ -9,6 +9,8 @@ from pathlib import PurePosixPath
 
 from artifact_schema import ArtifactInputError
 from identity import ObjectDescriptor, canonical_key, _parse_arg_types
+from sql_gp import (distributed_in_bytes, execute_on_in_bytes, is_greenplum, prepare as gp_prepare,
+                    storage_parameters_of, statement_byte_span)
 from sql_syntax import mask_sql, SubjectSelectionError
 
 try:
@@ -62,8 +64,7 @@ def type_name(node):
 
 def source_statement(raw, text):
     data = text.encode('utf-8')
-    start = raw.stmt_location
-    end = start + raw.stmt_len if raw.stmt_len else len(data)
+    start, end = statement_byte_span(raw, text)
     snippet = data[start:end].decode('utf-8')
     masked = mask_sql(snippet)[0]
     leading = len(masked) - len(masked.lstrip())
@@ -119,9 +120,11 @@ def table_constraints(node):
 
 
 class Analyzer:
-    def __init__(self, text, path, sha, version):
+    def __init__(self, text, path, sha, version, gp_constructs=(), gp_enabled=False):
         require_parser()
         self.text, self.path, self.sha, self.version = text, path, sha, version
+        self.gp_constructs = list(gp_constructs)
+        self.gp_enabled = gp_enabled
         self.items, self.notes, self.counts, self.temps = [], [], {}, {}
         self.scope = path
         self.query_number = 0
@@ -142,6 +145,9 @@ class Analyzer:
             self.notes.append(value)
 
     def check_merge_version(self, line):
+        if self.gp_enabled:
+            self.note(line, 'MERGE compatibility with Greenplum is not established; PostgreSQL version thresholds do not apply')
+            return
         major = self.version.split('.')[0]
         if not major.isdigit() or int(major) < 15:
             self.note(line, 'MERGE requires a confirmed PostgreSQL version >= 15')
@@ -268,7 +274,7 @@ class Analyzer:
             self.analyze_query(child, sql(child), line, env=env, branch=branch)
         return item
 
-    def statement(self, node, raw, line, forced_kind=None, branch=None):
+    def statement(self, node, raw, line, forced_kind=None, branch=None, gp_span=None):
         cls = type(node).__name__
         if cls in QUERY_TYPES:
             return self.analyze_query(node, raw, line, forced_kind, branch=branch)
@@ -282,6 +288,18 @@ class Analyzer:
                 ref = name
             constraints = table_constraints(node)
             extension = dict(extension_version=1, constraints=constraints) if constraints else {}
+            if self.gp_enabled:
+                distributed = distributed_in_bytes(self.gp_constructs, *gp_span) if gp_span else None
+                if distributed:
+                    extension['distributed'] = distributed
+                try:
+                    storage = storage_parameters_of(node)
+                    if storage:
+                        extension['storage_parameters'] = storage
+                except ValueError as exc:
+                    self.note(line, str(exc))
+            if any(k in extension for k in ('distributed', 'storage_parameters')):
+                extension['gp_extension_version'] = 1
             self.item('CREATE', line, line + raw.count('\n'), table_name=name, reference=ref,
                       physical=True, temporary=temporary, lifetime=node.oncommit.name,
                       columns=columns_of(node), ddl=sql(node), **extension)['writes'] = [ref]
@@ -290,7 +308,20 @@ class Analyzer:
             temporary=node.into.rel.relpersistence=='t'
             ref=f'@temp:{self.scope}:{name}' if temporary else name
             if temporary: self.temps[name]=ref
-            self.item('CTAS', line, line + raw.count('\n'), ddl=sql(node),temporary=temporary,reference=ref,lifetime=node.into.onCommit.name)['writes'] = [ref]
+            extension = {}
+            if self.gp_enabled:
+                distributed = distributed_in_bytes(self.gp_constructs, *gp_span) if gp_span else None
+                if distributed:
+                    extension['distributed'] = distributed
+                try:
+                    storage = storage_parameters_of(node.into)
+                    if storage:
+                        extension['storage_parameters'] = storage
+                except ValueError as exc:
+                    self.note(line, str(exc))
+            if extension:
+                extension['gp_extension_version'] = 1
+            self.item('CTAS', line, line + raw.count('\n'), ddl=sql(node),temporary=temporary,reference=ref,lifetime=node.into.onCommit.name, **extension)['writes'] = [ref]
             result=self.analyze_query(node.query, raw, line, branch=branch)
             if result: result['details']['result_for']=ref
             return result
@@ -465,21 +496,26 @@ class Analyzer:
 
 def analyze(text, path, sha, dialect='postgres', version='unknown', documented_subjects=None):
     require_parser()
-    engine = Analyzer(text, path, sha, version)
-    raw_stmts = parse_sql(text)
+    parse_text, gp_constructs, gp_notes = gp_prepare(text, dialect)
+    gp_enabled = is_greenplum(dialect)
+    engine = Analyzer(text, path, sha, version, gp_constructs=gp_constructs, gp_enabled=gp_enabled)
+    for note_line, reason in gp_notes:
+        engine.note(note_line, reason)
+    raw_stmts = parse_sql(parse_text)
     encoded = text.encode('utf-8')
     objects = []
     for raw in raw_stmts:
         node = raw.stmt
-        start = raw.stmt_location
-        stop = start + raw.stmt_len if raw.stmt_len else len(encoded)
+        start, stop = statement_byte_span(raw, parse_text)
         snippet = encoded[start:stop].decode('utf-8')
+        masked_snippet = parse_text.encode('utf-8')[start:stop].decode('utf-8')
         line = encoded[:start].decode('utf-8').count('\n') + 1
         # libpg_query includes whitespace/comments before the statement in RawStmt.
         masked = mask_sql(snippet)[0]
         leading = len(masked) - len(masked.lstrip())
         line += snippet[:leading].count('\n')
         snippet = snippet[leading:]
+        masked_snippet = masked_snippet[leading:]
         kind, schema, name, args, signature = None, None, None, None, None
         details = {}
         if isinstance(node, ast.CreateFunctionStmt):
@@ -493,6 +529,9 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
             details.update(parameters=parameters, returns=type_name(node.returnType), returns_table=any(p['mode']=='t' for p in parameters))
             options={o.defname:o.arg for o in node.options or ()}
             details['volatility']=getattr(options.get('volatility'),'sval','volatile')
+            execute_on = execute_on_in_bytes(gp_constructs, start, stop)
+            if execute_on:
+                details.update(execute_on=execute_on, gp_extension_version=1)
         elif isinstance(node, (ast.ViewStmt, ast.CreateStmt, ast.CreateTableAsStmt)):
             target = node.view if isinstance(node, ast.ViewStmt) else (node.into.rel if isinstance(node,ast.CreateTableAsStmt) else node.relation)
             schema, name = target.schemaname, target.relname
@@ -506,24 +545,24 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
                 key = f'unresolved+{kind}+{schema or "?"}+{name}@{line}'
             details.update(object_kind=kind, name=name, schema=schema, input_types=list(_parse_arg_types(args)) if args is not None else None,
                            signature=signature, canonical_key=key, analysis='postgres_ast')
-            objects.append((raw, snippet, line, details))
+            objects.append((raw, snippet, masked_snippet, line, details))
     if not objects and any(isinstance(r.stmt, (ast.AlterTableStmt,ast.RenameStmt,ast.DropStmt)) for r in raw_stmts):
         key = canonical_key(ObjectDescriptor('migration', migration_path=path))
         details = dict(object_kind='migration', name=PurePosixPath(path).name, schema=None,
                        input_types=None, signature=None, canonical_key=key, analysis='postgres_ast')
-        objects = [(None, text, 1, details)]
+        objects = [(None, text, text, 1, details)]
     selected = objects
     if documented_subjects:
         selected = []
         for subject in documented_subjects:
-            matches = [o for o in objects if subject in (o[3]['name'], f"{o[3]['schema']}.{o[3]['name']}", o[3]['canonical_key'])]
+            matches = [o for o in objects if subject in (o[4]['name'], f"{o[4]['schema']}.{o[4]['name']}", o[4]['canonical_key'])]
             if len(matches) != 1:
                 raise SubjectSelectionError(f'Subject {subject!r}: expected one declaration, found {len(matches)}')
             if matches[0] not in selected: selected.append(matches[0])
     if not selected:
         raise ValueError('No supported object declaration')
     analyzed = set()
-    for raw, snippet, line, details in selected:
+    for raw, snippet, masked_snippet, line, details in selected:
         engine.scope, engine.temps, engine.cte_nodes = details['canonical_key'], {}, {}
         declaration = engine.item('DECLARATION', line, line + snippet.count('\n'), **details)
         if engine.scope.startswith('unresolved+'):
@@ -546,7 +585,7 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
             body_line = line + snippet[:max(0,body_pos)].count('\n')
             try:
                 if language == 'plpgsql':
-                    function = parse_plpgsql(snippet)[0]['PLpgSQL_function']
+                    function = parse_plpgsql(masked_snippet)[0]['PLpgSQL_function']
                     engine.plpgsql(function['action'], body_line)
                 elif language == 'sql':
                     for statement in parse_sql(body):
@@ -563,7 +602,7 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
                 if index < len(outputs): outputs[index]['name'] = alias.sval
             declaration['details']['output_columns'] = outputs
         else:
-            query=engine.statement(node, snippet, line)
+            query=engine.statement(node, snippet, line, gp_span=statement_byte_span(raw, parse_text))
             if isinstance(node, ast.CreateTableAsStmt):
                 declaration['details']['output_columns'] = query['details'].get('columns',[]) if query else []
                 for index, alias in enumerate(node.into.colNames or ()):
@@ -587,14 +626,14 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
     if not any(o[0] is None for o in objects):
         for raw in raw_stmts:
             if id(raw) in recognized or id(raw) in analyzed or isinstance(raw.stmt, ast.CreateSchemaStmt): continue
-            if isinstance(raw.stmt, (ast.InsertStmt,ast.UpdateStmt,ast.DeleteStmt,ast.AlterTableStmt,ast.CommentStmt)) and any(o[3]['object_kind']=='table' for o in objects): continue
+            if isinstance(raw.stmt, (ast.InsertStmt,ast.UpdateStmt,ast.DeleteStmt,ast.AlterTableStmt,ast.CommentStmt)) and any(o[4]['object_kind']=='table' for o in objects): continue
             if isinstance(raw.stmt, standalone_types):
                 # Never attach a top-level DDL/access statement to the last routine.
                 target = getattr(raw.stmt, 'relation', None)
                 targets = [relation(target)] if target else [relation(o) for o in getattr(raw.stmt, 'objects', ()) or ()
                                                               if isinstance(o, ast.RangeVar)]
-                owners = {f"{o[3]['schema']}.{o[3]['name']}" for o in objects
-                          if o[3]['object_kind'] in ('table', 'view', 'materialized_view', 'ctas')}
+                owners = {f"{o[4]['schema']}.{o[4]['name']}" for o in objects
+                          if o[4]['object_kind'] in ('table', 'view', 'materialized_view', 'ctas')}
                 if targets and set(targets) <= owners:
                     continue  # Belongs to an explicitly unselected relation.
                 engine.scope = path
@@ -603,11 +642,11 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
                 engine.note(statement_line, 'Standalone extension requires a declared target relation in the selected SQL')
                 continue
             engine.note(1, f'Unanalyzed top-level statement: {type(raw.stmt).__name__}')
-    if dialect.lower() not in ('postgres','postgresql'):
+    if dialect.lower() not in ('postgres', 'postgresql', 'greenplum'):
         engine.note(1, f'Unsupported dialect: {dialect}')
     for item in engine.items:
         if any(o.get('expression') == '*' or o.get('expression','').endswith('.*') for o in item['details'].get('output_columns',[])):
             engine.note(item['source_ref']['start_line'], 'Wildcard output columns require DDL expansion')
     return dict(schema_version=2, run_id='00000000-0000-0000-0000-000000000000',
                 dialect=dict(name=dialect,version=version), items=engine.items, coverage_notes=engine.notes,
-                inputs=[dict(path=path,sha256=sha)], documented_subjects=[o[3]['canonical_key'] for o in selected])
+                inputs=[dict(path=path,sha256=sha)], documented_subjects=[o[4]['canonical_key'] for o in selected])

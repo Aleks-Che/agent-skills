@@ -1,0 +1,1247 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-23",
+  "scope": "Q-03 independent review and fixes; Q-01/Q-02 regression, no Q-04 or LLM acceptance",
+  "python": "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+  "tool_versions": {
+    "scripts_sha256": "fcb3daa3dca22a05fbf443003e45ba8b0ca36ef8e6ef318cb44c0368483dbe98",
+    "skill_md_sha256": "38cda6fe3cb3189eb98b85d2e031903fbbaeda087292cca8e4e6a35a23584d55",
+    "template_sha256": "bf92174bbc499f279092568744e1c24bc04b0a112caedb61a49a2863a8716630",
+    "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+  },
+  "unit": {
+    "python": "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "mode": "unittest modules in isolated processes",
+    "workers": 4,
+    "valid": true,
+    "tests": 835,
+    "skipped": 1,
+    "elapsed_seconds": 140.609,
+    "results": [
+      {
+        "module": "test_artifact_regressions.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_artifact_regressions.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 49,
+        "skipped": 0,
+        "elapsed_seconds": 17.49
+      },
+      {
+        "module": "test_artifacts.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_artifacts.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 30,
+        "skipped": 0,
+        "elapsed_seconds": 1.149
+      },
+      {
+        "module": "test_check_policy.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_check_policy.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 37,
+        "skipped": 0,
+        "elapsed_seconds": 0.92
+      },
+      {
+        "module": "test_coverage_gate.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_coverage_gate.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 87,
+        "skipped": 0,
+        "elapsed_seconds": 44.099
+      },
+      {
+        "module": "test_dialect_matrix.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_dialect_matrix.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 41,
+        "skipped": 0,
+        "elapsed_seconds": 11.553
+      },
+      {
+        "module": "test_evidence_bundle.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_evidence_bundle.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 55,
+        "skipped": 0,
+        "elapsed_seconds": 7.641
+      },
+      {
+        "module": "test_identity.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_identity.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 103,
+        "skipped": 0,
+        "elapsed_seconds": 0.765
+      },
+      {
+        "module": "test_index_query.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_index_query.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 29,
+        "skipped": 0,
+        "elapsed_seconds": 78.068
+      },
+      {
+        "module": "test_inventory_plan.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_inventory_plan.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 22,
+        "skipped": 0,
+        "elapsed_seconds": 2.405
+      },
+      {
+        "module": "test_metrics.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_metrics.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 40,
+        "skipped": 0,
+        "elapsed_seconds": 113.5
+      },
+      {
+        "module": "test_p0_gate_regressions.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p0_gate_regressions.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 36,
+        "skipped": 1,
+        "elapsed_seconds": 31.159
+      },
+      {
+        "module": "test_p1_acceptance.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p1_acceptance.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 12,
+        "skipped": 0,
+        "elapsed_seconds": 28.319
+      },
+      {
+        "module": "test_p2_03_acceptance.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p2_03_acceptance.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 16,
+        "skipped": 0,
+        "elapsed_seconds": 18.189
+      },
+      {
+        "module": "test_p2_03_model_extensions.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p2_03_model_extensions.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 28,
+        "skipped": 0,
+        "elapsed_seconds": 0.329
+      },
+      {
+        "module": "test_p2_05_acceptance.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p2_05_acceptance.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 17,
+        "skipped": 0,
+        "elapsed_seconds": 48.532
+      },
+      {
+        "module": "test_p2_05_operations.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p2_05_operations.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 27,
+        "skipped": 0,
+        "elapsed_seconds": 11.052
+      },
+      {
+        "module": "test_publish.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_publish.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 11,
+        "skipped": 0,
+        "elapsed_seconds": 50.781
+      },
+      {
+        "module": "test_q01_expectations.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q01_expectations.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 30,
+        "skipped": 0,
+        "elapsed_seconds": 3.594
+      },
+      {
+        "module": "test_q02_fallback_diagnostics.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q02_fallback_diagnostics.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 30,
+        "skipped": 0,
+        "elapsed_seconds": 11.937
+      },
+      {
+        "module": "test_q03_greenplum.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q03_greenplum.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 30,
+        "skipped": 0,
+        "elapsed_seconds": 9.608
+      },
+      {
+        "module": "test_q03_review.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q03_review.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 35,
+        "skipped": 0,
+        "elapsed_seconds": 11.434
+      },
+      {
+        "module": "test_review_fixes.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_review_fixes.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 41,
+        "skipped": 0,
+        "elapsed_seconds": 18.155
+      },
+      {
+        "module": "test_sql_ast.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_sql_ast.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 20,
+        "skipped": 0,
+        "elapsed_seconds": 0.501
+      },
+      {
+        "module": "test_validation_gate.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_validation_gate.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 9,
+        "skipped": 0,
+        "elapsed_seconds": 0.001
+      }
+    ]
+  },
+  "q_targeted": {
+    "tests": 125,
+    "failures": 0,
+    "command": "python -B -m unittest discover -s tests -p test_q0*.py",
+    "cwd": "wiki-doc/wiki-doc"
+  },
+  "reference": {
+    "cases": 12,
+    "cycle": "semi-automatic-saved",
+    "elapsed_seconds": 112.437,
+    "full_agent_cycle_completed": false,
+    "limitation": "Arbitrary prose requires an independent content review; controlled rendered claims are checked against separately authored expectations.",
+    "mode": "reference",
+    "model": "deterministic-reference-v1",
+    "outcome_variants": {
+      "01/function+demo+load_missing+()": 1,
+      "02/table+demo+events_log": 1,
+      "03/function+demo+fn_with_cte+(date)": 1,
+      "04/function+demo+refresh_summary+(bigint,integer)": 1,
+      "05/function+demo+fn_default_value+(character varying,character varying)": 1,
+      "06/function+archive+orders_summary+()": 1,
+      "06/function+core+orders_summary+()": 1,
+      "06/function+core+orders_summary+(bigint)": 1,
+      "07/function+demo+fn_dynamic+(text)": 1,
+      "08/migration+08_alter_migration.sql+08": 1,
+      "09/function+demo+total_for+(bigint)": 1,
+      "09/view+demo+order_totals": 1,
+      "10/ctas+demo+event_clock": 1,
+      "11/function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()": 1,
+      "12/table+demo+accounts": 1
+    },
+    "repair_iterations": 0,
+    "repeats": 3,
+    "schema_version": 1,
+    "settings": {},
+    "subjects": 15,
+    "valid": true,
+    "verified_results": 45
+  },
+  "saved": {
+    "cases": 12,
+    "cycle": "semi-automatic-saved",
+    "elapsed_seconds": 23.328,
+    "full_agent_cycle_completed": false,
+    "limitation": "Arbitrary prose requires an independent content review; controlled rendered claims are checked against separately authored expectations.",
+    "mode": "saved",
+    "model": "deterministic-reference-v1",
+    "outcome_variants": {
+      "01/function+demo+load_missing+()": 1,
+      "02/table+demo+events_log": 1,
+      "03/function+demo+fn_with_cte+(date)": 1,
+      "04/function+demo+refresh_summary+(bigint,integer)": 1,
+      "05/function+demo+fn_default_value+(character varying,character varying)": 1,
+      "06/function+archive+orders_summary+()": 1,
+      "06/function+core+orders_summary+()": 1,
+      "06/function+core+orders_summary+(bigint)": 1,
+      "07/function+demo+fn_dynamic+(text)": 1,
+      "08/migration+08_alter_migration.sql+08": 1,
+      "09/function+demo+total_for+(bigint)": 1,
+      "09/view+demo+order_totals": 1,
+      "10/ctas+demo+event_clock": 1,
+      "11/function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()": 1,
+      "12/table+demo+accounts": 1
+    },
+    "repair_iterations": 0,
+    "repeats": 3,
+    "schema_version": 1,
+    "settings": {},
+    "subjects": 15,
+    "valid": true,
+    "verified_results": 45
+  },
+  "before_after_basis": "Entry working tree with uncommitted Q-03 implementation; direct extractor and bundle probes before review fixes.",
+  "before_after": [
+    {
+      "case": "same_line_functions",
+      "sql": "CREATE FUNCTION demo.f() RETURNS int LANGUAGE sql AS $$ SELECT 1; $$ EXECUTE ON MASTER; CREATE FUNCTION demo.g() RETURNS int LANGUAGE sql AS $$ SELECT 2; $$ EXECUTE ON ANY;",
+      "subject": "demo.g",
+      "notes": [],
+      "attributes": [
+        {
+          "kind": "DECLARATION",
+          "execute_on": "MASTER",
+          "name": "g"
+        }
+      ],
+      "gate": {
+        "decision": "ready",
+        "publication_authorized": true,
+        "errors": [],
+        "input_error": false
+      },
+      "after": {
+        "notes": [],
+        "attributes": [
+          {
+            "kind": "DECLARATION",
+            "execute_on": "ANY",
+            "gp_extension_version": 1,
+            "name": "g"
+          }
+        ],
+        "gate": {
+          "decision": "ready",
+          "publication_authorized": true,
+          "errors": [],
+          "input_error": false
+        }
+      },
+      "input_sha256": "29ba7568379b797b3912dfa186eabdf4ff1dca55c4a5fd74b0ff02edc58e8fcf"
+    },
+    {
+      "case": "same_line_tables",
+      "sql": "CREATE TABLE demo.t (a int) DISTRIBUTED BY (a); CREATE TABLE demo.u (b int) DISTRIBUTED RANDOMLY;",
+      "subject": "demo.u",
+      "notes": [],
+      "attributes": [
+        {
+          "kind": "DECLARATION",
+          "name": "u"
+        },
+        {
+          "kind": "CREATE",
+          "distributed": {
+            "mode": "BY",
+            "columns": [
+              "a"
+            ]
+          }
+        }
+      ],
+      "gate": {
+        "decision": "ready",
+        "publication_authorized": true,
+        "errors": [],
+        "input_error": false
+      },
+      "after": {
+        "notes": [],
+        "attributes": [
+          {
+            "kind": "DECLARATION",
+            "name": "u"
+          },
+          {
+            "kind": "CREATE",
+            "distributed": {
+              "mode": "RANDOMLY"
+            },
+            "gp_extension_version": 1
+          }
+        ],
+        "gate": {
+          "decision": "ready",
+          "publication_authorized": true,
+          "errors": [],
+          "input_error": false
+        }
+      },
+      "input_sha256": "24d54108aa589f693259b00120d36d4e099e037d30a6c7404f2223be4c6bccff"
+    },
+    {
+      "case": "execute_on_view",
+      "sql": "CREATE VIEW demo.v AS SELECT 1 AS a EXECUTE ON MASTER;",
+      "subject": "demo.v",
+      "notes": [],
+      "attributes": [
+        {
+          "kind": "DECLARATION",
+          "name": "v"
+        }
+      ],
+      "gate": {
+        "decision": "ready",
+        "publication_authorized": true,
+        "errors": [],
+        "input_error": false
+      },
+      "after": {
+        "notes": [
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "start_line": 1,
+              "end_line": 1,
+              "sha256": "324ab2636f8efe93b3f21d1128f299aa7ff24db12be974c1fdab5bf34eed8b76"
+            },
+            "reason": "Unsupported dialect: greenplum"
+          },
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "start_line": 1,
+              "end_line": 1,
+              "sha256": "324ab2636f8efe93b3f21d1128f299aa7ff24db12be974c1fdab5bf34eed8b76"
+            },
+            "reason": "Unanalyzed dynamic SQL expression"
+          },
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "sha256": "324ab2636f8efe93b3f21d1128f299aa7ff24db12be974c1fdab5bf34eed8b76",
+              "start_line": 1,
+              "end_line": 1
+            },
+            "reason": "PostgreSQL AST analysis failed: syntax error at or near \"EXECUTE\", at index 36"
+          },
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "sha256": "324ab2636f8efe93b3f21d1128f299aa7ff24db12be974c1fdab5bf34eed8b76",
+              "start_line": 1,
+              "end_line": 1
+            },
+            "reason": "Unsupported Greenplum EXECUTE ON position: syntax error at or near \"COST\", at index 37"
+          }
+        ],
+        "attributes": [
+          {
+            "kind": "DECLARATION",
+            "name": "v"
+          }
+        ],
+        "bundle_refused": "source.sql:1: Unsupported Greenplum EXECUTE ON position: syntax error at or near \"COST\", at index 37; source.sql: DDL parse failed: line 1: Unsupported Greenplum EXECUTE ON position: syntax error at or near \"COST\", at index 37"
+      },
+      "input_sha256": "324ab2636f8efe93b3f21d1128f299aa7ff24db12be974c1fdab5bf34eed8b76"
+    },
+    {
+      "case": "distributed_in_column",
+      "sql": "CREATE TABLE demo.t (a int DISTRIBUTED BY (a));",
+      "subject": "demo.t",
+      "notes": [],
+      "attributes": [
+        {
+          "kind": "DECLARATION",
+          "name": "t"
+        },
+        {
+          "kind": "CREATE",
+          "distributed": {
+            "mode": "BY",
+            "columns": [
+              "a"
+            ]
+          }
+        }
+      ],
+      "gate": {
+        "decision": "ready",
+        "publication_authorized": true,
+        "errors": [],
+        "input_error": false
+      },
+      "after": {
+        "notes": [
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "start_line": 1,
+              "end_line": 1,
+              "sha256": "2f6f871156fb3df0fae4bc11397919a152a908cced0cb72fd0c211fdbd7506d2"
+            },
+            "reason": "Unsupported dialect: greenplum"
+          },
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "start_line": 1,
+              "end_line": 1,
+              "sha256": "2f6f871156fb3df0fae4bc11397919a152a908cced0cb72fd0c211fdbd7506d2"
+            },
+            "reason": "CREATE TABLE column/constraint analysis is outside the P0 subset"
+          },
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "sha256": "2f6f871156fb3df0fae4bc11397919a152a908cced0cb72fd0c211fdbd7506d2",
+              "start_line": 1,
+              "end_line": 1
+            },
+            "reason": "PostgreSQL AST analysis failed: syntax error at or near \"DISTRIBUTED\", at index 27"
+          },
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "sha256": "2f6f871156fb3df0fae4bc11397919a152a908cced0cb72fd0c211fdbd7506d2",
+              "start_line": 1,
+              "end_line": 1
+            },
+            "reason": "Unrecognized Greenplum DISTRIBUTED clause: distribution must follow storage/options and end the declaration"
+          }
+        ],
+        "attributes": [
+          {
+            "kind": "DECLARATION",
+            "name": "t"
+          }
+        ],
+        "bundle_refused": "source.sql:1: Unrecognized Greenplum DISTRIBUTED clause: distribution must follow storage/options and end the declaration; source.sql: DDL parse failed: line 1: Unrecognized Greenplum DISTRIBUTED clause: distribution must follow storage/options and end the declaration"
+      },
+      "input_sha256": "2f6f871156fb3df0fae4bc11397919a152a908cced0cb72fd0c211fdbd7506d2"
+    },
+    {
+      "case": "distributed_expression",
+      "sql": "CREATE TABLE demo.t (a int) DISTRIBUTED BY (a + 1);",
+      "subject": "demo.t",
+      "notes": [],
+      "attributes": [
+        {
+          "kind": "DECLARATION",
+          "name": "t"
+        },
+        {
+          "kind": "CREATE",
+          "distributed": {
+            "mode": "BY",
+            "columns": [
+              "a + 1"
+            ]
+          }
+        }
+      ],
+      "gate": {
+        "decision": "ready",
+        "publication_authorized": true,
+        "errors": [],
+        "input_error": false
+      },
+      "after": {
+        "notes": [
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "start_line": 1,
+              "end_line": 1,
+              "sha256": "8c987f2f187c697e6a8c39e7fb2ab42c72e6d664f88543f643edb05ac85febe9"
+            },
+            "reason": "Unsupported dialect: greenplum"
+          },
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "start_line": 1,
+              "end_line": 1,
+              "sha256": "8c987f2f187c697e6a8c39e7fb2ab42c72e6d664f88543f643edb05ac85febe9"
+            },
+            "reason": "CREATE TABLE column/constraint analysis is outside the P0 subset"
+          },
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "sha256": "8c987f2f187c697e6a8c39e7fb2ab42c72e6d664f88543f643edb05ac85febe9",
+              "start_line": 1,
+              "end_line": 1
+            },
+            "reason": "PostgreSQL AST analysis failed: syntax error at or near \"DISTRIBUTED\", at index 28"
+          },
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "sha256": "8c987f2f187c697e6a8c39e7fb2ab42c72e6d664f88543f643edb05ac85febe9",
+              "start_line": 1,
+              "end_line": 1
+            },
+            "reason": "Unrecognized Greenplum DISTRIBUTED clause: only distinct column identifiers are supported"
+          }
+        ],
+        "attributes": [
+          {
+            "kind": "DECLARATION",
+            "name": "t"
+          }
+        ],
+        "bundle_refused": "source.sql:1: Unrecognized Greenplum DISTRIBUTED clause: only distinct column identifiers are supported; source.sql: DDL parse failed: line 1: Unrecognized Greenplum DISTRIBUTED clause: only distinct column identifiers are supported"
+      },
+      "input_sha256": "8c987f2f187c697e6a8c39e7fb2ab42c72e6d664f88543f643edb05ac85febe9"
+    },
+    {
+      "case": "duplicate_execute",
+      "sql": "CREATE FUNCTION demo.f() RETURNS int LANGUAGE sql AS $$ SELECT 1; $$ EXECUTE ON MASTER EXECUTE ON ANY;",
+      "subject": "demo.f",
+      "notes": [],
+      "attributes": [
+        {
+          "kind": "DECLARATION",
+          "execute_on": "MASTER",
+          "name": "f"
+        }
+      ],
+      "gate": {
+        "decision": "ready",
+        "publication_authorized": true,
+        "errors": [],
+        "input_error": false
+      },
+      "after": {
+        "notes": [
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "start_line": 1,
+              "end_line": 1,
+              "sha256": "a491c4afc59687c990f76476bb6c4fdbf683fe6befb3c3854591447cb3c530e0"
+            },
+            "reason": "Unsupported dialect: greenplum"
+          },
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "sha256": "a491c4afc59687c990f76476bb6c4fdbf683fe6befb3c3854591447cb3c530e0",
+              "start_line": 1,
+              "end_line": 1
+            },
+            "reason": "PostgreSQL AST analysis failed: syntax error at or near \"EXECUTE\", at index 69"
+          },
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "sha256": "a491c4afc59687c990f76476bb6c4fdbf683fe6befb3c3854591447cb3c530e0",
+              "start_line": 1,
+              "end_line": 1
+            },
+            "reason": "Duplicate Greenplum EXECUTE ON clauses"
+          }
+        ],
+        "attributes": [
+          {
+            "kind": "DECLARATION",
+            "name": "f"
+          }
+        ],
+        "bundle_refused": "source.sql:1: Duplicate Greenplum EXECUTE ON clauses; source.sql: DDL parse failed: line 1: Duplicate Greenplum EXECUTE ON clauses"
+      },
+      "input_sha256": "a491c4afc59687c990f76476bb6c4fdbf683fe6befb3c3854591447cb3c530e0"
+    },
+    {
+      "case": "duplicate_distributed",
+      "sql": "CREATE TABLE demo.t (a int) DISTRIBUTED BY (a) DISTRIBUTED RANDOMLY;",
+      "subject": "demo.t",
+      "notes": [],
+      "attributes": [
+        {
+          "kind": "DECLARATION",
+          "name": "t"
+        },
+        {
+          "kind": "CREATE",
+          "distributed": {
+            "mode": "BY",
+            "columns": [
+              "a"
+            ]
+          }
+        }
+      ],
+      "gate": {
+        "decision": "ready",
+        "publication_authorized": true,
+        "errors": [],
+        "input_error": false
+      },
+      "after": {
+        "notes": [
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "start_line": 1,
+              "end_line": 1,
+              "sha256": "e73bc420963b39d2ec824299baa3f0c65abc6b8b85685784367c97c004e4a4c9"
+            },
+            "reason": "Unsupported dialect: greenplum"
+          },
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "start_line": 1,
+              "end_line": 1,
+              "sha256": "e73bc420963b39d2ec824299baa3f0c65abc6b8b85685784367c97c004e4a4c9"
+            },
+            "reason": "CREATE TABLE column/constraint analysis is outside the P0 subset"
+          },
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "sha256": "e73bc420963b39d2ec824299baa3f0c65abc6b8b85685784367c97c004e4a4c9",
+              "start_line": 1,
+              "end_line": 1
+            },
+            "reason": "PostgreSQL AST analysis failed: syntax error at or near \"DISTRIBUTED\", at index 28"
+          },
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "sha256": "e73bc420963b39d2ec824299baa3f0c65abc6b8b85685784367c97c004e4a4c9",
+              "start_line": 1,
+              "end_line": 1
+            },
+            "reason": "Duplicate or ambiguous Greenplum DISTRIBUTED clauses"
+          }
+        ],
+        "attributes": [
+          {
+            "kind": "DECLARATION",
+            "name": "t"
+          }
+        ],
+        "bundle_refused": "source.sql:1: Duplicate or ambiguous Greenplum DISTRIBUTED clauses; source.sql: DDL parse failed: line 1: Duplicate or ambiguous Greenplum DISTRIBUTED clauses"
+      },
+      "input_sha256": "e73bc420963b39d2ec824299baa3f0c65abc6b8b85685784367c97c004e4a4c9"
+    },
+    {
+      "case": "all_segments",
+      "sql": "CREATE FUNCTION demo.f() RETURNS int LANGUAGE sql AS $$ SELECT 1; $$ EXECUTE ON ALL SEGMENTS;",
+      "subject": "demo.f",
+      "notes": [
+        "Unsupported dialect: greenplum",
+        "PostgreSQL AST analysis failed: syntax error at or near \"SEGMENTS\", at index 84"
+      ],
+      "attributes": [
+        {
+          "kind": "DECLARATION",
+          "name": "f"
+        }
+      ],
+      "error": "source.sql: DDL parse failed: syntax error at or near \"SEGMENTS\", at index 84",
+      "after": {
+        "notes": [],
+        "attributes": [
+          {
+            "kind": "DECLARATION",
+            "execute_on": "ALL SEGMENTS",
+            "gp_extension_version": 1,
+            "name": "f"
+          }
+        ],
+        "gate": {
+          "decision": "ready",
+          "publication_authorized": true,
+          "errors": [],
+          "input_error": false
+        }
+      },
+      "input_sha256": "88715e8fc5e86187414485122a33b5b32a8834dff927fcb930d70008b0c20903"
+    },
+    {
+      "case": "bare_all",
+      "sql": "CREATE FUNCTION demo.f() RETURNS int LANGUAGE sql AS $$ SELECT 1; $$ EXECUTE ON ALL;",
+      "subject": "demo.f",
+      "notes": [],
+      "attributes": [
+        {
+          "kind": "DECLARATION",
+          "execute_on": "ALL",
+          "name": "f"
+        }
+      ],
+      "gate": {
+        "decision": "ready",
+        "publication_authorized": true,
+        "errors": [],
+        "input_error": false
+      },
+      "after": {
+        "notes": [
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "start_line": 1,
+              "end_line": 1,
+              "sha256": "1c88d76ae80d1c508a1877310030e44101867e0508761b86ec270ffc31b147d2"
+            },
+            "reason": "Unsupported dialect: greenplum"
+          },
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "sha256": "1c88d76ae80d1c508a1877310030e44101867e0508761b86ec270ffc31b147d2",
+              "start_line": 1,
+              "end_line": 1
+            },
+            "reason": "PostgreSQL AST analysis failed: syntax error at or near \"EXECUTE\", at index 69"
+          },
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "sha256": "1c88d76ae80d1c508a1877310030e44101867e0508761b86ec270ffc31b147d2",
+              "start_line": 1,
+              "end_line": 1
+            },
+            "reason": "Unrecognized Greenplum EXECUTE ON target: ALL"
+          }
+        ],
+        "attributes": [
+          {
+            "kind": "DECLARATION",
+            "name": "f"
+          }
+        ],
+        "bundle_refused": "source.sql:1: Unrecognized Greenplum EXECUTE ON target: ALL; source.sql: DDL parse failed: line 1: Unrecognized Greenplum EXECUTE ON target: ALL"
+      },
+      "input_sha256": "1c88d76ae80d1c508a1877310030e44101867e0508761b86ec270ffc31b147d2"
+    },
+    {
+      "case": "ctas",
+      "sql": "CREATE TABLE demo.t AS SELECT 1 AS a DISTRIBUTED BY (a);",
+      "subject": "demo.t",
+      "notes": [],
+      "attributes": [
+        {
+          "kind": "DECLARATION",
+          "name": "t"
+        },
+        {
+          "kind": "CTAS"
+        }
+      ],
+      "gate": {
+        "decision": "ready",
+        "publication_authorized": true,
+        "errors": [],
+        "input_error": false
+      },
+      "after": {
+        "notes": [],
+        "attributes": [
+          {
+            "kind": "DECLARATION",
+            "name": "t"
+          },
+          {
+            "kind": "CTAS",
+            "distributed": {
+              "mode": "BY",
+              "columns": [
+                "a"
+              ]
+            },
+            "gp_extension_version": 1
+          }
+        ],
+        "gate": {
+          "decision": "ready",
+          "publication_authorized": true,
+          "errors": [],
+          "input_error": false
+        }
+      },
+      "input_sha256": "f20eec7cdb4957a2705afeb7b0144119ed7c80ae65c3499dd99ac6c8a535cb0d"
+    },
+    {
+      "case": "merge_gp15",
+      "sql": "CREATE FUNCTION demo.f() RETURNS void LANGUAGE plpgsql AS $$ BEGIN MERGE INTO demo.t t USING demo.s s ON s.id=t.id WHEN MATCHED THEN UPDATE SET val=s.val; END; $$;",
+      "subject": "demo.f",
+      "notes": [],
+      "attributes": [
+        {
+          "kind": "DECLARATION",
+          "name": "f"
+        }
+      ],
+      "gate": {
+        "decision": "ready",
+        "publication_authorized": true,
+        "errors": [],
+        "input_error": false
+      },
+      "after": {
+        "notes": [
+          {
+            "source_ref": {
+              "path": "source.sql",
+              "sha256": "a07b1e1ad629dfa370f49196f505c4321bdd75886d44d294575c2895177eb343",
+              "start_line": 1,
+              "end_line": 1
+            },
+            "reason": "MERGE compatibility with Greenplum is not established; PostgreSQL version thresholds do not apply"
+          }
+        ],
+        "attributes": [
+          {
+            "kind": "DECLARATION",
+            "name": "f"
+          }
+        ],
+        "gate": {
+          "decision": "blocked",
+          "publication_authorized": false,
+          "errors": [
+            "analysis gap: MERGE compatibility with Greenplum is not established; PostgreSQL version thresholds do not apply"
+          ],
+          "input_error": false
+        }
+      },
+      "input_sha256": "a07b1e1ad629dfa370f49196f505c4321bdd75886d44d294575c2895177eb343"
+    }
+  ],
+  "q05_isolated": [
+    {
+      "repeat": 1,
+      "returncode": 0,
+      "decision": "ready",
+      "publication_authorized": true,
+      "errors": []
+    },
+    {
+      "repeat": 2,
+      "returncode": 0,
+      "decision": "ready",
+      "publication_authorized": true,
+      "errors": []
+    },
+    {
+      "repeat": 3,
+      "returncode": 0,
+      "decision": "ready",
+      "publication_authorized": true,
+      "errors": []
+    }
+  ],
+  "inputs": {
+    "examples/fixtures/q05_gp_master_nested.sql": "49fd3d012e82d20f359ad838825e07fa4045baf27ffd9b77b421203b0212f466",
+    "examples/fixtures/q_context_gp.sql": "f2bfbaebc7d37b2f93668828beaab6d4b1b94145c7097f83134adc054d26e1c6",
+    "examples/fixtures/q_context.sql": "0fb2c7fa0e1edb0efd7f4b2e80a6874db8d411d29f131ee3bd5c5222d9218b8b"
+  },
+  "large": {
+    "input_sha256": "168dc68069a244fa957931d092b93c44a8f01a0b0b3bd3538a6de507cb4941c3",
+    "inventory_items": 1677,
+    "coverage_note_count": 179,
+    "reason_counts": {
+      "PL/pgSQL exception handlers require control-flow analysis": 1,
+      "Unsupported PL/pgSQL AST node: PLpgSQL_stmt_raise": 6,
+      "Unsupported PL/pgSQL AST node: PLpgSQL_stmt_getdiag": 155,
+      "Unresolved unqualified call: trunc": 6,
+      "Unresolved unqualified call: to_number": 1,
+      "Unresolved unqualified call: last_day": 5,
+      "Unresolved unqualified call: add_months": 4,
+      "Unresolved unqualified call: xmlagg": 1
+    },
+    "interpretation": "Extractor diagnostic only; no Q-04 acceptance, numerical/documentation completeness or server execution claimed."
+  },
+  "auxiliary_checks": {
+    "skill_quick_validate": "passed",
+    "git_diff_check": "passed"
+  },
+  "full_agent_cycle_completed": false,
+  "remaining": {
+    "Q01": "in_progress: saved erroneous page acceptance remains open",
+    "Q02": "done",
+    "Q03": "done after fixes",
+    "Q04_Q09": "planned"
+  },
+  "commands": [
+    {
+      "command": "python -B scripts/run_regression.py --mode reference --output ../.runtime/q03-review/reference --repeats 3",
+      "cwd": "wiki-doc/wiki-doc",
+      "exit_code": 0
+    },
+    {
+      "command": "python -B scripts/run_regression.py --mode saved --output ../.runtime/q03-review/reference --repeats 3",
+      "cwd": "wiki-doc/wiki-doc",
+      "exit_code": 0
+    },
+    {
+      "command": "python -B wiki-doc/.runtime/q03-review/verify_review.py",
+      "cwd": "repository",
+      "exit_code": 0
+    }
+  ]
+}

@@ -109,7 +109,7 @@ def isolate(case,workspace,examples):
         source=inside(examples,relative); target=inside(project,relative)
         target.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(source,target)
     output.mkdir()
-    request={k:case[k] for k in ('sql','context','subjects','version','migration_manifest','profile') if k in case}
+    request={k:case[k] for k in ('sql','context','subjects','version','migration_manifest','profile','dialect') if k in case}
     if request.get('profile'): request['profile']=str(package/request['profile'])
     request.update(schema_version=1,project_root=str(project),output_dir=str(output),skill_root=str(package))
     atomic_json(workspace/'request.json',request)

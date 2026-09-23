@@ -56,15 +56,6 @@ def relation(node):
     return (node.schemaname + '.' if node.schemaname else '') + node.relname
 
 
-def role_name(spec):
-    """Resolve a RoleSpec to its literal name, including PUBLIC and pseudo-roles."""
-    if getattr(spec, 'rolename', None):
-        return spec.rolename
-    name = getattr(getattr(spec, 'roletype', None), 'name', '')
-    return {'ROLESPEC_PUBLIC': 'PUBLIC', 'ROLESPEC_CURRENT_USER': 'CURRENT_USER',
-            'ROLESPEC_SESSION_USER': 'SESSION_USER', 'ROLESPEC_CURRENT_ROLE': 'CURRENT_ROLE'}.get(name, name or None)
-
-
 def type_name(node):
     return sql(node) if node else None
 
@@ -98,43 +89,6 @@ def columns_of(node):
             for column in result:
                 if column['name'] in keys: column.update(primary_key=True,not_null=True)
     return result
-
-
-def constraint_details(constraint):
-    """Shared constraint vocabulary for inventory and ordered table state."""
-    kind = constraint.contype.name.removeprefix('CONSTR_').lower()
-    kind = {'foreign': 'foreign_key', 'primary': 'primary_key',
-            'notnull': 'not_null'}.get(kind, kind)
-    entry = dict(name=constraint.conname, type=kind)
-    if constraint.raw_expr:
-        entry['expression'] = sql(constraint.raw_expr)
-    if constraint.pktable:
-        entry['references'] = relation(constraint.pktable)
-    columns = constraint.fk_attrs or constraint.keys
-    if columns:
-        entry['columns'] = names(columns)
-    if constraint.pk_attrs:
-        entry['ref_columns'] = names(constraint.pk_attrs)
-    return entry
-
-
-def statement_targets(node):
-    """Relation identities affected by a top-level statement, never its reads."""
-    target = getattr(node, 'relation', None)
-    if isinstance(target, ast.RangeVar):
-        return {(target.schemaname, target.relname)}
-    if isinstance(node, ast.GrantStmt):
-        return {(o.schemaname, o.relname) for o in node.objects or ()
-                if isinstance(o, ast.RangeVar)}
-    if isinstance(node, ast.TruncateStmt):
-        return {(r.schemaname, r.relname) for r in node.relations}
-    if isinstance(node, ast.DropStmt) and node.removeType.name in ('OBJECT_TABLE', 'OBJECT_VIEW', 'OBJECT_MATVIEW'):
-        parts = [names(o) for o in node.objects]
-    elif isinstance(node, ast.CommentStmt) and node.objtype.name in ('OBJECT_TABLE', 'OBJECT_VIEW', 'OBJECT_MATVIEW', 'OBJECT_COLUMN'):
-        parts = [names(node.object)[:-1] if node.objtype.name == 'OBJECT_COLUMN' else names(node.object)]
-    else:
-        return set()
-    return {(p[-2] if len(p) > 1 else None, p[-1]) for p in parts}
 
 
 class Analyzer:
@@ -306,86 +260,13 @@ class Analyzer:
             result=self.analyze_query(node.query, raw, line, branch=branch)
             if result: result['details']['result_for']=ref
             return result
-        elif isinstance(node, ast.AlterTableStmt):
-            item = self.item('ALTER', line, line + raw.count('\n'), ddl=sql(node), analysis='postgres_ast')
-            if getattr(node, 'relation', None):
-                item['writes'] = [relation(node.relation)]
-            constraints = []
-            for cmd in node.cmds or ():
-                if hasattr(cmd, 'def_') and cmd.def_ and hasattr(cmd.def_, 'contype'):
-                    constraints.append(constraint_details(cmd.def_))
-            if constraints:
-                item['details']['constraints'] = constraints
-        elif isinstance(node, (ast.RenameStmt, ast.DropStmt, ast.CommentStmt, ast.TruncateStmt)):
-            kind = {ast.RenameStmt:'ALTER',ast.DropStmt:'DROP',ast.CommentStmt:'COMMENT',ast.TruncateStmt:'TRUNCATE'}[type(node)]
+        elif isinstance(node, (ast.AlterTableStmt, ast.RenameStmt, ast.DropStmt, ast.CommentStmt, ast.TruncateStmt)):
+            kind = {ast.AlterTableStmt:'ALTER',ast.RenameStmt:'ALTER',ast.DropStmt:'DROP',ast.CommentStmt:'COMMENT',ast.TruncateStmt:'TRUNCATE'}[type(node)]
             item = self.item(kind, line, line + raw.count('\n'), ddl=sql(node), analysis='postgres_ast')
             if getattr(node, 'relation', None):
                 item['writes'] = [relation(node.relation)]
             elif isinstance(node, ast.TruncateStmt):
                 item['writes'] = [relation(r) for r in node.relations]
-            elif isinstance(node, ast.DropStmt):
-                item['writes'] = sorted((schema + '.' if schema else '') + name
-                                        for schema, name in statement_targets(node))
-        elif isinstance(node, ast.IndexStmt):
-            idx_name = node.idxname
-            table_name = relation(node.relation)
-            columns = [p.name for p in node.indexParams or () if p.name]
-            expressions = [sql(p.expr) for p in node.indexParams or () if p.expr]
-            structure = dict(index_name=idx_name, table=table_name,
-                             unique=bool(node.unique), primary=bool(getattr(node, 'primary', False)),
-                             columns=columns, expressions=expressions)
-            if node.whereClause:
-                structure['predicate'] = sql(node.whereClause)
-            if node.accessMethod:
-                structure['access_method'] = node.accessMethod
-            item = self.item('CREATE', line, line + raw.count('\n'), ddl=sql(node),
-                             table_name=table_name, structure=structure, analysis='postgres_ast')
-            item['writes'] = [table_name]
-        elif isinstance(node, ast.CreateTrigStmt):
-            trig_name = node.trigname
-            table_name = relation(node.relation)
-            func_name = '.'.join(names(node.funcname)) if node.funcname else None
-            # PostgreSQL TRIGGER_TYPE_* bitmask: INSTEAD is bit 6, not INSERT (bit 2).
-            timing_map = {0: 'AFTER', 2: 'BEFORE', 64: 'INSTEAD OF'}
-            timing = timing_map.get(node.timing, 'UNKNOWN')
-            # Events bitmask: 4=INSERT, 8=DELETE, 16=UPDATE, 32=TRUNCATE
-            event_names = []
-            if node.events & 4: event_names.append('INSERT')
-            if node.events & 8: event_names.append('DELETE')
-            if node.events & 16: event_names.append('UPDATE')
-            if node.events & 32: event_names.append('TRUNCATE')
-            structure = dict(trigger_name=trig_name, table=table_name,
-                             timing=timing, events=event_names,
-                             for_each_row=bool(node.row), function=func_name)
-            if node.whenClause:
-                structure['when'] = sql(node.whenClause)
-            if node.columns:
-                structure['columns'] = [c.sval for c in node.columns]
-            if func_name:
-                calls = [func_name]
-            else:
-                calls = []
-            item = self.item('CREATE', line, line + raw.count('\n'), ddl=sql(node),
-                             table_name=table_name, structure=structure, analysis='postgres_ast')
-            item['writes'] = [table_name]
-            if calls:
-                item['calls'] = calls
-        elif isinstance(node, ast.GrantStmt):
-            if node.objtype.name != 'OBJECT_TABLE' or node.targtype.name != 'ACL_TARGET_OBJECT':
-                self.note(line, 'Unsupported GRANT/REVOKE target; only explicit table/view objects are analyzed')
-            kind = 'GRANT' if node.is_grant else 'REVOKE'
-            table_names = [relation(o) for o in node.objects or () if hasattr(o, 'relname')]
-            privileges = [p.priv_name for p in node.privileges or ()] or ['ALL']
-            grantees = [role_name(n) for n in node.grantees or ()]
-            structure = dict(privileges=privileges, grantees=grantees,
-                             grant_option=bool(getattr(node, 'grant_option', False)))
-            if any(p.cols for p in node.privileges or ()):
-                structure['privilege_columns'] = [dict(privilege=p.priv_name, columns=names(p.cols))
-                                                   for p in node.privileges]
-            item = self.item(kind, line, line + raw.count('\n'), ddl=sql(node),
-                             structure=structure, analysis='postgres_ast')
-            if table_names:
-                item['reads'] = table_names
         elif isinstance(node, ast.CallStmt):
             expression = node.funccall
             item = self.item('CALL', line, line + raw.count('\n'), formulas=[], conditions=[], analysis='postgres_ast')
@@ -526,8 +407,7 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
             details.update(object_kind=kind, name=name, schema=schema, input_types=list(_parse_arg_types(args)) if args is not None else None,
                            signature=signature, canonical_key=key, analysis='postgres_ast')
             objects.append((raw, snippet, line, details))
-    if not objects and any(isinstance(r.stmt, (ast.AlterTableStmt,ast.RenameStmt,ast.DropStmt,
-                                               ast.IndexStmt,ast.CreateTrigStmt,ast.GrantStmt)) for r in raw_stmts):
+    if not objects and any(isinstance(r.stmt, (ast.AlterTableStmt,ast.RenameStmt,ast.DropStmt)) for r in raw_stmts):
         key = canonical_key(ObjectDescriptor('migration', migration_path=path))
         details = dict(object_kind='migration', name=PurePosixPath(path).name, schema=None,
                        input_types=None, signature=None, canonical_key=key, analysis='postgres_ast')
@@ -542,9 +422,6 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
             if matches[0] not in selected: selected.append(matches[0])
     if not selected:
         raise ValueError('No supported object declaration')
-    recognized = {id(o[0]) for o in objects if o[0]}
-    relations = {(o[3]['schema'], o[3]['name']) for o in objects
-                 if o[3]['object_kind'] in ('table', 'view', 'materialized_view', 'ctas')}
     for raw, snippet, line, details in selected:
         engine.scope, engine.temps, engine.cte_nodes = details['canonical_key'], {}, {}
         declaration = engine.item('DECLARATION', line, line + snippet.count('\n'), **details)
@@ -590,22 +467,19 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
                 declaration['details']['output_columns'] = query['details'].get('columns',[]) if query else []
                 for index, alias in enumerate(node.into.colNames or ()):
                     if index < len(declaration['details']['output_columns']): declaration['details']['output_columns'][index]['name'] = alias.sval
-        if details['object_kind'] in ('table', 'view', 'materialized_view', 'ctas'):
+        if details['object_kind'] == 'table':
             for other in raw_stmts:
                 if other is raw or any(other is o[0] for o in objects): continue
-                if (details['schema'], details['name']) in statement_targets(other.stmt):
+                target = getattr(other.stmt, 'relation', None)
+                if target and relation(target) == f"{details['schema']}.{details['name']}":
                     statement_text, statement_line = source_statement(other, text)
                     engine.statement(other.stmt, statement_text, statement_line)
-                    recognized.add(id(other))
-    # A page slice excludes statements owned by other declarations. Unassigned or
-    # unsupported statements remain explicit gaps, never inherit the last scope.
+    recognized = {id(o[0]) for o in objects if o[0]}
     if not any(o[0] is None for o in objects):
         for raw in raw_stmts:
             if id(raw) in recognized or isinstance(raw.stmt, ast.CreateSchemaStmt): continue
-            targets = statement_targets(raw.stmt)
-            if targets and targets <= relations: continue
-            _, statement_line = source_statement(raw, text)
-            engine.note(statement_line, f'Unanalyzed top-level statement: {type(raw.stmt).__name__}')
+            if isinstance(raw.stmt, (ast.InsertStmt,ast.UpdateStmt,ast.DeleteStmt,ast.AlterTableStmt,ast.CommentStmt)) and any(o[3]['object_kind']=='table' for o in objects): continue
+            engine.note(1, f'Unanalyzed top-level statement: {type(raw.stmt).__name__}')
     if dialect.lower() not in ('postgres','postgresql'):
         engine.note(1, f'Unsupported dialect: {dialect}')
     for item in engine.items:

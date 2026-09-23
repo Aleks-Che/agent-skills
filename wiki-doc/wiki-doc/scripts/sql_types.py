@@ -50,11 +50,7 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
     for item in inventory['items']:
         details=item.get('details',{})
         if item['kind']=='CREATE' and details.get('columns'):
-            # Ordered physical DDL is already in the catalogue. Only synthesize
-            # scoped locals; replacing a table here would undo its ALTERs/DROP.
-            reference=details.get('reference',item.get('writes',[''])[0])
-            if reference.startswith('@'):
-                tables[reference]=dict(columns=details['columns'],source_ref=item['source_ref'])
+            tables[details.get('reference',item.get('writes',[''])[0])]=dict(columns=details['columns'],source_ref=item['source_ref'])
     mappings=[]
     from pglast import ast, parse_sql, parse_plpgsql
     def inspect(node,ref):
@@ -147,8 +143,6 @@ def check_types(facts,catalogue):
         if expected:
             for field,target in (('default','default'),('description','comment'),('primary_key','primary_key')):
                 if field in col and col[field]!=expected.get(target): errors.append(f"facts column {col['id']}: {field} differs from DDL")
-            if 'nullable' in col and 'not_null' in expected and col['nullable'] != (not expected['not_null']):
-                errors.append(f"facts column {col['id']}: nullable differs from DDL")
         if 'expression_status' in col:
             mapped=any(m['table']==key and m['name']==col['name'] for m in catalogue['mappings'])
             status=('known' if col['type_expression'] is not None else 'unknown') if mapped else 'not_applicable'

@@ -386,52 +386,6 @@
         }
       ]
     },
-    "operation_structure": {
-      "description": "P2-03 structures within the version 2 facts contract; other operation-specific fields remain extensible.",
-      "type": "object",
-      "properties": {
-        "index_name": {"type": ["string", "null"]},
-        "trigger_name": {"type": "string", "minLength": 1},
-        "table": {"type": "string", "minLength": 1},
-        "unique": {"type": "boolean"},
-        "primary": {"type": "boolean"},
-        "columns": {"$ref": "#/$defs/sql_names"},
-        "expressions": {"$ref": "#/$defs/sql_names"},
-        "predicate": {"type": "string"},
-        "access_method": {"type": "string"},
-        "timing": {"enum": ["BEFORE", "AFTER", "INSTEAD OF"]},
-        "events": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["INSERT", "UPDATE", "DELETE", "TRUNCATE"]}},
-        "for_each_row": {"type": "boolean"},
-        "function": {"type": "string", "minLength": 1},
-        "when": {"type": "string"},
-        "privileges": {"$ref": "#/$defs/sql_names"},
-        "grantees": {"$ref": "#/$defs/sql_names"},
-        "grant_option": {"type": "boolean"},
-        "privilege_columns": {"type": "array", "items": {"type": "object", "required": ["privilege", "columns"], "properties": {"privilege": {"type": "string"}, "columns": {"$ref": "#/$defs/sql_names"}}, "additionalProperties": false}},
-        "constraints": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["name", "type"],
-            "properties": {
-              "name": {"type": ["string", "null"]},
-              "type": {"type": "string", "minLength": 1},
-              "expression": {"type": "string"},
-              "columns": {"$ref": "#/$defs/sql_names"},
-              "references": {"type": "string"},
-              "ref_columns": {"$ref": "#/$defs/sql_names"}
-            },
-            "additionalProperties": false
-          }
-        }
-      },
-      "allOf": [
-        {"if": {"required": ["index_name"]}, "then": {"required": ["table", "unique", "columns", "expressions"]}},
-        {"if": {"required": ["trigger_name"]}, "then": {"required": ["table", "timing", "events", "for_each_row", "function"]}},
-        {"if": {"required": ["privileges"]}, "then": {"required": ["grantees", "grant_option"], "properties": {"privileges": {"minItems": 1}, "grantees": {"minItems": 1}}}}
-      ]
-    },
-    "sql_names": {"type": "array", "items": {"type": "string", "minLength": 1}},
     "operation_entry": {
       "type": "object",
       "required": [
@@ -576,7 +530,7 @@
           "pattern": "\\S"
         },
         "structure": {
-          "$ref": "#/$defs/operation_structure"
+          "type": "object"
         }
       },
       "additionalProperties": false,

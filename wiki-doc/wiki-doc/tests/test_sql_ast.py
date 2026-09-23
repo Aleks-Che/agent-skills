@@ -1,5 +1,4 @@
 import hashlib
-import json
 import os
 import shutil
 import sys
@@ -10,7 +9,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 from sql_extract import extract_inventory
 from ddl import reconstruct, enrich_inventory
-from build_bundle import build
 
 EXAMPLES = Path(__file__).resolve().parents[1] / 'examples'
 
@@ -123,115 +121,6 @@ class NativeInventoryTests(unittest.TestCase):
         select=next(i for i in result['items'] if i['kind']=='SELECT')
         self.assertEqual(select['details']['result_for'],'demo.event_clock')
 
-    def test_matview_with_index_and_grant(self):
-        result=self.example('12')
-        self.assertFalse(result['coverage_notes'], result['coverage_notes'])
-        kinds={i['kind'] for i in result['items']}
-        self.assertIn('CTAS', kinds)
-        self.assertIn('SELECT', kinds)
-        self.assertIn('CREATE', kinds)
-        self.assertIn('GRANT', kinds)
-        indexes=[i for i in result['items'] if i['kind']=='CREATE' and i['details'].get('structure',{}).get('index_name')]
-        self.assertEqual(len(indexes), 2)
-        self.assertEqual(indexes[0]['details']['structure']['index_name'],'idx_monthly_sales_month')
-        self.assertTrue(indexes[0]['details']['structure']['unique'])
-        self.assertEqual(indexes[1]['details']['structure']['index_name'],'idx_monthly_sales_amount')
-        self.assertFalse(indexes[1]['details']['structure']['unique'])
-        grants=[i for i in result['items'] if i['kind']=='GRANT']
-        self.assertEqual(len(grants), 1)
-        self.assertIn('select', grants[0]['details']['structure']['privileges'])
-        self.assertIn('reporting_role', grants[0]['details']['structure']['grantees'])
-
-    def test_trigger_constraint_grant_revoke(self):
-        result=self.example('13')
-        self.assertFalse(result['coverage_notes'], result['coverage_notes'])
-        kinds={i['kind'] for i in result['items']}
-        self.assertIn('CREATE', kinds)
-        self.assertIn('ALTER', kinds)
-        self.assertIn('GRANT', kinds)
-        self.assertIn('REVOKE', kinds)
-        triggers=[i for i in result['items'] if i['kind']=='CREATE' and i['details'].get('structure',{}).get('trigger_name')]
-        self.assertEqual(len(triggers), 1)
-        trig=triggers[0]['details']['structure']
-        self.assertEqual(trig['trigger_name'],'trg_audit_orders')
-        self.assertEqual(trig['timing'],'AFTER')
-        self.assertIn('INSERT', trig['events'])
-        self.assertIn('UPDATE', trig['events'])
-        self.assertIn('DELETE', trig['events'])
-        self.assertTrue(trig['for_each_row'])
-        self.assertEqual(trig['function'],'demo.fn_audit_trigger')
-        alters=[i for i in result['items'] if i['kind']=='ALTER']
-        constraints=[]
-        for a in alters:
-            constraints.extend(a['details'].get('constraints', []))
-        self.assertEqual(len(constraints), 1)
-        self.assertEqual(constraints[0]['name'],'chk_action')
-        self.assertEqual(constraints[0]['type'],'check')
-        self.assertIn('expression', constraints[0])
-        grants=[i for i in result['items'] if i['kind']=='GRANT']
-        revokes=[i for i in result['items'] if i['kind']=='REVOKE']
-        self.assertEqual(len(grants), 1)
-        self.assertEqual(len(revokes), 1)
-
-    def test_create_index_inline(self):
-        result=self.inventory('CREATE INDEX idx_test ON demo.orders (amount);')
-        self.assertFalse(result['coverage_notes'], result['coverage_notes'])
-        creates=[i for i in result['items'] if i['kind']=='CREATE']
-        self.assertEqual(len(creates), 1)
-        s=creates[0]['details']['structure']
-        self.assertEqual(s['index_name'],'idx_test')
-        self.assertEqual(s['table'],'demo.orders')
-        self.assertEqual(s['columns'],['amount'])
-        self.assertFalse(s['unique'])
-
-    def test_create_unique_index(self):
-        result=self.inventory('CREATE UNIQUE INDEX idx_uniq ON demo.orders (id);')
-        self.assertFalse(result['coverage_notes'])
-        s=next(i for i in result['items'] if i['kind']=='CREATE')['details']['structure']
-        self.assertTrue(s['unique'])
-
-    def test_create_trigger_inline(self):
-        result=self.inventory('CREATE TRIGGER trg BEFORE INSERT ON demo.t FOR EACH ROW EXECUTE FUNCTION demo.f();')
-        self.assertFalse(result['coverage_notes'], result['coverage_notes'])
-        creates=[i for i in result['items'] if i['kind']=='CREATE']
-        self.assertEqual(len(creates), 1)
-        s=creates[0]['details']['structure']
-        self.assertEqual(s['trigger_name'],'trg')
-        self.assertEqual(s['timing'],'BEFORE')
-        self.assertEqual(s['events'],['INSERT'])
-        self.assertTrue(s['for_each_row'])
-
-    def test_grant_revoke_inline(self):
-        result=self.inventory('GRANT SELECT, INSERT ON demo.t TO analyst; REVOKE ALL ON demo.t FROM PUBLIC;')
-        self.assertFalse(result['coverage_notes'])
-        grants=[i for i in result['items'] if i['kind']=='GRANT']
-        revokes=[i for i in result['items'] if i['kind']=='REVOKE']
-        self.assertEqual(len(grants), 1)
-        self.assertEqual(len(revokes), 1)
-        self.assertIn('select', grants[0]['details']['structure']['privileges'])
-        self.assertIn('insert', grants[0]['details']['structure']['privileges'])
-
-    def test_alter_add_check_constraint(self):
-        result=self.inventory('ALTER TABLE demo.t ADD CONSTRAINT chk_val CHECK (x > 0);')
-        self.assertFalse(result['coverage_notes'])
-        alters=[i for i in result['items'] if i['kind']=='ALTER']
-        self.assertEqual(len(alters), 1)
-        constraints=alters[0]['details'].get('constraints', [])
-        self.assertEqual(len(constraints), 1)
-        self.assertEqual(constraints[0]['name'],'chk_val')
-        self.assertEqual(constraints[0]['type'],'check')
-
-    def test_alter_add_foreign_key(self):
-        result=self.inventory('ALTER TABLE demo.child ADD CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES demo.parent(id);')
-        self.assertFalse(result['coverage_notes'])
-        constraints=next(i for i in result['items'] if i['kind']=='ALTER')['details']['constraints']
-        self.assertEqual(len(constraints), 1)
-        c=constraints[0]
-        self.assertEqual(c['type'],'foreign_key')
-        self.assertEqual(c['references'],'demo.parent')
-        self.assertEqual(c['columns'],['parent_id'])
-        self.assertEqual(c['ref_columns'],['id'])
-
 
 class MigrationTests(unittest.TestCase):
     def test_explicit_order_restores_final_columns(self):
@@ -267,47 +156,6 @@ class MigrationTests(unittest.TestCase):
         enrich_inventory(result,project_root=EXAMPLES,migration_manifest=EXAMPLES/'migrations/manifest.json')
         self.assertFalse(result['coverage_notes'])
         self.assertEqual(result['items'][0]['details']['reconstruction']['status'],'resolved')
-
-
-class ModelExtensionBuildTests(unittest.TestCase):
-    """P2-03: index/trigger/constraint/grant survive the full build and gate."""
-
-    def _build(self, sql, subject):
-        temp=tempfile.TemporaryDirectory(); self.addCleanup(temp.cleanup)
-        root=Path(temp.name)
-        return build(EXAMPLES/sql, root/'run', project_root=EXAMPLES, subject=subject,
-                     context=[EXAMPLES/'context.sql'])
-
-    def _structures(self, result):
-        facts=json.loads((Path(result['run_dir'])/'facts.json').read_text(encoding='utf-8'))
-        return facts, [op.get('structure',{}) for op in facts['operations']]
-
-    def test_matview_index_and_grant_build_ready(self):
-        result=self._build('12_matview_index_grant.sql','materialized_view+demo+monthly_sales')
-        self.assertEqual(result['decision'],'ready',result.get('errors'))
-        facts,structures=self._structures(result)
-        self.assertEqual({s.get('index_name') for s in structures if 'index_name' in s},
-                         {'idx_monthly_sales_month','idx_monthly_sales_amount'})
-        grant=next(s for s in structures if 'privileges' in s)
-        self.assertEqual(grant['privileges'],['select'])
-        self.assertEqual(grant['grantees'],['reporting_role'])
-
-    def test_trigger_constraint_grant_build_ready(self):
-        result=self._build('13_trigger_audit.sql','table+demo+audit_log')
-        self.assertEqual(result['decision'],'ready',result.get('errors'))
-        facts,structures=self._structures(result)
-        self.assertFalse(any(s.get('trigger_name') for s in structures))
-        trigger_result=self._build('13_trigger_audit.sql','table+demo_src+orders')
-        self.assertEqual(trigger_result['decision'],'ready',trigger_result.get('errors'))
-        _,trigger_structures=self._structures(trigger_result)
-        trigger=next(s for s in trigger_structures if s.get('trigger_name'))
-        self.assertEqual(trigger['timing'],'AFTER')
-        self.assertEqual(trigger['events'],['INSERT','DELETE','UPDATE'])
-        self.assertEqual(trigger['function'],'demo.fn_audit_trigger')
-        constraints=next(s['constraints'] for s in structures if s.get('constraints'))
-        self.assertEqual(constraints[0]['type'],'check')
-        revoke=next(o for o in facts['operations'] if o['kind']=='REVOKE')
-        self.assertEqual(revoke['structure']['grantees'],['PUBLIC'])
 
 
 if __name__=='__main__': unittest.main()

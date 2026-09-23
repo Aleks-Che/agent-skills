@@ -35,9 +35,6 @@ SUPPORTED_CONSTRUCTS = frozenset({
     'PERFORM', 'CALL', 'EXECUTE',
     'RETURN',
     'CTE', 'TEMP_TABLE',
-    'CREATE_INDEX', 'CREATE_TRIGGER',
-    'GRANT', 'REVOKE',
-    'ALTER', 'DROP', 'TRUNCATE',
 })
 
 DML_KEYWORDS = {'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE'}
@@ -280,10 +277,6 @@ def extract_operations(sql_text: str, file_path: str, file_sha256: str,
         'PERFORM': r'\bPERFORM\b', 'CALL': r'\bCALL\b', 'EXECUTE': r'\bEXECUTE\b',
         'RETURN': r'\bRETURN\b', 'CTE': r'\bWITH\s+(' + identifier + r')\s+AS\s*\(',
         'TEMP_TABLE': r'\bCREATE\s+(?:LOCAL\s+)?TEMP(?:ORARY)?\s+TABLE\s+(' + identifier + ')',
-        'CREATE_INDEX': r'\bCREATE\s+(?:UNIQUE\s+)?INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)\s+ON\s+(' + identifier + ')',
-        'CREATE_TRIGGER': r'\bCREATE\s+(?:OR\s+REPLACE\s+)?CONSTRAINT\s+TRIGGER\s+(\w+)\b|\bCREATE\s+(?:OR\s+REPLACE\s+)?TRIGGER\s+(\w+)\b',
-        'GRANT': r'\bGRANT\b',
-        'REVOKE': r'\bREVOKE\b',
     }
     matches = sorted((m.start(), kind, m) for kind, pattern in patterns.items()
                      for m in re.finditer(pattern, cleaned, re.I))
@@ -344,24 +337,6 @@ def extract_operations(sql_text: str, file_path: str, file_sha256: str,
         if kind == 'TEMP_TABLE':
             item.details['table_name'] = m.group(1)
             add_note(start, stop, 'Temporary table columns/lifetime require scoped analysis')
-        if kind == 'CREATE_INDEX':
-            item.details['index_name'] = m.group(1)
-            item.details['table_name'] = _normalize_ref(m.group(2))
-            item.writes = [item.details['table_name']]
-        if kind == 'CREATE_TRIGGER':
-            trig_name = m.group(1) or m.group(2)
-            item.details['trigger_name'] = trig_name
-            table_match = re.search(r'\bON\s+(' + identifier + r')', segment, re.I)
-            if table_match:
-                item.details['table_name'] = _normalize_ref(table_match.group(1))
-                item.writes = [item.details['table_name']]
-            func_match = re.search(r'\bEXECUTE\s+(?:FUNCTION|PROCEDURE)\s+(' + identifier + r')', segment, re.I)
-            if func_match:
-                item.calls = [_normalize_ref(func_match.group(1))]
-        if kind in ('GRANT', 'REVOKE'):
-            on_match = re.search(r'\bON\s+(?:TABLE\s+)?(' + identifier + r')', segment, re.I)
-            if on_match:
-                item.reads = [_normalize_ref(on_match.group(1))]
         if kind == 'EXECUTE':
             item.details.update(dynamic=True, unresolved_parts=['runtime target or parameter values'])
             template = re.match(r"EXECUTE\s+(?:format\s*\(\s*)?'((?:''|[^'])*)'", raw, re.I | re.S)
@@ -386,7 +361,7 @@ def extract_operations(sql_text: str, file_path: str, file_sha256: str,
     for pos, reason in lexical_issues:
         add_note(pos, pos + 1, reason)
     for m in re.finditer(r'\b(?:MERGE|WITH|TRIGGER|INDEX|CONSTRAINT|GRANT|REVOKE|ALTER|DROP|TRUNCATE|IF|LOOP|EXCEPTION|DECLARE|COPY|DO|CASE)\b', cleaned, re.I):
-        add_note(m.start(), m.end(), f'{m.group().upper()} requires PostgreSQL AST analysis')
+        add_note(m.start(), m.end(), f'{m.group().upper()} requires analysis beyond the P0 subset')
     for m in re.finditer(r'\(\s*SELECT\b|\b(?:UNION|INTERSECT|EXCEPT)\b', cleaned, re.I):
         add_note(m.start(), m.end(), 'Nested/set query requires scoped analysis beyond P0')
     for m in re.finditer(r'[^;]+(?:;|$)', cleaned):

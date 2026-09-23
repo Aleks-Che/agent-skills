@@ -1,17 +1,18 @@
 # Актуальный статус — 2026-09-19
 
-**P2-03 повторно проверен и исправлен в поддержанном подмножестве.** Устранены
-пропуски неизвестных операторов, смешение DDL соседних объектов, сбой DROP,
-потеря финального состояния ALTER/PK и межфайловых конфликтов, неверная маска
-INSTEAD OF. Типизированы структуры facts v2 и сохранены поколоночные права.
-Пример 13 разделён на страницы audit_log и orders с триггером. Подробности:
-[REVIEW-P2-03.md](REVIEW-P2-03.md), [P2-03-ACCEPTANCE.json](P2-03-ACCEPTANCE.json).
-Регрессия: 13 случаев, 17 предметов × 3 повтора; 38 отклонённых мутаций,
-17 публикаций с повтором без дублей и чистым lint. P2-04/P2-05 не начаты.
+**P2-02 повторно проверен и исправлен.** Найдены дополнительные ошибки:
+журнал публикаций не измерял проверки gate, покрытие подменялось процентом
+завершённых проверок, терялись documented unknowns, ошибки архивов подавлялись,
+устаревшие страницы считались по числу изменённых файлов. Подробности —
+в секции P2-02 ниже.
 
-**Текущий полный набор: 617 тестов — 616 прошли, 1 пропущен, 156 subtests passed.**
-Пропуск — symlink на Windows. 51 тест метрик, 30 тестов SQL AST,
-15 дополнительных тестов приёмки P2-03.
+**Текущий полный набор: 592 теста — 591 прошёл, 1 пропущен, 137 subtests прошли.**
+Пропуск — symlink на Windows; проверка ссылок выполняется без rg.
+51 тест метрик прошёл. Регрессия: 11 сценариев × 3 повтора, 42 комплекта;
+28 мутаций, ошибочных ready — 0; опубликованы и проверены 14 страниц.
+Машиночитаемая приёмка: [P2-02-ACCEPTANCE.json](P2-02-ACCEPTANCE.json).
+Использован системный Python 3.12.7 с точными зависимостями requirements.txt:
+в этой среде команда python указывала на другое, неполное окружение.
 
 **P1-01…P1-07 выполнены и проверены.** Предыдущие исправления P0 сохранены.
 Подробная приёмка: [REVIEW-P1-COMPLETE.md](REVIEW-P1-COMPLETE.md),
@@ -409,7 +410,7 @@ scripts/bundle.py и scripts/validation_gate.py.
 |--------|--------|
 | P2-01. Индекс, граф и Query | done |
 | P2-02. Метрики | done |
-| P2-03. Расширение модели | done |
+| P2-03. Расширение модели | не начато |
 | P2-04. Матрица диалектов | не начато |
 | P2-05. Эксплуатация | не начато |
 
@@ -537,108 +538,7 @@ average_iterations = 1.0. Все **284 файла wiki** сохранили хэ
 валидным manifest run; более ранние попытки неизвестны. Исправления должны
 сохранять run_id; новый run — новый цикл. Полный LLM-прогон не заявляется.
 
-**Следующее действие:** P2-03. Расширение модели.
-
-### P2-03. Расширение модели
-
-**Статус:** done — проверено и исправлено после ревью. 2026-09-19.
-
-Реализовано:
-
-- `scripts/sql_ast.py` — новые AST-обработчики в `Analyzer.statement()`:
-  - `IndexStmt` → `CREATE` с `structure`: index_name, table, unique, primary, columns, expressions, predicate, access_method.
-  - `CreateTrigStmt` → `CREATE` с `structure`: trigger_name, table, timing, events, for_each_row, function, when, columns.
-  - `GrantStmt` → `GRANT`/`REVOKE` с `structure`: privileges, grantees, grant_option.
-  - `AlterTableStmt` — расширен: извлечение ограничений (CHECK, UNIQUE, FK, PK, NOT NULL) из `cmds` в `details.constraints`.
-  - Timing: 0=AFTER, 2=BEFORE, 64=INSTEAD OF (исправлено повторной проверкой). Events: 4=INSERT, 8=DELETE, 16=UPDATE, 32=TRUNCATE.
-  - Association loop: DDL-операции (INDEX, TRIGGER, GRANT) связываются с объявленными таблицами/views/materialized views/CTAS.
-  - Standalone DDL: миграционный путь расширен для IndexStmt/CreateTrigStmt/GrantStmt.
-- `scripts/sql_extract.py` — regex-паттерны:
-  - `CREATE_INDEX`: уникальный/non-unique, table_name.
-  - `CREATE_TRIGGER`: trigger_name, table_name, function.
-  - `GRANT`/`REVOKE`: table_name в reads.
-  - `SUPPORTED_CONSTRUCTS` расширен: CREATE_INDEX, CREATE_TRIGGER, GRANT, REVOKE, ALTER, DROP, TRUNCATE.
-  - Структурные конструкции требуют AST: regex сохраняет `coverage_notes` и не объявляет их полностью разобранными.
-- Примеры:
-  - `examples/12_matview_index_grant.sql` — materialized view + 2 индекса + GRANT.
-  - `examples/13_trigger_audit.sql` — audit_log и orders, функция, триггер на orders, CHECK и GRANT/REVOKE на audit_log.
-- `tests/test_sql_ast.py` — 10 новых тестов (30 всего):
-  - test_matview_with_index_and_grant: индексы, GRANT на materialized view.
-  - test_trigger_constraint_grant_revoke: триггер, CHECK constraint, GRANT, REVOKE.
-  - test_create_index_inline / test_create_unique_index: CREATE [UNIQUE] INDEX.
-  - test_create_trigger_inline: CREATE TRIGGER (BEFORE INSERT).
-  - test_grant_revoke_inline: GRANT + REVOKE.
-  - test_alter_add_check_constraint / test_alter_add_foreign_key: ALTER ADD CONSTRAINT.
-  - test_matview_index_and_grant_build_ready / test_trigger_constraint_grant_build_ready:
-    полный build + gate новых примеров с проверкой structure в facts.
-- Регрессия:
-  - `examples/cases.json` — случаи 12 (materialized view + 2 индекса + GRANT) и
-    13 (две отдельные страницы таблиц); 13 случаев, 17 предметов.
-  - `examples/expected/12`…`13` — факты со `structures`, checks, decision,
-    page_assertions с 5 мутациями (индексы, права, constraint, timing триггера).
-  - `examples/12_...expected.md`, `13_...expected.md`, README и
-    `references/{regression,sql-support}.md`, `doc-validator.md` обновлены.
-
-Исправления после проверки плана:
-
-- `validation_gate.operation_kinds` и `check_policy.derive_inventory_checks` не
-  включали `GRANT`/`REVOKE`: факты-операции не сверялись с независимым инвентарём,
-  полный build примера 12 завершался `revise`. Добавлены.
-- `build_bundle` и `validation_gate` отбрасывали вложенную `details.structure`
-  (индексы/триггеры/права) и `details.constraints`: расширение модели не доходило
-  до facts. Теперь структура переносится в `operation.structure` и сверяется gate.
-- `ddl.apply_statement` не поддерживал `AT_AddConstraint`, а `ddl.catalog` считал
-  любой ALTER неупорядоченным, из-за чего пример 13 не проходил build. Добавлена
-  поддержка ограничений и DDL, упорядоченного внутри одного файла.
-- `GrantStmt` возвращал `grantees: [null]` для PUBLIC; добавлено разрешение
-  PUBLIC и псевдоролей.
-- Устранено расхождение чисел тестов в статусе (620 → 602).
-
-Повторная проверка Codex:
-
-- Неизвестные верхнеуровневые SQL-операторы теперь оставляют блокирующий пробел;
-  DDL связывается с реальной целевой таблицей/view. Соседние объявления и их DDL
-  не попадают в выбранную страницу; несвязанный DDL не наследует последний scope.
-- Исправлены DROP, финальное состояние колонок после ALTER/PK, PK/UNIQUE-ключи
-  и проверка nullable в gate. Сравниваются финальные состояния файлов, включая
-  DROP/RENAME; неустановленный межфайловый порядок не скрывает конфликт.
-- Исправлен INSTEAD OF, добавлены `privilege_columns` и типизированные структуры
-  в facts schema v2. Старые решения требуют повторного gate из-за смены хэшей.
-- Добавлены 15 тестов в `tests/test_p2_model_review.py`; эталон и мутации 13
-  исправлены по SQL, включая отдельный предмет `table+demo_src+orders`.
-- Исправлены четыре ссылки в плане и устаревшее описание legacy gate в README.
-  Полный отчёт — [REVIEW-P2-03.md](REVIEW-P2-03.md).
-
-Приёмка:
-
-- [x] Materialized view с индексами и GRANT разбирается без coverage_notes.
-- [x] Триггер (AFTER INSERT/UPDATE/DELETE, FOR EACH ROW) с функцией и constraint.
-- [x] CREATE INDEX (unique/non-unique) с columns и predicate.
-- [x] GRANT/REVOKE на таблицы с privileges и grantees (PUBLIC не теряется).
-- [x] ALTER TABLE ADD CONSTRAINT (CHECK, FK) с expression и references.
-- [x] Все 13 примеров по-прежнему без coverage_notes.
-- [x] Примеры 12/13 проходят полный build и gate (`ready`).
-- [x] Reference-регрессия: 13 случаев, 17 предметов × 3 повтора, 0 ошибочных ready;
-      38 мутаций (2 режима) отклонены.
-- [x] 30/30 тестов SQL AST проходят.
-- [x] 616 passed, 1 skipped, 156 subtests в полном наборе (617 тестов).
-- [x] 17 страниц опубликованы в изолированную wiki; повтор идемпотентен, lint чистый.
-
-**Проверки:** `python -B -m pytest tests/test_sql_ast.py -q` — **30/30**.
-`python -B -m pytest tests/ -q -p no:cacheprovider` — **616 passed, 1 skipped, 156 subtests passed**.
-`python scripts/run_regression.py --mode reference --repeats 3` — valid, 13 случаев, 51 комплект.
-`python scripts/regression_mutations.py ...` — 38 мутаций, false_ready = 0.
-
-**Ограничения:** pglast обязателен; regex не даёт допуска для структурного DDL.
-INSTEAD OF на view проверен отдельным тестом. Табличный DDL внутри одного файла
-применяется по порядку; межфайловый порядок требует manifest. Реконструкция по
-manifest поддерживает CREATE/ALTER/RENAME/DROP/COMMENT таблиц; INDEX/TRIGGER/GRANT
-в manifest остаются `unsupported`, хотя их отдельные операции извлекаются AST.
-GRANT на схемы/functions и ALL TABLES IN SCHEMA создаёт пробел анализа.
-Полный LLM-прогон не заявляется. dbt/пакеты/макросы — вне P2-03.
-
-**Блокировки:** нет в границах P2-03.
-**Следующее действие:** P2-04. Матрица диалектов.
+**Следующее действие:** P2-03. Расширение модели. P2-03…P2-05 не реализовывались.
 
 ## Сводка тестов на 2026-09-19
 
@@ -656,18 +556,11 @@ GRANT на схемы/functions и ALL TABLES IN SCHEMA создаёт проб�
 - `tests/test_p1_acceptance.py`: 12 тестов сквозной приёмки P1 (проверка ссылок выполняется без rg).
 - `tests/test_publish.py`: 11 тестов публикации и recovery.
 - `tests/test_review_fixes.py`: 41 тест проверочных исправлений.
-- `tests/test_sql_ast.py`: 30 тестов SQL AST (P2-03: +10).
-- `tests/test_p2_model_review.py`: 15 тестов повторной приёмки P2-03.
-- Всего: **617 тестов, 616 прошли, 1 skipped, 156 subtests passed** при проверке 2026-09-19.
+- `tests/test_sql_ast.py`: 20 тестов SQL AST.
+- Всего: **592 теста, 591 прошёл, 1 skipped, 137 subtests passed** при проверке 2026-09-19.
   Пропуск: symlink на Windows. Отсутствие `rg` больше не отключает проверку ссылок.
 
 ## Журнал проверки
-
-- 2026-09-19, Codex: повторно проверен и исправлен P2-03. Подробности и границы
-  поддержки — [REVIEW-P2-03.md](REVIEW-P2-03.md); доказательства —
-  [P2-03-ACCEPTANCE.json](P2-03-ACCEPTANCE.json). Полный набор: 616 passed,
-  1 skipped, 156 subtests; 51 положительный комплект, 38 отклонённых мутаций,
-  17 публикаций. P2-04/P2-05 остаются не начатыми.
 
 - 2026-09-19, Codex: повторно проверены завершённые этапы с акцентом на P2-02.
   Исправлены источники покрытия/unknowns, уникальный счёт устаревших страниц,
@@ -722,22 +615,7 @@ GRANT на схемы/functions и ALL TABLES IN SCHEMA создаёт проб�
   отчёта вместо непройденного прогона. Добавлена самопроверка результата по
   `metrics.schema.json` и 4 теста итераций (36/36). Устранена известная
   subprocess-ошибка PYTHONPATH. Полный прогон: **575 passed, 2 skipped**.
-- 2026-09-19, opencode: P2-03 — расширение модели (триггеры, индексы, ограничения, GRANT).
-  `sql_ast.py`: обработчики для IndexStmt (structure: index_name, table, unique, columns,
-  predicate), CreateTrigStmt (structure: trigger_name, table, timing, events, for_each_row,
-  function), GrantStmt (structure: privileges, grantees), AlterTableStmt (constraints: CHECK,
-  UNIQUE, FK, PK). `sql_extract.py`: regex-паттерны для CREATE INDEX, CREATE TRIGGER,
-  GRANT, REVOKE. Убрано «TRIGGER/INDEX/CONSTRAINT/GRANT/REVOKE requires analysis beyond P0».
-  Примеры 12 (matview + index + GRANT) и 13 (trigger + constraint + GRANT + REVOKE).
-  8 новых тестов. 576 passed, 1 skipped.
-- 2026-09-19, opencode: проверка P2-03 выявила и исправила: GRANT/REVOKE отсутствовали
-  в operation_kinds gate/policy (build примера 12 давал revise); `structure` и
-  `constraints` терялись при построении facts; пример 13 не проходил build из-за
-  ALTER ADD CONSTRAINT и «неупорядоченного» DDL в одном файле; PUBLIC терялся в
-  grantees. Примеры 12/13 добавлены в `cases.json`, `expected/12`…`13` и мутации
-  (38 мутаций, false_ready = 0). 2 новых теста полного build. Итог: **601 passed,
-  1 skipped, 139 subtests** (602 теста).
 
 ## Следующий шаг
 
-P2-04: матрица диалектов (`docs/dialect-support.md`).
+P2-03: расширение модели (`scripts/sql_extract.py`, `scripts/sql_ast.py`).

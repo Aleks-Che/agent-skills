@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "derived_from": "fixtures/q05_gp_master_nested.sql",
+  "authoring": "hand-derived from source SQL, independent of extractor and writer",
+  "deparse_deltas": [],
+  "assertions": [
+    {
+      "id": "q05-A1",
+      "review": "D05",
+      "kind": "declaration_attribute",
+      "attribute": "EXECUTE ON MASTER",
+      "position": "after_body",
+      "severity": "blocking",
+      "claim": "EXECUTE ON MASTER is a declaration attribute after the body, not a dynamic EXECUTE of the body"
+    },
+    {
+      "id": "q05-A2",
+      "review": "D05",
+      "kind": "attribute_not_dynamic_execute",
+      "rejected": [
+        {
+          "kind": "EXECUTE",
+          "details.dynamic": true
+        }
+      ],
+      "severity": "blocking",
+      "claim": "the attribute must not be recorded as a body-level dynamic EXECUTE"
+    },
+    {
+      "id": "q05-A3",
+      "review": "D05",
+      "kind": "nested_source_preserved",
+      "physical_reads": [
+        "q_src.events"
+      ],
+      "derived_tables_min": 2,
+      "severity": "blocking",
+      "claim": "reads of the nested derived tables are preserved instead of lost to a fallback crash"
+    },
+    {
+      "id": "q05-A4",
+      "review": "Q-02",
+      "kind": "no_crash",
+      "forbid_exit_codes": [
+        2
+      ],
+      "forbid_error_text": [
+        "Unbalanced SQL list"
+      ],
+      "severity": "blocking",
+      "claim": "analysis of this file must not end in an undiagnosed crash; before Q-03 it stays blocked with an explicit reason"
+    },
+    {
+      "id": "q05-A5",
+      "review": "D12",
+      "kind": "unverified_compatibility",
+      "dialect": "greenplum",
+      "version": "unknown",
+      "confirmed_minimum_versions": {},
+      "rejected": [
+        "PostgreSQL >=9.4",
+        "Greenplum >=5"
+      ],
+      "severity": "blocking",
+      "claim": "the input does not establish a server version; PostgreSQL >=9.4 / Greenplum >=5 compatibility must not be promised"
+    }
+  ]
+}

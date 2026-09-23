@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "manifest_kind": "q-expectations",
+  "note": "Independent Q-01 expectation set. Kept separate from cases.json so the historical 01-12 suite is not regressed before Q-08. Expectations live in expected/qNN and are not copied into adapter workspaces.",
+  "cases": [
+    {
+      "id": "q01",
+      "sql": "fixtures/q01_retro_param_local.sql",
+      "context": ["fixtures/q_context.sql"],
+      "subjects": ["function+q_hist+apply_retro+(boolean)"],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15",
+      "dialect": "postgres",
+      "review_ids": ["D01"],
+      "expectation_mode": "must_pass_analysis"
+    },
+    {
+      "id": "q02",
+      "sql": "fixtures/q02_null_check_sign.sql",
+      "context": ["fixtures/q_context.sql"],
+      "subjects": ["function+q_out+count_phoned_clients+()"],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15",
+      "dialect": "postgres",
+      "review_ids": ["D02"],
+      "expectation_mode": "must_pass_analysis"
+    },
+    {
+      "id": "q03",
+      "sql": "fixtures/q03_dedup_priority.sql",
+      "context": ["fixtures/q_context.sql"],
+      "subjects": ["function+q_out+pick_next_task+(bigint)"],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15",
+      "dialect": "postgres",
+      "review_ids": ["D03"],
+      "expectation_mode": "must_pass_analysis"
+    },
+    {
+      "id": "q04",
+      "sql": "fixtures/q04_date_branch.sql",
+      "context": ["fixtures/q_context.sql"],
+      "subjects": ["function+q_out+calc_norm+(bigint,date)"],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15",
+      "dialect": "postgres",
+      "review_ids": ["D04"],
+      "expectation_mode": "must_pass_analysis"
+    },
+    {
+      "id": "q05",
+      "sql": "fixtures/q05_gp_master_nested.sql",
+      "context": ["fixtures/q_context.sql", "fixtures/q_context_gp.sql"],
+      "subjects": ["function+q_out+gp_master_probe+(text)"],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "unknown",
+      "dialect": "greenplum",
+      "review_ids": ["D05", "D12"],
+      "expectation_mode": "must_not_crash_and_must_block_until_q03",
+      "known_issue": "legacy fallback raised 'Unbalanced SQL list' (exit 2) on pre-Q-02 builds; see history/Q01-REPRODUCTION.md"
+    },
+    {
+      "id": "q06",
+      "sql": "fixtures/q06_cte_scopes.sql",
+      "context": ["fixtures/q_context.sql"],
+      "subjects": ["function+q_out+two_inserts+()"],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15",
+      "dialect": "postgres",
+      "review_ids": ["D11"],
+      "expectation_mode": "must_pass_analysis"
+    },
+    {
+      "id": "q07",
+      "sql": "fixtures/q07_xml_filters.sql",
+      "context": ["fixtures/q_context.sql"],
+      "subjects": ["function+q_out+xml_filter_blob+(bigint)"],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15",
+      "dialect": "postgres",
+      "review_ids": ["D06"],
+      "expectation_mode": "must_pass_analysis"
+    },
+    {
+      "id": "q08",
+      "sql": "fixtures/q08_positional_insert.sql",
+      "context": ["fixtures/q_context.sql"],
+      "subjects": ["function+q_out+load_positional+()"],
+      "profile": null,
+      "migration_manifest": "fixtures/migrations/manifest.json",
+      "version": "15",
+      "dialect": "postgres",
+      "review_ids": ["D10"],
+      "expectation_mode": "must_pass_analysis_with_migration_state"
+    },
+    {
+      "id": "q09",
+      "sql": "fixtures/q09_kpi_levels.sql",
+      "context": ["fixtures/q_context.sql"],
+      "subjects": ["function+q_out+load_kpi_levels+()"],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15",
+      "dialect": "postgres",
+      "review_ids": ["D07", "D08"],
+      "expectation_mode": "must_pass_analysis"
+    },
+    {
+      "id": "q10",
+      "sql": "fixtures/q10_hours_plan.sql",
+      "context": ["fixtures/q_context.sql"],
+      "subjects": ["function+q_out+load_norm_plan+(bigint,date)"],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15",
+      "dialect": "postgres",
+      "review_ids": ["D08"],
+      "expectation_mode": "must_pass_analysis"
+    },
+    {
+      "id": "q11",
+      "sql": "fixtures/q11_rr_sl.sql",
+      "context": ["fixtures/q_context.sql"],
+      "subjects": ["function+q_out+load_rr_sl+()"],
+      "profile": null,
+      "migration_manifest": null,
+      "version": "15",
+      "dialect": "postgres",
+      "review_ids": ["D08"],
+      "expectation_mode": "must_pass_analysis"
+    }
+  ]
+}

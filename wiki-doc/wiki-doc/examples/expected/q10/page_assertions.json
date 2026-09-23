@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {
+      "group": "formulas",
+      "selector": {
+        "expression": "h.hours / 8.0"
+      },
+      "field": "expression",
+      "value": "h.hours",
+      "id": "D08-lose-hour-normalization"
+    }
+  ]
+}

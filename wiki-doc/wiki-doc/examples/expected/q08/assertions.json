@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "derived_from": "fixtures/q08_positional_insert.sql",
+  "authoring": "hand-derived from source SQL, independent of extractor and writer",
+  "deparse_deltas": [],
+  "assertions": [
+    {
+      "id": "q08-A1",
+      "review": "D10",
+      "kind": "positional_insert_columns",
+      "target": "q_out.orders",
+      "column_list_present": false,
+      "post_migration_columns": [
+        "id",
+        "amount",
+        "legacy",
+        "total"
+      ],
+      "column_count": 4,
+      "pre_migration_columns": [
+        "id",
+        "legacy",
+        "total"
+      ],
+      "severity": "blocking",
+      "claim": "the INSERT is positional, so its meaning is the post-migration column order id, amount, legacy, total"
+    },
+    {
+      "id": "q08-A2",
+      "review": "D10",
+      "kind": "column_types",
+      "columns": [
+        {
+          "name": "id",
+          "type_target": "bigint"
+        },
+        {
+          "name": "amount",
+          "type_target": "numeric",
+          "type_expression": "numeric"
+        },
+        {
+          "name": "legacy",
+          "type_target": "text"
+        },
+        {
+          "name": "total",
+          "type_target": "integer"
+        }
+      ],
+      "severity": "blocking",
+      "claim": "each target column keeps its exact type and migration evidence; no tb_* mask and no empty type"
+    },
+    {
+      "id": "q08-A3",
+      "review": "D10",
+      "kind": "migration_state",
+      "manifest": "fixtures/migrations/manifest.json",
+      "target_revision": "014",
+      "ordered_files": [
+        "baseline_orders.sql",
+        "014_amount_reorder.sql"
+      ],
+      "severity": "blocking",
+      "claim": "the chosen schema state is the declared migration order, not file mtime or file name guessing"
+    }
+  ]
+}

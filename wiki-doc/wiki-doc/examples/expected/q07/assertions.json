@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "derived_from": "fixtures/q07_xml_filters.sql",
+  "authoring": "hand-derived from source SQL, independent of extractor and writer",
+  "deparse_deltas": [],
+  "assertions": [
+    {
+      "id": "q07-A1",
+      "review": "D06",
+      "kind": "xml_aggregate_filters",
+      "aggregate_calls": [
+        "xmlagg"
+      ],
+      "aggregate_count": 1,
+      "element_name": "filters",
+      "child_name": "filter",
+      "severity": "blocking",
+      "claim": "exactly ONE xmlagg-shaped aggregation produces the filters list"
+    },
+    {
+      "id": "q07-A2",
+      "review": "D06",
+      "kind": "metadata_calls_not_filters",
+      "metadata_select_count": 5,
+      "metadata_source": "q_meta.field_defs",
+      "metadata_fields": [
+        "title",
+        "kind",
+        "owner",
+        "state",
+        "extra"
+      ],
+      "must_not_count_as": "filters",
+      "severity": "blocking",
+      "claim": "the five q_meta.field_defs lookups are metadata calls and are not five filter rows"
+    },
+    {
+      "id": "q07-A3",
+      "review": "D09",
+      "kind": "reference_source_present",
+      "source": "q_meta.field_defs",
+      "role": "reference/metadata dictionary",
+      "on_missing": "plan_gap_blocks",
+      "severity": "blocking",
+      "claim": "the metadata dictionary source is essential; deleting it leaves a source gap that blocks"
+    }
+  ]
+}

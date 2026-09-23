@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {
+      "group": "conditions",
+      "selector": {
+        "expression": "p_date >= DATE '2026-01-01'"
+      },
+      "field": "expression",
+      "value": "h.create_date >= DATE '2026-01-01'",
+      "id": "D04-rebind-to-create-date"
+    },
+    {
+      "group": "formulas",
+      "selector": {
+        "expression": "h.hours / 7.2"
+      },
+      "field": "expression",
+      "value": "h.hours / 8.0",
+      "id": "D04-collapse-legacy-divisor"
+    }
+  ]
+}

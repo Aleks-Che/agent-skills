@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "id": "q-acceptance-large",
+  "title": "Local acceptance scenario for the large control SQL object",
+  "purpose": "Pin the reviewed input by hash and record the independently reviewed acceptance numbers. Numbers below are valid ONLY for the pinned bytes.",
+  "input": {
+    "project": "test-sql-wiki",
+    "relative_path": "gp/gp/all/u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader/04s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core/05function/ckr_uup_db_onboarding.sql",
+    "sha256": "168dc68069a244fa957931d092b93c44a8f01a0b0b3bd3538a6de507cb4941c3",
+    "note": "External control project. Paths must not become runtime constants of the skill."
+  },
+  "reviewed_page": {
+    "sha256": "5b165d85282a3356afc326263ae04b832590c960eb1e0c97af025e26314873d3",
+    "role": "control input, not a target to overwrite"
+  },
+  "hash_policy": {
+    "on_hash_mismatch": "refuse_to_apply_numbers",
+    "required_action": "re-derive expectations from the new bytes; do not silently reuse the counts below"
+  },
+  "acceptance_numbers": {
+    "method": "independent review methodology of wiki-doc-onboarding-2026-09-23",
+    "operations": {
+      "INSERT": 77,
+      "DELETE": 77,
+      "UPDATE": 1
+    },
+    "main_body": {
+      "calculated_insert": 68,
+      "retro_insert": 1
+    },
+    "kpi": {
+      "unique_kpi": 36,
+      "kpi_structure_pairs": 68
+    },
+    "physical_sources": {
+      "unique_from_join": 30
+    },
+    "retro_pairs": {
+      "expected": 3,
+      "requirement": "each retro pair must carry the matching condition"
+    }
+  },
+  "known_defects_in_reviewed_page": [
+    "D01 p_retro described as unused",
+    "D02 wrong NULL-check polarity in filters",
+    "D03 wrong dedup priority and is_done/is_phoned sets",
+    "D04 missing/incorrect >=2026-01-01 formula transition",
+    "D05 EXECUTE ON MASTER attribute lost or denied",
+    "D06 five filter rows claimed instead of one XML aggregate",
+    "D07 wrong INSERT/pair/level counts",
+    "D08 missing SL/RR/plan/normalization formulas",
+    "D09 missing INI source or essential JOIN/WHERE",
+    "D10 wrong column count or lost type/migration",
+    "D11 tm called a CTE when it is not / broken SQL link or graph edge",
+    "D12 unverified compatibility, window cause or wrong example"
+  ],
+  "expected_gate": {
+    "publication_authorized": false,
+    "reason": "lint returns legacy_unverified and publication_authorized=false until the full cycle is proven"
+  }
+}

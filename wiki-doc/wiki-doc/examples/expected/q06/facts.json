@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+q_out+two_inserts+()": {
+      "declaration": {
+        "returns": "void",
+        "parameters": [],
+        "volatility": "volatile"
+      },
+      "operations": {
+        "INSERT": 2,
+        "CTE": 2,
+        "SELECT": 5
+      },
+      "reads": [
+        "q_src.orders",
+        "q_src.order_lines"
+      ],
+      "writes": [
+        "q_out.out_a",
+        "q_out.out_b"
+      ],
+      "calls": [],
+      "conditions": [
+        "o.amount IS NOT NULL"
+      ],
+      "local_objects": {
+        "cte": 2
+      },
+      "definitions": [
+        {
+          "object": "q_out.out_a",
+          "status": "resolved"
+        },
+        {
+          "object": "q_out.out_b",
+          "status": "resolved"
+        }
+      ],
+      "unknown_required": false
+    }
+  }
+}

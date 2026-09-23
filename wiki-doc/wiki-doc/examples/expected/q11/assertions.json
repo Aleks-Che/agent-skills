@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "derived_from": "fixtures/q11_rr_sl.sql",
+  "authoring": "hand-derived from source SQL, independent of extractor and writer",
+  "deparse_deltas": [
+    "pipeline deparse emits CAST(count(*) AS numeric) and tightens WHERE( spacing; source form kept as oracle truth"
+  ],
+  "assertions": [
+    {
+      "id": "q11-A1",
+      "review": "D08",
+      "kind": "rr_formula",
+      "name": "rr_value",
+      "shape": "in_target_count / total_count",
+      "rejected": [
+        "average of minutes",
+        "sum of minutes"
+      ],
+      "severity": "blocking",
+      "claim": "rr_value is the share of tickets closed within target_min, not an average of durations"
+    },
+    {
+      "id": "q11-A2",
+      "review": "D08",
+      "kind": "sl_formula",
+      "name": "sl_value",
+      "shape": "1 - rr_value",
+      "severity": "blocking",
+      "claim": "sl_value is the complement of the SAME two counts; losing either formula while keeping both column names is incomplete coverage"
+    },
+    {
+      "id": "q11-A3",
+      "review": "Q-07",
+      "kind": "honest_unknown",
+      "token": "rr",
+      "decoded": false,
+      "rejected": [
+        "first-response rate",
+        "resolution rate",
+        "return rate"
+      ],
+      "severity": "blocking",
+      "claim": "the business expansion of `rr` is unknown; any expanded name is an unverified claim and must be rejected or explicitly limited"
+    }
+  ]
+}

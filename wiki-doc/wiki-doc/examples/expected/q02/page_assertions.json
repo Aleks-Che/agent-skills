@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {
+      "group": "conditions",
+      "selector": {
+        "expression": "c.phone IS NOT NULL AND c.is_phoned IS NOT TRUE"
+      },
+      "field": "expression",
+      "value": "c.phone IS NULL AND c.is_phoned IS NOT TRUE",
+      "id": "D02-flip-phone-null"
+    },
+    {
+      "group": "conditions",
+      "selector": {
+        "expression": "c.phone IS NOT NULL AND c.is_phoned IS NOT TRUE"
+      },
+      "field": "expression",
+      "value": "c.phone IS NOT NULL AND c.is_phoned IS TRUE",
+      "id": "D02-flip-is-phoned"
+    }
+  ]
+}

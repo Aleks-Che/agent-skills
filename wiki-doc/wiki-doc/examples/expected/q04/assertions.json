@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "derived_from": "fixtures/q04_date_branch.sql",
+  "authoring": "hand-derived from source SQL, independent of extractor and writer",
+  "deparse_deltas": [],
+  "assertions": [
+    {
+      "id": "q04-A1",
+      "review": "D04",
+      "kind": "date_branch_boundary",
+      "condition": "p_date >= DATE '2026-01-01'",
+      "literal": "2026-01-01",
+      "bound_to": [
+        "p_date",
+        "h.on_date"
+      ],
+      "not_bound_to": [
+        "create_date",
+        "h.create_date"
+      ],
+      "severity": "blocking",
+      "claim": "the formula transition is keyed on p_date/on_date against 2026-01-01, not on create_date"
+    },
+    {
+      "id": "q04-A2",
+      "review": "D04",
+      "kind": "branch_formula_pair",
+      "branches": [
+        {
+          "when": "p_date >= DATE '2026-01-01'",
+          "formula": "h.hours / 8.0"
+        },
+        {
+          "when": "else",
+          "formula": "h.hours / 7.2"
+        }
+      ],
+      "severity": "blocking",
+      "claim": "both date branches carry their own divisor; dropping >=2026-01-01 or unifying divisors is a defect tied to both KPI structures"
+    }
+  ]
+}

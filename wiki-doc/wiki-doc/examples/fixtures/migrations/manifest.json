@@ -1,0 +1,9 @@
+{
+  "dialect": "postgres",
+  "version": "15",
+  "target_revision": "014",
+  "ordered_files": [
+    "baseline_orders.sql",
+    "014_amount_reorder.sql"
+  ]
+}

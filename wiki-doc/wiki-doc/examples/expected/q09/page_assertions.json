@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {
+      "group": "conditions",
+      "selector": {
+        "expression": "f.kpi_id = 20 AND f.struct_id = 200 AND f.level_no = 1"
+      },
+      "field": "expression",
+      "value": "f.kpi_id = 10 AND f.struct_id = 100 AND f.level_no = 1",
+      "id": "D07-collapse-pair"
+    },
+    {
+      "group": "formulas",
+      "selector": {
+        "expression": "f.value_num * 1.5"
+      },
+      "field": "expression",
+      "value": "f.value_num",
+      "id": "D08-lose-struct-100-level2-formula"
+    }
+  ]
+}

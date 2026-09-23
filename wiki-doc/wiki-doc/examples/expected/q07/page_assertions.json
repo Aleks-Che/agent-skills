@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {
+      "group": "formulas",
+      "selector": {
+        "expression": "xmlelement(name filters, xmlagg(xmlelement(name filter, f.value) ORDER BY f.ord))"
+      },
+      "field": "expression",
+      "value": "xmlelement(name filters, xmlelement(name filter, f.value))",
+      "id": "D06-drop-xmlagg"
+    }
+  ]
+}

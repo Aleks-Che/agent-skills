@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "derived_from": "fixtures/q10_hours_plan.sql",
+  "authoring": "hand-derived from source SQL, independent of extractor and writer",
+  "deparse_deltas": [],
+  "assertions": [
+    {
+      "id": "q10-A1",
+      "review": "D08",
+      "kind": "hour_normalization",
+      "formula": "h.hours / 8.0",
+      "divisor": 8.0,
+      "rejected": [
+        "h.hours",
+        "h.hours / 7.2"
+      ],
+      "severity": "blocking",
+      "claim": "hour normalization divides by 8.0; losing the divisor while keeping the KPI name is incomplete coverage"
+    },
+    {
+      "id": "q10-A2",
+      "review": "D08",
+      "kind": "plan_selection",
+      "order_by": [
+        "p.priority DESC",
+        "p.weight DESC"
+      ],
+      "limit": 1,
+      "severity": "blocking",
+      "claim": "plan choice is highest priority, then largest weight, then LIMIT 1"
+    },
+    {
+      "id": "q10-A3",
+      "review": "D09",
+      "kind": "essential_sources",
+      "sources": [
+        "q_src.hours",
+        "q_src.plan_variants"
+      ],
+      "essential_conditions": [
+        "p.user_id = p_uid",
+        "h.user_id = p_uid AND h.on_date = p_date"
+      ],
+      "on_missing": "plan_gap_blocks",
+      "severity": "blocking",
+      "claim": "both sources and both WHERE conditions are essential; deleting either leaves a plan gap that blocks"
+    }
+  ]
+}

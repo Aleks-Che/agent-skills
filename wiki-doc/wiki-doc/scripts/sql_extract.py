@@ -117,7 +117,7 @@ def _strip_strings_and_comments(text: str) -> str:
     return _mask_sql(text)[0]
 
 
-from sql_syntax import mask_sql as _mask_sql, matching_paren, split_top_level
+from sql_syntax import mask_sql as _mask_sql, matching_paren, split_top_level, SubjectSelectionError
 
 
 @dataclass
@@ -232,6 +232,46 @@ def _clauses(text):
     return result
 
 
+def _split_at_depth_zero(text, keywords):
+    """First occurrence of any keyword outside parentheses/brackets.
+
+    A flat re.split cuts nested subqueries mid-expression and then the source
+    list splitter raises 'Unbalanced SQL list'. Boundaries must respect nesting.
+    """
+    pattern = re.compile(r'\b(?:' + '|'.join(keywords) + r')\b', re.I)
+    depth, index = 0, 0
+    for match in pattern.finditer(text):
+        for ch in text[index:match.start()]:
+            if ch in '([':
+                depth += 1
+            elif ch in ')]':
+                depth -= 1
+        index = match.start()
+        if depth == 0:
+            return match.start()
+    return len(text)
+
+
+def _trim_trailing_closers(text):
+    """Drop trailing ')' / ']' left over when a keyword segment overshoots.
+
+    The keyword scan is depth-blind, so a nested SELECT's segment can run past
+    the subquery into the enclosing statement and pick up its closing paren.
+    Trimming only unbalanced closers at the end keeps every original byte of the
+    matched expression and avoids a bogus 'Unbalanced SQL list' failure.
+    """
+    depth = 0
+    for ch in text:
+        if ch in '([':
+            depth += 1
+        elif ch in ')]':
+            depth -= 1
+    while depth < 0 and text.rstrip().endswith((')', ']')):
+        text = text.rstrip()[:-1]
+        depth += 1
+    return text.rstrip()
+
+
 def _expressions(raw, kind):
     """Concrete output/assignment expressions and predicate clauses for bounded SQL."""
     cleaned = _strip_strings_and_comments(raw)
@@ -332,8 +372,16 @@ def extract_operations(sql_text: str, file_path: str, file_sha256: str,
             for word, begin, end in _clauses(segment):
                 if word in ('FROM','USING'):
                     tail = segment[end:]
-                    tail = re.split(r'\b(?:WHERE|GROUP|ORDER|HAVING|RETURNING|WHEN)\b', tail, maxsplit=1, flags=re.I)[0]
-                    if len(split_top_level(tail.rstrip(';'))) > 1:
+                    cut = _split_at_depth_zero(tail, ('WHERE','GROUP','ORDER','HAVING','RETURNING','WHEN'))
+                    tail = _trim_trailing_closers(tail[:cut])
+                    try:
+                        parts = split_top_level(tail.rstrip(';')) if tail.strip() else []
+                    except ValueError as exc:
+                        # Auxiliary parse failure keeps its source range and blocks;
+                        # it must not abort the whole analysis with an uncaught error.
+                        add_note(start, stop, f'Source list split failed: {exc}')
+                        continue
+                    if len(parts) > 1:
                         add_note(start, stop, 'Comma-separated sources require scoped analysis')
             if re.search(r'\bSELECT\b.*?\bINTO\b|\bON\s+CONFLICT\b|\bDISTINCT\s+ON\b|\bWINDOW\b', segment, re.I | re.S):
                 add_note(start, stop, 'SELECT INTO / ON CONFLICT / named window requires scoped analysis')
@@ -476,7 +524,7 @@ def _extract_inventory_legacy(sql_text: str, file_path: str, file_sha256: str,
             matches = [o for o in objects if subject in
                        (o.name, f'{o.schema}.{o.name}', object_scope(o))]
             if len(matches) != 1:
-                raise ValueError(f'Subject {subject!r}: expected one declaration, found {len(matches)}')
+                raise SubjectSelectionError(f'Subject {subject!r}: expected one declaration, found {len(matches)}')
             if matches[0] not in selected:
                 selected.append(matches[0])
 
@@ -517,7 +565,12 @@ def _extract_inventory_legacy(sql_text: str, file_path: str, file_sha256: str,
                 all_items[-1].details['returns_table'] = True
                 note(obj.start, obj.end, 'RETURNS TABLE columns require structural analysis')
         body = sql_text[obj.body_start:obj.body_end]
-        items, notes = extract_operations(body, file_path, file_sha256, scope)
+        try:
+            items, notes = extract_operations(body, file_path, file_sha256, scope)
+        except ValueError as exc:
+            items, notes = [], []
+            note(obj.body_start, obj.body_end,
+                 f'Legacy operation scan failed: {exc}')
         offset = _line_of(sql_text, obj.body_start) - 1
         for item in items + notes:
             item.source_ref.start_line += offset
@@ -535,7 +588,11 @@ def _extract_inventory_legacy(sql_text: str, file_path: str, file_sha256: str,
         if not items:
             note(obj.body_start, obj.body_end, 'No supported executable operation found')
     if not objects:
-        items, notes = extract_operations(sql_text, file_path, file_sha256, file_path)
+        try:
+            items, notes = extract_operations(sql_text, file_path, file_sha256, file_path)
+        except ValueError as exc:
+            items, notes = [], []
+            note(0, len(sql_text), f'Legacy operation scan failed: {exc}')
         all_items.extend(items)
         all_notes.extend(notes)
         note(0, len(sql_text), 'No supported object declaration; migration/raw statement scope requires further analysis')
@@ -565,16 +622,57 @@ def extract_inventory(sql_text, file_path, file_sha256, dialect='postgres', vers
     require_parser()
     try:
         native = analyze(sql_text, file_path, file_sha256, dialect, version, documented_subjects)
+    except SubjectSelectionError:
+        raise
     except Exception as exc:
         # A parse failure must never turn into a successful regex-only validation.
-        fallback = _extract_inventory_legacy(sql_text, file_path, file_sha256, dialect, version, documented_subjects)
+        # The legacy fallback is a last resort: auxiliary parse failures inside it
+        # become blocking diagnostics, never an uncaught crash and never an empty
+        # "successful" inventory. Malformed inputs (e.g. ambiguous --subjects)
+        # stay ValueError and keep the documented CLI exit code 2.
+        try:
+            fallback = _extract_inventory_legacy(sql_text, file_path, file_sha256, dialect, version, documented_subjects)
+        except SubjectSelectionError:
+            # Only an explicit selection error is a CLI input error. ValueError
+            # from an auxiliary parser is an analysis gap, just like other failures.
+            raise
+        except Exception as sub:
+            fallback = {
+                'schema_version': 2,
+                'run_id': '00000000-0000-0000-0000-000000000000',
+                'dialect': {'name': dialect, 'version': version},
+                'items': [{'anchor': {'object_or_scope': file_path, 'construct': 'ANALYSIS_GAP', 'ordinal': 1},
+                           'kind': 'ANALYSIS_GAP',
+                           'source_ref': {'path': file_path, 'sha256': file_sha256,
+                                          'start_line': 1, 'end_line': max(1, len(sql_text.splitlines()))}}],
+                'coverage_notes': [],
+                'inputs': [{'path': file_path, 'sha256': file_sha256}],
+                'documented_subjects': documented_subjects or [file_path],
+            }
+            sub_reason = f'Legacy analysis failed: {sub}'
+        else:
+            sub_reason = None
         fallback['coverage_notes'].append({'source_ref': {'path': file_path, 'sha256': file_sha256,
             'start_line': 1, 'end_line': max(1, len(sql_text.splitlines()))}, 'reason': f'PostgreSQL AST analysis failed: {exc}'})
+        if sub_reason:
+            fallback['coverage_notes'].append({'source_ref': {'path': file_path, 'sha256': file_sha256,
+                'start_line': 1, 'end_line': max(1, len(sql_text.splitlines()))}, 'reason': sub_reason})
         return fallback
     try:
         previous = _extract_inventory_legacy(sql_text, file_path, file_sha256, dialect, version, documented_subjects)
-    except ValueError:
+    except SubjectSelectionError:
+        # Native selection is authoritative; the bounded legacy scanner cannot
+        # recognize every valid declaration (for example quoted identifiers).
         return native
+    except Exception as exc:
+        native['coverage_notes'].append({'source_ref': {'path': file_path, 'sha256': file_sha256,
+            'start_line': 1, 'end_line': max(1, len(sql_text.splitlines()))},
+            'reason': f'Legacy analysis failed: {exc}'})
+        return native
+    # A failed whole-scope operation scan is distinct from the bounded legacy
+    # scanner's known unsupported constructs, which the native AST can handle.
+    native['coverage_notes'].extend(note for note in previous['coverage_notes']
+                                    if note['reason'].startswith('Legacy operation scan failed:'))
     if not native['coverage_notes'] and not previous['coverage_notes'] and not any(
             i['kind'] in ('EXECUTE','CTAS','CTE','TRIGGER','INDEX','GRANT','REVOKE')
             or i.get('details', {}).get('constraints') for i in native['items']):

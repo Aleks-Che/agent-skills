@@ -1,6 +1,11 @@
 """Position-preserving lexical helpers for the supported PostgreSQL subset."""
 import re
 
+
+class SubjectSelectionError(ValueError):
+    """An explicit subject does not identify exactly one declaration."""
+
+
 DOLLAR_QUOTE_RE = re.compile(r'\$(?:[a-zA-Z_][a-zA-Z_0-9]*)?\$')
 
 def mask_sql(text, mask_identifiers=True):

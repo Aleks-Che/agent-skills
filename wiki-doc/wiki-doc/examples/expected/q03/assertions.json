@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "derived_from": "fixtures/q03_dedup_priority.sql",
+  "authoring": "hand-derived from source SQL, independent of extractor and writer",
+  "deparse_deltas": [],
+  "assertions": [
+    {
+      "id": "q03-A1",
+      "review": "D03",
+      "kind": "in_list_set",
+      "expression_contains": "t.status IN ('new', 'ready', 'assigned', 'in_progress', 'waiting')",
+      "flag": "is_done",
+      "members": [
+        "new",
+        "ready",
+        "assigned",
+        "in_progress",
+        "waiting"
+      ],
+      "member_count": 5,
+      "rejected": [
+        "done",
+        "cancelled",
+        "archived"
+      ],
+      "severity": "blocking",
+      "claim": "is_done uses five codes, independently from the three-code is_phoned calculation"
+    },
+    {
+      "id": "q03-A2",
+      "review": "D03",
+      "kind": "in_list_set",
+      "expression_contains": "t.status IN ('ready', 'in_progress', 'waiting')",
+      "flag": "is_phoned",
+      "members": [
+        "ready",
+        "in_progress",
+        "waiting"
+      ],
+      "member_count": 3,
+      "rejected": [
+        "new",
+        "assigned"
+      ],
+      "severity": "blocking",
+      "claim": "is_phoned uses three codes; status assigned makes is_done true and is_phoned false"
+    },
+    {
+      "id": "q03-A3",
+      "review": "D03",
+      "kind": "row_choice_order",
+      "order_by": [
+        "t.priority DESC",
+        "t.created_at"
+      ],
+      "limit": 1,
+      "severity": "blocking",
+      "claim": "row choice is priority DESC with created_at tie-break and LIMIT 1"
+    },
+    {
+      "id": "q03-A4",
+      "review": "D03",
+      "kind": "counterexample",
+      "rows": [
+        {
+          "task_id": 1,
+          "priority": 1,
+          "created_at": "2026-01-01",
+          "status": "ready"
+        },
+        {
+          "task_id": 2,
+          "priority": 2,
+          "created_at": "2026-01-02",
+          "status": "assigned"
+        }
+      ],
+      "selected_task_id": 2,
+      "earliest_task_id": 1,
+      "selected_flags": {
+        "is_done": true,
+        "is_phoned": false
+      },
+      "severity": "blocking",
+      "claim": "the set/order claims are checked against a two-task counterexample, not only the happy path"
+    }
+  ]
+}

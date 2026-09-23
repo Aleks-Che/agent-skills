@@ -1,0 +1,673 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-23",
+  "reviewer": "Codex",
+  "package_version": "1.0.0",
+  "statuses": {
+    "Q-01": "in_progress",
+    "Q-02": "done",
+    "Q-03": "planned",
+    "Q-04": "planned",
+    "Q-05": "planned",
+    "Q-06": "planned",
+    "Q-07": "planned",
+    "Q-08": "planned",
+    "Q-09": "planned"
+  },
+  "environment": {
+    "python": "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "dependencies": {
+      "pglast": "7.14",
+      "jsonschema": "4.26.0",
+      "markdown-it-py": "3.0.0",
+      "rfc3339-validator": "0.1.4"
+    }
+  },
+  "unit": {
+    "python": "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "mode": "unittest modules in isolated processes",
+    "workers": 4,
+    "valid": true,
+    "tests": 764,
+    "skipped": 1,
+    "elapsed_seconds": 133.422,
+    "results": [
+      {
+        "module": "test_artifact_regressions.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_artifact_regressions.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 49,
+        "skipped": 0,
+        "elapsed_seconds": 18.042
+      },
+      {
+        "module": "test_artifacts.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_artifacts.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 30,
+        "skipped": 0,
+        "elapsed_seconds": 1.104
+      },
+      {
+        "module": "test_check_policy.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_check_policy.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 37,
+        "skipped": 0,
+        "elapsed_seconds": 0.937
+      },
+      {
+        "module": "test_coverage_gate.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_coverage_gate.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 87,
+        "skipped": 0,
+        "elapsed_seconds": 43.322
+      },
+      {
+        "module": "test_dialect_matrix.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_dialect_matrix.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 38,
+        "skipped": 0,
+        "elapsed_seconds": 11.815
+      },
+      {
+        "module": "test_evidence_bundle.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_evidence_bundle.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 55,
+        "skipped": 0,
+        "elapsed_seconds": 7.67
+      },
+      {
+        "module": "test_identity.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_identity.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 103,
+        "skipped": 0,
+        "elapsed_seconds": 0.877
+      },
+      {
+        "module": "test_index_query.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_index_query.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 29,
+        "skipped": 0,
+        "elapsed_seconds": 74.76
+      },
+      {
+        "module": "test_inventory_plan.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_inventory_plan.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 22,
+        "skipped": 0,
+        "elapsed_seconds": 2.469
+      },
+      {
+        "module": "test_metrics.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_metrics.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 40,
+        "skipped": 0,
+        "elapsed_seconds": 106.64
+      },
+      {
+        "module": "test_p0_gate_regressions.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p0_gate_regressions.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 36,
+        "skipped": 1,
+        "elapsed_seconds": 30.233
+      },
+      {
+        "module": "test_p1_acceptance.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p1_acceptance.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 12,
+        "skipped": 0,
+        "elapsed_seconds": 27.528
+      },
+      {
+        "module": "test_p2_03_acceptance.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p2_03_acceptance.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 16,
+        "skipped": 0,
+        "elapsed_seconds": 17.862
+      },
+      {
+        "module": "test_p2_03_model_extensions.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p2_03_model_extensions.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 28,
+        "skipped": 0,
+        "elapsed_seconds": 0.341
+      },
+      {
+        "module": "test_p2_05_acceptance.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p2_05_acceptance.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 17,
+        "skipped": 0,
+        "elapsed_seconds": 46.812
+      },
+      {
+        "module": "test_p2_05_operations.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p2_05_operations.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 27,
+        "skipped": 0,
+        "elapsed_seconds": 11.227
+      },
+      {
+        "module": "test_publish.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_publish.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 11,
+        "skipped": 0,
+        "elapsed_seconds": 46.797
+      },
+      {
+        "module": "test_q01_expectations.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q01_expectations.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 30,
+        "skipped": 0,
+        "elapsed_seconds": 3.231
+      },
+      {
+        "module": "test_q02_fallback_diagnostics.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q02_fallback_diagnostics.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 27,
+        "skipped": 0,
+        "elapsed_seconds": 10.646
+      },
+      {
+        "module": "test_review_fixes.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_review_fixes.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 41,
+        "skipped": 0,
+        "elapsed_seconds": 17.164
+      },
+      {
+        "module": "test_sql_ast.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_sql_ast.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 20,
+        "skipped": 0,
+        "elapsed_seconds": 0.507
+      },
+      {
+        "module": "test_validation_gate.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_validation_gate.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 9,
+        "skipped": 0,
+        "elapsed_seconds": 0.001
+      }
+    ]
+  },
+  "regression": {
+    "reference": {
+      "valid": true,
+      "mode": "reference",
+      "cases": 12,
+      "subjects": 15,
+      "repeats": 1,
+      "full_agent_cycle_completed": false,
+      "log": ".runtime/q-review-2026-09-23/reference-reviewed.log"
+    },
+    "saved": {
+      "valid": true,
+      "mode": "saved",
+      "cases": 12,
+      "subjects": 15,
+      "repeats": 1,
+      "full_agent_cycle_completed": false,
+      "log": ".runtime/q-review-2026-09-23/saved-reviewed.log"
+    }
+  },
+  "extractor": {
+    "python": "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "package_version": "1.0.0",
+    "input_sha256": "168dc68069a244fa957931d092b93c44a8f01a0b0b3bd3538a6de507cb4941c3",
+    "runs": [
+      {
+        "case": "q05",
+        "implementation": "before_q02",
+        "input_sha256": "49fd3d012e82d20f359ad838825e07fa4045baf27ffd9b77b421203b0212f466",
+        "returncode": 2,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr": "{\"error\": \"Unbalanced SQL list\"}\r\n",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "C:\\Users\\Aleks\\AppData\\Local\\Temp\\tmpy74ejywq\\sql_extract.py",
+          "C:\\work\\git\\my-repos\\agent-skills.agents-ide-worktrees\\28e110ba73c447c39fa260701cff993f\\wiki-doc\\wiki-doc\\examples\\fixtures\\q05_gp_master_nested.sql",
+          "--dialect",
+          "greenplum",
+          "--version",
+          "unknown"
+        ]
+      },
+      {
+        "case": "q05",
+        "implementation": "current",
+        "input_sha256": "49fd3d012e82d20f359ad838825e07fa4045baf27ffd9b77b421203b0212f466",
+        "returncode": 0,
+        "stdout_sha256": "1164529eeb885e81fa69d6c716fb7f6d11ebcb5fe80e27c56a51a78acdc4a680",
+        "stderr": "",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "C:\\work\\git\\my-repos\\agent-skills.agents-ide-worktrees\\28e110ba73c447c39fa260701cff993f\\wiki-doc\\wiki-doc\\scripts\\sql_extract.py",
+          "C:\\work\\git\\my-repos\\agent-skills.agents-ide-worktrees\\28e110ba73c447c39fa260701cff993f\\wiki-doc\\wiki-doc\\examples\\fixtures\\q05_gp_master_nested.sql",
+          "--dialect",
+          "greenplum",
+          "--version",
+          "unknown"
+        ],
+        "items": 8,
+        "coverage_notes": 12,
+        "ast_reasons": [
+          "PostgreSQL AST analysis failed: syntax error at or near \"EXECUTE\", at index 1053"
+        ],
+        "unsupported_dialect": true
+      },
+      {
+        "case": "large",
+        "implementation": "before_q02",
+        "input_sha256": "168dc68069a244fa957931d092b93c44a8f01a0b0b3bd3538a6de507cb4941c3",
+        "returncode": 2,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr": "{\"error\": \"Unbalanced SQL list\"}\r\n",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "C:\\Users\\Aleks\\AppData\\Local\\Temp\\tmpy74ejywq\\sql_extract.py",
+          "C:\\work\\git\\my-repos\\test-sql-wiki\\gp\\gp\\all\\u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader\\04s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core\\05function\\ckr_uup_db_onboarding.sql",
+          "--dialect",
+          "greenplum",
+          "--version",
+          "unknown"
+        ]
+      },
+      {
+        "case": "large",
+        "implementation": "current",
+        "input_sha256": "168dc68069a244fa957931d092b93c44a8f01a0b0b3bd3538a6de507cb4941c3",
+        "returncode": 0,
+        "stdout_sha256": "7ce7aa2fd357dfada91494865d64d051cbb0f218474835acd7d367b742bf4897",
+        "stderr": "",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-B",
+          "C:\\work\\git\\my-repos\\agent-skills.agents-ide-worktrees\\28e110ba73c447c39fa260701cff993f\\wiki-doc\\wiki-doc\\scripts\\sql_extract.py",
+          "C:\\work\\git\\my-repos\\test-sql-wiki\\gp\\gp\\all\\u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader\\04s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core\\05function\\ckr_uup_db_onboarding.sql",
+          "--dialect",
+          "greenplum",
+          "--version",
+          "unknown"
+        ],
+        "items": 1076,
+        "coverage_notes": 7551,
+        "ast_reasons": [
+          "PostgreSQL AST analysis failed: syntax error at or near \"EXECUTE\", at index 842125"
+        ],
+        "unsupported_dialect": true
+      }
+    ],
+    "baseline_revision": "b614063e92edb097991a3d1aabe0f38e49d01005"
+  },
+  "q_oracles": {
+    "cases": 11,
+    "blocking_assertions": 35,
+    "expected_ready": 10,
+    "expected_blocked": 1,
+    "full_generation_cycle_completed": false
+  },
+  "skill_validation": {
+    "valid": true,
+    "command": "python -B -X utf8 <skill-creator>/scripts/quick_validate.py wiki-doc/wiki-doc"
+  },
+  "limitations": [
+    "Full LLM run was not performed.",
+    "Q-01 saved legacy-page acceptance is still open.",
+    "Q-07/Q-08 generation and semantic mutation acceptance is still open.",
+    "Greenplum remains unsupported and publication is blocked."
+  ],
+  "artifact_sha256": {
+    "wiki-doc/examples/cases-q.json": "5801582d453c6b21c2f29c30856276b4a06c7090d2dbfc9bf46fe0edbf5b95ec",
+    "wiki-doc/examples/expected/_authoring.py": "973b86fccb8dec48161e636db2185676a9d631102851c27ca67137e0396c9112",
+    "wiki-doc/examples/expected/q01/assertions.json": "c96e832c81075fe827fd67733ecf9f2eebc44b9663f403b499ec1129cb3c513b",
+    "wiki-doc/examples/expected/q01/checks.json": "ac2159685432d679b0bcec72d902f84c9a043297c53f6895b4a4c567a8557d6c",
+    "wiki-doc/examples/expected/q01/decision.json": "b5c8fa611b23d1c316d57808850d60bf7905a785f6f9c78ed9dbf11dfeff4733",
+    "wiki-doc/examples/expected/q01/facts.json": "e06eba31c9ff5841b9a0a1e2ed279ae12ffe3ddf886eaba7ae8a584e9af0dfb9",
+    "wiki-doc/examples/expected/q01/page_assertions.json": "9428d0fb9688d5c44e8cf248e330b16f75102555c97bae2c91e58145d413c625",
+    "wiki-doc/examples/expected/q02/assertions.json": "416b08949e29e12ae3a987fb54c1730fa457ff82d174caae27e813f35d251937",
+    "wiki-doc/examples/expected/q02/checks.json": "98c6f25111493b8e95353a624319f97f764d343f215266a2eecc3767362f1c1c",
+    "wiki-doc/examples/expected/q02/decision.json": "b5c8fa611b23d1c316d57808850d60bf7905a785f6f9c78ed9dbf11dfeff4733",
+    "wiki-doc/examples/expected/q02/facts.json": "ea95ab86bfabf38069cd25d7a16dd1d880b4abd850426ad8d62941725b69c2a5",
+    "wiki-doc/examples/expected/q02/page_assertions.json": "6052c248dfa7feff38c6517e9e23885b5c988aa9fa79f581487eb93ded0cf800",
+    "wiki-doc/examples/expected/q03/assertions.json": "d6baecc7093a466b58bddd35261c3d3b5e7b19e5a6283d76fc59282849875ac4",
+    "wiki-doc/examples/expected/q03/checks.json": "4df536c3289126bb0c0ca03ec1dc81f8d048ecbd0250e0e0d1e12cda431f3aa8",
+    "wiki-doc/examples/expected/q03/decision.json": "b5c8fa611b23d1c316d57808850d60bf7905a785f6f9c78ed9dbf11dfeff4733",
+    "wiki-doc/examples/expected/q03/facts.json": "dc66006bce5c3500b8aa713d6b2383560c71a0053b4f076cf1b66549b7f83319",
+    "wiki-doc/examples/expected/q03/page_assertions.json": "c1770715e1df576ea109868639e3c59f0751cd6ee26fbe8bd9fb5b2026c4026a",
+    "wiki-doc/examples/expected/q04/assertions.json": "65f459dc814c5db57fa5afc89d39951fcd8f9320b2236ed8af44efef3a2f3bd8",
+    "wiki-doc/examples/expected/q04/checks.json": "6ff6761da2bd1d5aa809f1f7154fc674c7af46de739fae0749db03a473bcd892",
+    "wiki-doc/examples/expected/q04/decision.json": "b5c8fa611b23d1c316d57808850d60bf7905a785f6f9c78ed9dbf11dfeff4733",
+    "wiki-doc/examples/expected/q04/facts.json": "ce46c8ccbd6059abc211b78e31745a6bc160fe6d24a7611f0f698aa1c9fccfa0",
+    "wiki-doc/examples/expected/q04/page_assertions.json": "030972fabd5db3e0325d30258b9e62a9c46d72db670f43500c34f1179ff132ef",
+    "wiki-doc/examples/expected/q05/assertions.json": "098a61a169bd60063e70a70c1d0d3efe54bf261cee45622fc5a7ed3359f0ca58",
+    "wiki-doc/examples/expected/q05/checks.json": "5300bd777507dc5dc2ee2ea2c37fc677daa16dfdad1fcb6b437ab98965fccc21",
+    "wiki-doc/examples/expected/q05/decision.json": "3dc3e7f7bcbcfbaef22639ffde7e77c342d79c9620fa634db553b815d985b596",
+    "wiki-doc/examples/expected/q05/facts.json": "155cd5fe06bb90f5a4a6d84e0207b95cb755e9131e041d8922dcfbec2bad6b22",
+    "wiki-doc/examples/expected/q05/page_assertions.json": "7e58b9bcb951745d1494b6883e907ce2396aee422d90183144cba84b5a9ac093",
+    "wiki-doc/examples/expected/q06/assertions.json": "7c371739237d6282fbdf5bee53cfd04442c43ea5766de29b1f0cb1f30f239f56",
+    "wiki-doc/examples/expected/q06/checks.json": "1fd732ef4b20b186e7a0701b2f7f77aff517a3e56627ac87a9194bb3e735e921",
+    "wiki-doc/examples/expected/q06/decision.json": "b5c8fa611b23d1c316d57808850d60bf7905a785f6f9c78ed9dbf11dfeff4733",
+    "wiki-doc/examples/expected/q06/facts.json": "c56e4b18244f7490e5abc9d3630f3646163c65e95abb7ee36ae8d44b3af110de",
+    "wiki-doc/examples/expected/q06/page_assertions.json": "1225be3c73300cc4e97cad79e695bf009cf7fc1cdbdc8b536703087e507ca4de",
+    "wiki-doc/examples/expected/q07/assertions.json": "b820a650e64e5a331dea96763ee77d77341607f8999825796e58bcab6b81e140",
+    "wiki-doc/examples/expected/q07/checks.json": "98c6f25111493b8e95353a624319f97f764d343f215266a2eecc3767362f1c1c",
+    "wiki-doc/examples/expected/q07/decision.json": "b5c8fa611b23d1c316d57808850d60bf7905a785f6f9c78ed9dbf11dfeff4733",
+    "wiki-doc/examples/expected/q07/facts.json": "93688e0b42f8f1f07099d77b99827ac99ce622f25565781fb7694444e5d2d633",
+    "wiki-doc/examples/expected/q07/page_assertions.json": "2589af1486cdbc1984f63ff00a14eacb37a042c88119761e77a269b89031bc45",
+    "wiki-doc/examples/expected/q08/assertions.json": "723d6f31293c51de62eed12df18c522fac30f280fa59ced5073d481528b7013e",
+    "wiki-doc/examples/expected/q08/checks.json": "abb3d90856720b6af1e30123444d54b65d0cdf2703c0693d1748aea9739be660",
+    "wiki-doc/examples/expected/q08/decision.json": "b5c8fa611b23d1c316d57808850d60bf7905a785f6f9c78ed9dbf11dfeff4733",
+    "wiki-doc/examples/expected/q08/facts.json": "d285a78a69ff821dab1a7ee8a59a3f5e3b6297b14769dae2092c39956848e779",
+    "wiki-doc/examples/expected/q08/page_assertions.json": "19503b16c600b5d0150267ba802b4b22491af16e73d5f434b753ed2cef679d8e",
+    "wiki-doc/examples/expected/q09/assertions.json": "d7b19b98f2628af06c476e5e64103226c0fddfc3a39c578f0b5cd88532c4df25",
+    "wiki-doc/examples/expected/q09/checks.json": "1fd732ef4b20b186e7a0701b2f7f77aff517a3e56627ac87a9194bb3e735e921",
+    "wiki-doc/examples/expected/q09/decision.json": "b5c8fa611b23d1c316d57808850d60bf7905a785f6f9c78ed9dbf11dfeff4733",
+    "wiki-doc/examples/expected/q09/facts.json": "a1972bf7f64ebf11d114d0ec142f76d69c8aaa229cc60a7bd834d475479ed578",
+    "wiki-doc/examples/expected/q09/page_assertions.json": "d0e21d456f19f8234bdde0017829c4a6b594f65d52691e6dd93b90fd4e61b521",
+    "wiki-doc/examples/expected/q10/assertions.json": "d918a7423fb060a04b83a337208786a639f051f62d69ae7c573744418592f434",
+    "wiki-doc/examples/expected/q10/checks.json": "1fd732ef4b20b186e7a0701b2f7f77aff517a3e56627ac87a9194bb3e735e921",
+    "wiki-doc/examples/expected/q10/decision.json": "b5c8fa611b23d1c316d57808850d60bf7905a785f6f9c78ed9dbf11dfeff4733",
+    "wiki-doc/examples/expected/q10/facts.json": "98fc016c92903e38d41db1f77931181f7ce919f8adf822e44ce35450688276b4",
+    "wiki-doc/examples/expected/q10/page_assertions.json": "75b5caad884980163ee33f1f48f059457ad15c54b36cb5f55e5fac045195d981",
+    "wiki-doc/examples/expected/q11/assertions.json": "faeb2e7fbd11cad77fa791b4f4b0aef7700e3bf2e40753b5a7e52e56c03d061b",
+    "wiki-doc/examples/expected/q11/checks.json": "af6e4d1ff00bcc363f2f53796daafa535f0251339fb75e59f9d113f77c00b2bb",
+    "wiki-doc/examples/expected/q11/decision.json": "b5c8fa611b23d1c316d57808850d60bf7905a785f6f9c78ed9dbf11dfeff4733",
+    "wiki-doc/examples/expected/q11/facts.json": "5bff356b04baf5a069fdcb638702568acfe64d41c7dcf0ac619782cc36a793a1",
+    "wiki-doc/examples/expected/q11/page_assertions.json": "b8fa5c29cf90177b6d7ea9cdff8d9e6862bff29578b2aa8494b96080678cff58",
+    "wiki-doc/examples/fixtures/acceptance-large.json": "dc005aee0438406e4d51fd80c9de4d941b742da9bee5293ed3759eed207777d7",
+    "wiki-doc/examples/fixtures/migrations/014_amount_reorder.sql": "0c38cf1a32387fd0e787c0d57f5c0c11bfd629a8f3512aa3d81b0f5605fbe9d7",
+    "wiki-doc/examples/fixtures/migrations/baseline_orders.sql": "5448e3184c0ca6a05d46df3f62847d5d71944312686cfed080205c1649a72a7c",
+    "wiki-doc/examples/fixtures/migrations/manifest.json": "2d04bc250cca8f7738fb0d9de246086e3e9a6c103a5ef5d8c1e8c481e2bc029d",
+    "wiki-doc/examples/fixtures/q01_retro_param_local.sql": "f1969d2ea703a7eaeb1ee7069332c0726fc4b5a6e8e7d78c09da98ae4e4817a9",
+    "wiki-doc/examples/fixtures/q02_null_check_sign.sql": "65f4f2ae35e628572f11766543d6adc6a7bd43fa9e70bc0a5bb9223441827fd7",
+    "wiki-doc/examples/fixtures/q03_dedup_priority.sql": "c97a7ca486f6a30b6d915f83fbf05c8a3c34b14cc70930092161bfd7cd9583cd",
+    "wiki-doc/examples/fixtures/q04_date_branch.sql": "a8d668aff944881776afa3797a1e35fb85d9141f5bacd1a22e4eea8202baee30",
+    "wiki-doc/examples/fixtures/q05_gp_master_nested.sql": "49fd3d012e82d20f359ad838825e07fa4045baf27ffd9b77b421203b0212f466",
+    "wiki-doc/examples/fixtures/q06_cte_scopes.sql": "4735a09d1bbae7b7e3ff20d7c70e89957f51c395735086dc3e87f25e5c05aeff",
+    "wiki-doc/examples/fixtures/q07_xml_filters.sql": "12e8dc3d86550a6b7a79db526b727b447e165fa13ab9b73511ed937bb0effa70",
+    "wiki-doc/examples/fixtures/q08_positional_insert.sql": "b1e5186ae4d394aef81e76089d4575766cda53bf0d1ca05f5afe6cd4a270bbca",
+    "wiki-doc/examples/fixtures/q09_kpi_levels.sql": "e56b39d5b3ceda46b4b074bcefab13eee50e188ddd374e7846b59cd3099fa812",
+    "wiki-doc/examples/fixtures/q10_hours_plan.sql": "80fca33dbec3b74b464dd56cb0394ff9e717c89bfa9b760e6a7f76b40a639788",
+    "wiki-doc/examples/fixtures/q11_rr_sl.sql": "81eae1239578b98be0f24b605cb732a60618de31a1c345cac00bd1406a7c3cd1",
+    "wiki-doc/examples/fixtures/q_context.sql": "0fb2c7fa0e1edb0efd7f4b2e80a6874db8d411d29f131ee3bd5c5222d9218b8b",
+    "wiki-doc/examples/fixtures/q_context_gp.sql": "fd699ac70714d5b057708125321198488a9834b069f6d55e65eff99e816be662",
+    "wiki-doc/examples/fixtures/README.md": "7db25c3ec474fda66089634b823a1520a914b624eaa920db1d51d2768ddfbf7d",
+    "wiki-doc/references/sql-support.md": "fee61a10b0079dca3ca6cc987cd2a95ab4ee00dbd5a7b8cfefae6d6390a8db07",
+    "wiki-doc/scripts/ddl.py": "0f9b0af27770db6faaaac263ef01cfc6499be9ddd141ec1d34b2062cbcac7f27",
+    "wiki-doc/scripts/sql_ast.py": "beee21699476ac965ead2338191b07eee17978496d206a94ca135d2bad189216",
+    "wiki-doc/scripts/sql_extract.py": "4bec984357531dc3672578e1c9cc1a375df6cb58a57c75cb4d7113f9af2c6b87",
+    "wiki-doc/scripts/sql_syntax.py": "e8369c27684652d4e84058304a82a80d4e776b4e3dc6e496d05440378efd8ee5",
+    "wiki-doc/tests/test_q01_expectations.py": "d52c81103cddee112642b9b5f916a91bc9422b975c3a71f8a7b3450283d457e1",
+    "wiki-doc/tests/test_q02_fallback_diagnostics.py": "bc905030851e79f1798ffc91522788e6f9053bc09688f1762dbd2b1b43ae31d6"
+  },
+  "logs": {
+    "directory": ".runtime/q-review-2026-09-23",
+    "unit": "unit-final.json",
+    "note": "Final unit module logs are test_*.log. Earlier unittest*.log files are intermediate runs during edits."
+  }
+}

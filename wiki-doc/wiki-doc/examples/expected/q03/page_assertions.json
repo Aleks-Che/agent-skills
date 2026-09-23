@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {
+      "group": "formulas",
+      "selector": {
+        "expression": "t.status IN ('new', 'ready', 'assigned', 'in_progress', 'waiting')"
+      },
+      "field": "expression",
+      "value": "t.status IN ('ready', 'in_progress', 'waiting')",
+      "id": "D03-swap-status-sets"
+    }
+  ]
+}

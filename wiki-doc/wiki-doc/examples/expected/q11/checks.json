@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "required_rules": [
+    "identity",
+    "signature",
+    "sql_registry",
+    "registry_document",
+    "operation",
+    "reads",
+    "writes",
+    "formula",
+    "section",
+    "unknown"
+  ]
+}

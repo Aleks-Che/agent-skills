@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {
+      "group": "objects",
+      "selector": {
+        "kind": "cte",
+        "name": "tm"
+      },
+      "field": "physical",
+      "value": true,
+      "id": "D11-mark-cte-physical"
+    },
+    {
+      "group": "conditions",
+      "selector": {
+        "expression": "o.amount IS NOT NULL"
+      },
+      "field": "expression",
+      "value": "o.amount IS NULL",
+      "id": "D11-lose-cte-filter"
+    }
+  ]
+}

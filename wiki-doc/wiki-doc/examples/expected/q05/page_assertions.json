@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {
+      "group": "objects",
+      "selector": {
+        "canonical_key": "function+q_out+gp_master_probe+(text)"
+      },
+      "field": "volatility",
+      "value": "stable",
+      "id": "D05-invent-volatility-claim"
+    }
+  ]
+}

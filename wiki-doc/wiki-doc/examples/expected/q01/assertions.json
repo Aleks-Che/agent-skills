@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "derived_from": "fixtures/q01_retro_param_local.sql",
+  "authoring": "hand-derived from source SQL, independent of extractor and writer",
+  "deparse_deltas": [
+    "pipeline deparse emits CAST('2026-01-01' AS date) for the DELETE/SELECT bounds; source form kept as oracle truth"
+  ],
+  "assertions": [
+    {
+      "id": "q01-A1",
+      "review": "D01",
+      "kind": "parameter_reaches_condition",
+      "parameter": "p_retro",
+      "local": "v_retro",
+      "condition": "v_retro",
+      "severity": "blocking",
+      "claim": "p_retro is assigned to v_retro and v_retro is the IF gate; p_retro is NOT unused"
+    },
+    {
+      "id": "q01-A2",
+      "review": "D01",
+      "kind": "retro_operation_pair",
+      "branch": "then",
+      "pair": [
+        [
+          "DELETE",
+          "q_hist.retro_pairs"
+        ],
+        [
+          "INSERT",
+          "q_hist.retro_pairs"
+        ]
+      ],
+      "severity": "blocking",
+      "claim": "the gated branch contains a historical DELETE/INSERT pair on the same target"
+    },
+    {
+      "id": "q01-A3",
+      "review": "D01",
+      "kind": "history_boundary",
+      "column": "fact_start_date",
+      "op": "<",
+      "literal": "2026-01-01",
+      "bound_to": [
+        "r.fact_start_date",
+        "k.fact_start_date"
+      ],
+      "not_bound_to": [
+        "create_date"
+      ],
+      "severity": "blocking",
+      "claim": "the history window is fact_start_date < 2026-01-01 on both sides of the pair and is not limited to the call period"
+    }
+  ]
+}

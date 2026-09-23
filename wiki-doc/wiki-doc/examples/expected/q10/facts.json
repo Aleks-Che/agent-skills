@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+q_out+load_norm_plan+(bigint,date)": {
+      "declaration": {
+        "returns": "numeric",
+        "parameters": [
+          {
+            "name": "p_uid",
+            "type": "bigint",
+            "mode": "d",
+            "default": null
+          },
+          {
+            "name": "p_date",
+            "type": "date",
+            "mode": "d",
+            "default": null
+          }
+        ],
+        "volatility": "volatile"
+      },
+      "operations": {
+        "SELECT": 2,
+        "INSERT": 1,
+        "RETURN": 1
+      },
+      "reads": [
+        "q_src.hours",
+        "q_src.plan_variants"
+      ],
+      "writes": [
+        "q_out.kpi_result"
+      ],
+      "calls": [],
+      "conditions": [
+        "p.user_id = p_uid",
+        "h.user_id = p_uid AND h.on_date = p_date"
+      ],
+      "formulas": [
+        "h.hours / 8.0",
+        "COALESCE(v_norm, 0)"
+      ],
+      "definitions": [
+        {
+          "object": "q_src.plan_variants",
+          "status": "resolved"
+        },
+        {
+          "object": "q_out.kpi_result",
+          "status": "resolved"
+        }
+      ],
+      "unknown_required": false
+    }
+  }
+}

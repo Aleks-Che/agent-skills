@@ -9,7 +9,7 @@ from pathlib import PurePosixPath
 
 from artifact_schema import ArtifactInputError
 from identity import ObjectDescriptor, canonical_key, _parse_arg_types
-from sql_syntax import mask_sql
+from sql_syntax import mask_sql, SubjectSelectionError
 
 try:
     from pglast import ast, parse_sql, parse_plpgsql
@@ -518,7 +518,7 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
         for subject in documented_subjects:
             matches = [o for o in objects if subject in (o[3]['name'], f"{o[3]['schema']}.{o[3]['name']}", o[3]['canonical_key'])]
             if len(matches) != 1:
-                raise ValueError(f'Subject {subject!r}: expected one declaration, found {len(matches)}')
+                raise SubjectSelectionError(f'Subject {subject!r}: expected one declaration, found {len(matches)}')
             if matches[0] not in selected: selected.append(matches[0])
     if not selected:
         raise ValueError('No supported object declaration')

@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+q_hist+apply_retro+(boolean)": {
+      "declaration": {
+        "returns": "bigint",
+        "parameters": [
+          {
+            "name": "p_retro",
+            "type": "boolean",
+            "mode": "d",
+            "default": null
+          }
+        ],
+        "volatility": "volatile"
+      },
+      "operations": {
+        "IF": 1,
+        "DELETE": 1,
+        "INSERT": 1,
+        "SELECT": 1,
+        "ASSIGN": 1,
+        "RETURN": 1
+      },
+      "reads": [
+        "q_src.kpi_facts"
+      ],
+      "writes": [
+        "q_hist.retro_pairs"
+      ],
+      "calls": [],
+      "conditions": [
+        "v_retro",
+        "r.fact_start_date < DATE '2026-01-01'",
+        "k.fact_start_date < DATE '2026-01-01'"
+      ],
+      "definitions": [
+        {
+          "object": "q_hist.retro_pairs",
+          "status": "resolved"
+        }
+      ],
+      "unknown_required": false
+    }
+  }
+}

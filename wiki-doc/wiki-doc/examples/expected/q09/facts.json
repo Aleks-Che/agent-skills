@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+q_out+load_kpi_levels+()": {
+      "declaration": {
+        "returns": "bigint",
+        "parameters": [],
+        "volatility": "volatile"
+      },
+      "operations": {
+        "INSERT": 3,
+        "SELECT": 3,
+        "RETURN": 1
+      },
+      "reads": [
+        "q_src.kpi_facts"
+      ],
+      "writes": [
+        "q_out.kpi_result"
+      ],
+      "calls": [],
+      "conditions": [
+        "f.kpi_id = 10 AND f.struct_id = 100 AND f.level_no = 1",
+        "f.kpi_id = 10 AND f.struct_id = 100 AND f.level_no = 2",
+        "f.kpi_id = 20 AND f.struct_id = 200 AND f.level_no = 1"
+      ],
+      "formulas": [
+        "f.value_num * 1.5",
+        "f.value_num + 10",
+        "f.value_num"
+      ],
+      "definitions": [
+        {
+          "object": "q_out.kpi_result",
+          "status": "resolved"
+        }
+      ],
+      "unknown_required": false
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "contract": "claims-v1",
+  "oracle": "facts.json",
+  "require_actual_markdown_values": true,
+  "mutations": [
+    {
+      "group": "conditions",
+      "selector": {
+        "expression": "v_retro"
+      },
+      "field": "expression",
+      "value": "true",
+      "id": "D01-drop-retro-gate"
+    }
+  ]
+}

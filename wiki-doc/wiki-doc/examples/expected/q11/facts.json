@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+q_out+load_rr_sl+()": {
+      "declaration": {
+        "returns": "bigint",
+        "parameters": [],
+        "volatility": "volatile"
+      },
+      "operations": {
+        "INSERT": 1,
+        "SELECT": 1,
+        "RETURN": 1
+      },
+      "reads": [
+        "q_src.sla_raw"
+      ],
+      "writes": [
+        "q_out.rr_sl"
+      ],
+      "calls": [],
+      "conditions": [],
+      "formulas": [
+        "CASE WHEN count(*) FILTER (WHERE (s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 THEN count(*) FILTER (WHERE (s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / count(*)::numeric ELSE 0 END",
+        "1 - CASE WHEN count(*) FILTER (WHERE (s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 THEN count(*) FILTER (WHERE (s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / count(*)::numeric ELSE 0 END"
+      ],
+      "definitions": [
+        {
+          "object": "q_src.sla_raw",
+          "status": "resolved"
+        },
+        {
+          "object": "q_out.rr_sl",
+          "status": "resolved"
+        }
+      ],
+      "unknown_required": true
+    }
+  }
+}

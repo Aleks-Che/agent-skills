@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "derived_from": "fixtures/q06_cte_scopes.sql",
+  "authoring": "hand-derived from source SQL, independent of extractor and writer",
+  "deparse_deltas": [],
+  "assertions": [
+    {
+      "id": "q06-A1",
+      "review": "D11",
+      "kind": "cte_vs_derived",
+      "cte_names": [
+        "tm"
+      ],
+      "derived_aliases": [
+        "s"
+      ],
+      "derived_alias_not_cte": [
+        "s"
+      ],
+      "severity": "blocking",
+      "claim": "tm is a CTE and s is a derived-table alias; calling s a CTE or tm a physical table is a subject defect"
+    },
+    {
+      "id": "q06-A2",
+      "review": "D11",
+      "kind": "cte_scopes",
+      "name": "tm",
+      "scope_count": 2,
+      "per_scope_reads": [
+        [
+          "q_src.orders"
+        ],
+        [
+          "q_src.order_lines"
+        ]
+      ],
+      "severity": "blocking",
+      "claim": "the two `tm` names live in different per-INSERT scopes and read different physical sources"
+    },
+    {
+      "id": "q06-A3",
+      "review": "D11",
+      "kind": "graph_edges",
+      "reads_to_operations": [
+        [
+          "q_src.orders",
+          "INSERT:1"
+        ],
+        [
+          "q_src.order_lines",
+          "INSERT:2"
+        ]
+      ],
+      "operations_to_writes": [
+        [
+          "INSERT:1",
+          "q_out.out_a"
+        ],
+        [
+          "INSERT:2",
+          "q_out.out_b"
+        ]
+      ],
+      "severity": "blocking",
+      "claim": "reads -> operation -> writes edges resolve to physical objects and the two INSERTs stay distinct"
+    },
+    {
+      "id": "q06-A4",
+      "review": "D08",
+      "kind": "level_formulas",
+      "formulas_by_scope": {
+        "INSERT:2/tm": "l.qty * l.price"
+      },
+      "severity": "blocking",
+      "claim": "the second CTE computes amount as qty * price; losing the product while keeping the CTE name is incomplete coverage"
+    }
+  ]
+}

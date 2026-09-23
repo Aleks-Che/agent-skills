@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+q_out+xml_filter_blob+(bigint)": {
+      "declaration": {
+        "returns": "xml",
+        "parameters": [
+          {
+            "name": "p_id",
+            "type": "bigint",
+            "mode": "d",
+            "default": null
+          }
+        ],
+        "volatility": "volatile"
+      },
+      "operations": {
+        "SELECT": 6,
+        "RETURN": 1
+      },
+      "reads": [
+        "q_meta.field_defs",
+        "q_src.row_values"
+      ],
+      "writes": [],
+      "calls": [],
+      "conditions": [
+        "d.object_name = 'q_out.xml_filter_blob' AND d.field_name = 'title'",
+        "d.object_name = 'q_out.xml_filter_blob' AND d.field_name = 'kind'",
+        "d.object_name = 'q_out.xml_filter_blob' AND d.field_name = 'owner'",
+        "d.object_name = 'q_out.xml_filter_blob' AND d.field_name = 'state'",
+        "d.object_name = 'q_out.xml_filter_blob' AND d.field_name = 'extra'",
+        "f.row_id = p_id"
+      ],
+      "formulas": [
+        "xmlelement(name filters, xmlagg(xmlelement(name filter, f.value) ORDER BY f.ord))"
+      ],
+      "definitions": [
+        {
+          "object": "q_meta.field_defs",
+          "status": "resolved"
+        },
+        {
+          "object": "q_src.row_values",
+          "status": "resolved"
+        }
+      ],
+      "unknown_required": false
+    }
+  }
+}

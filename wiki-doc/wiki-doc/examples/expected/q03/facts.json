@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+q_out+pick_next_task+(bigint)": {
+      "declaration": {
+        "returns": "bigint",
+        "parameters": [
+          {
+            "name": "p_uid",
+            "type": "bigint",
+            "mode": "d",
+            "default": null
+          }
+        ],
+        "volatility": "volatile"
+      },
+      "operations": {
+        "SELECT": 1,
+        "UPDATE": 1,
+        "RETURN": 1
+      },
+      "reads": [
+        "q_src.task_queue"
+      ],
+      "writes": [
+        "q_src.task_queue"
+      ],
+      "calls": [],
+      "conditions": [
+        "t.user_id = p_uid AND t.is_done IS NOT TRUE",
+        "u.task_id = v_task"
+      ],
+      "formulas": [
+        "t.status IN ('new', 'ready', 'assigned', 'in_progress', 'waiting')",
+        "t.status IN ('ready', 'in_progress', 'waiting')"
+      ],
+      "definitions": [
+        {
+          "object": "q_src.task_queue",
+          "status": "resolved"
+        }
+      ],
+      "unknown_required": false
+    }
+  }
+}

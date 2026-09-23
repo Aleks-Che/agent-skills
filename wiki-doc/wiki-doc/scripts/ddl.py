@@ -128,22 +128,35 @@ def reconstruct(manifest_path=None, *, project_root=None):
 def catalog(files, root):
     """CREATE is type evidence; constraint additions after the same-file CREATE are ordered."""
     from pglast import ast
-    result, functions, inputs, errors = {}, {}, [], []
+    result, functions, inputs, errors, notes = {}, {}, [], [], []
     root = Path(root).resolve()
     for path in files:
         path = Path(path).resolve()
         if not path.is_relative_to(root): raise ArtifactInputError(f'Context file outside project: {path}')
         data = path.read_bytes()
+        text = data.decode('utf-8-sig')
         ref = dict(path=path.relative_to(root).as_posix(), sha256=hashlib.sha256(data).hexdigest())
         inputs.append(ref)
+        def note(message):
+            errors.append(message)
+            notes.append(dict(source_ref={**ref, 'start_line': 1,
+                                          'end_line': max(1, len(text.splitlines()))},
+                              reason=message))
         local_tables = set()
-        for raw in parse(data.decode('utf-8-sig')):
+        try:
+            statements = list(parse(text))
+        except Exception as exc:
+            # A dialect-specific context file must yield a blocking diagnostic
+            # instead of an uncaught crash of the whole extraction run.
+            note(f'{ref["path"]}: DDL parse failed: {exc}')
+            continue
+        for raw in statements:
             node = raw.stmt
             if isinstance(node, ast.CreateStmt):
                 key = relation(node.relation)
                 value = dict(columns=columns_of(node), source_ref={**ref, 'start_line':1,'end_line':len(data.decode('utf-8-sig').splitlines())})
                 if key in result and result[key]['columns'] != value['columns']:
-                    errors.append(f'Conflicting unordered definitions for {key}')
+                    note(f'Conflicting unordered definitions for {key}')
                 result[key] = value
                 local_tables.add(key)
             elif isinstance(node, ast.CreateFunctionStmt):
@@ -154,10 +167,10 @@ def catalog(files, root):
                 try:
                     apply_statement(result, node)
                 except ValueError as exc:
-                    errors.append(str(exc))
+                    note(str(exc))
             elif isinstance(node, (ast.AlterTableStmt,ast.RenameStmt,ast.DropStmt)):
-                errors.append(f'Unordered migration DDL in {ref["path"]}; provide migration manifest')
-    return dict(tables=result, functions=functions, inputs=inputs, errors=errors)
+                note(f'Unordered migration DDL in {ref["path"]}; provide migration manifest')
+    return dict(tables=result, functions=functions, inputs=inputs, errors=errors, coverage_notes=notes)
 
 
 def enrich_inventory(inventory, *, context_files=(), project_root=None, migration_manifest=None):
@@ -166,6 +179,7 @@ def enrich_inventory(inventory, *, context_files=(), project_root=None, migratio
     ordered = {(root / ref['path']).resolve() for ref in migrations['inputs']} if migrations else set()
     static_context = [p for p in context_files if Path(p).resolve() not in ordered]
     context = catalog(static_context, root) if static_context else dict(tables={}, functions={}, inputs=[], errors=[])
+    inventory['coverage_notes'].extend(context.get('coverage_notes', []))
     declarations = [i for i in inventory['items'] if i['kind'] == 'DECLARATION']
     for declaration in declarations:
         details = declaration['details']
@@ -177,7 +191,7 @@ def enrich_inventory(inventory, *, context_files=(), project_root=None, migratio
                 inventory['coverage_notes'].append(dict(source_ref=declaration['source_ref'], reason='Migration reconstruction is not resolved'))
         if migrations and migrations['status'] == 'resolved':
             details['reconstructed_tables'] = migrations['tables']
-        for message in context['errors'] + (migrations['errors'] if migrations else []):
+        for message in migrations['errors'] if migrations else []:
             inventory['coverage_notes'].append(dict(source_ref=declaration['source_ref'], reason=message))
     for item in inventory['items']:
         effects = []

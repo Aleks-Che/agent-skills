@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+q_out+load_positional+()": {
+      "declaration": {
+        "returns": "bigint",
+        "parameters": [],
+        "volatility": "volatile"
+      },
+      "operations": {
+        "INSERT": 1,
+        "SELECT": 1,
+        "RETURN": 1
+      },
+      "reads": [
+        "q_src.order_feed"
+      ],
+      "writes": [
+        "q_out.orders"
+      ],
+      "calls": [],
+      "conditions": [
+        "s.id IS NOT NULL"
+      ],
+      "formulas": [],
+      "exact_columns": {
+        "q_out.orders": [
+          "id",
+          "amount",
+          "legacy",
+          "total"
+        ]
+      },
+      "definitions": [
+        {
+          "object": "q_out.orders",
+          "status": "resolved"
+        }
+      ],
+      "unknown_required": false
+    }
+  }
+}

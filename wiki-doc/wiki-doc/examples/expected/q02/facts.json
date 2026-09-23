@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+q_out+count_phoned_clients+()": {
+      "declaration": {
+        "returns": "bigint",
+        "parameters": [],
+        "volatility": "volatile"
+      },
+      "operations": {
+        "SELECT": 1,
+        "RETURN": 1
+      },
+      "reads": [
+        "q_src.clients"
+      ],
+      "writes": [],
+      "calls": [],
+      "conditions": [
+        "c.phone IS NOT NULL AND c.is_phoned IS NOT TRUE"
+      ],
+      "formulas": [
+        "count(*)"
+      ],
+      "definitions": [
+        {
+          "object": "q_src.clients",
+          "status": "resolved"
+        }
+      ],
+      "unknown_required": false
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "subjects": {
+    "function+q_out+gp_master_probe+(text)": {
+      "declaration": {
+        "returns": "bigint",
+        "parameters": [
+          {
+            "name": "p_msg",
+            "type": "text",
+            "mode": "d",
+            "default": null
+          }
+        ],
+        "volatility": "volatile"
+      },
+      "reads": [
+        "q_src.events"
+      ],
+      "writes": [
+        "q_out.gp_events"
+      ],
+      "calls": [
+        "q_meta.log_event"
+      ],
+      "unknown_required": true
+    }
+  }
+}

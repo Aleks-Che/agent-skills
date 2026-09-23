@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "derived_from": "fixtures/q09_kpi_levels.sql",
+  "authoring": "hand-derived from source SQL, independent of extractor and writer",
+  "deparse_deltas": [],
+  "assertions": [
+    {
+      "id": "q09-A1",
+      "review": "D07",
+      "kind": "kpi_structure_pairs",
+      "pairs": [
+        {
+          "kpi_id": 10,
+          "struct_id": 100
+        },
+        {
+          "kpi_id": 20,
+          "struct_id": 200
+        }
+      ],
+      "pair_count": 2,
+      "rejected_pair_count": [
+        3,
+        4
+      ],
+      "severity": "blocking",
+      "claim": "KPI/structure pairs are counted per pair; claiming 3 pairs is rejected"
+    },
+    {
+      "id": "q09-A2",
+      "review": "D07",
+      "kind": "levels_per_pair",
+      "pair_count": 2,
+      "levels_by_pair": {
+        "10/100": [
+          1,
+          2
+        ],
+        "20/200": [
+          1
+        ]
+      },
+      "calculation_branches": 3,
+      "rejected_claim": "two levels for every KPI",
+      "severity": "blocking",
+      "claim": "10/100 has levels 1,2; 20/200 has only level 1; the three branches do not establish a runtime row count"
+    },
+    {
+      "id": "q09-A3",
+      "review": "D08",
+      "kind": "level_formulas",
+      "formulas_by_pair_level": {
+        "10/100/2": "f.value_num * 1.5",
+        "20/200/1": "f.value_num + 10",
+        "10/100/1": "f.value_num"
+      },
+      "severity": "blocking",
+      "claim": "formulas differ per KPI/structure/level; keeping names while losing one formula is incomplete coverage"
+    }
+  ]
+}

@@ -212,7 +212,7 @@ def generate_plan(inventory, policy, page_id=None, object_kind=None,
     return plan
 
 
-def main(argv=None):
+def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('inventory', help='Path to inventory.json')
     parser.add_argument('--policy', help='Path to check-policy.json')
@@ -223,9 +223,8 @@ def main(argv=None):
     parser.add_argument('--object-key', help='Canonical object key')
     parser.add_argument('--profile-active', action='store_true', help='Include CKR_GP profile obligations')
     parser.add_argument('--profile', help='Explicit profile JSON/Markdown path')
-    parser.add_argument('-o', '--output', type=Path, help='Write UTF-8 plan JSON instead of stdout')
 
-    args = parser.parse_args(argv)
+    args = parser.parse_args()
 
     try:
         from artifact_schema import read_json
@@ -241,11 +240,7 @@ def main(argv=None):
             profile_active=args.profile_active or bool(args.profile), profile_path=args.profile,
         )
 
-        payload = json.dumps(plan, indent=2, ensure_ascii=False)
-        if args.output:
-            args.output.write_text(payload + '\n', encoding='utf-8')
-        else:
-            print(payload)
+        print(json.dumps(plan, indent=2, ensure_ascii=False))
 
     except (OSError, json.JSONDecodeError, PolicyError, ValueError) as exc:
         print(json.dumps({'error': str(exc)}, ensure_ascii=False), file=sys.stderr)

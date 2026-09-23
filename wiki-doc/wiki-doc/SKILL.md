@@ -319,26 +319,3 @@ validation. В bundle create перечисли DDL/контекст через 
 1 — revise/blocked, 2 — ошибка контракта/JSON/чтения/зависимостей.
 Legacy-вызов с одним validation.json возвращает только диагностические метрики
 и `publication_authorized: false`, никогда код 0.
-
-### Единая CLI-обёртка и эксплуатация
-
-Используй `python scripts/wiki_doc.py <command> [options]`. Команды:
-`inventory`, `plan`, `prepare`, `validate`, `publish`, `recover`, `lint`,
-`query`, `metrics`, `identity`, `version`. Они используют те же экстрактор,
-план, gate и publisher; отдельные скрипты также доступны.
-
-Для inventory задавай `--project-root`, `--run-id`, выбранные `--subjects`
-и найденный контекст/порядок миграций. Один профиль и политика должны пройти
-через план, bundle, validation и publication. Перед содержательной проверкой
-выполняй `prepare`; после неё — полный gate, затем `publish`.
-
-Команды полного цикла, коды возврата, `--dry-run`, одиночный/конкурентный режим
-и recovery описаны в [docs/operations.md](docs/operations.md). Журнал команд
-включается глобальным `--journal <directory>`; сохраняй его вне временного run.
-Он не заменяет историю gate и журнал восстановления publisher. Без этой опции
-read-only команды не создают журнал.
-
-Версия пакета хранится в [VERSION](VERSION), изменения — в [CHANGELOG.md](CHANGELOG.md).
-При формировании итогового ответа используй [шаблоны](docs/agent-response-templates.md),
-заполняя только подтверждённые поля. `ready` и успешный dry-run ещё не означают
-фактическую публикацию.

@@ -92,13 +92,12 @@ def isolate(case,workspace,examples):
     package=workspace/'skill'; project=workspace/'input'; output=workspace/'output'
     for folder in ('scripts','schemas','references','template','profiles'):
         shutil.copytree(PACKAGE/folder,package/folder,ignore=shutil.ignore_patterns('__pycache__'))
-    for name in ('SKILL.md','template.md','doc-writer.md','doc-validator.md','ddl-finder.md','rules.md','requirements.txt','project-profile.md','VERSION','CHANGELOG.md'):
+    for name in ('SKILL.md','template.md','doc-writer.md','doc-validator.md','ddl-finder.md','rules.md','requirements.txt','project-profile.md'):
         shutil.copy2(PACKAGE/name,package/name)
-    # Keep the skill's runtime documentation available to isolated agents
+    # The skill links to this capability matrix; keep it available to isolated agents
     # without copying historical reviews, test code or expected artifacts.
     (package/'docs').mkdir()
-    for name in ('dialect-support.md', 'agent-response-templates.md', 'operations.md'):
-        shutil.copy2(PACKAGE/'docs'/name,package/'docs'/name)
+    shutil.copy2(PACKAGE/'docs/dialect-support.md',package/'docs/dialect-support.md')
     paths={case['sql'],*case['context']}
     if case.get('migration_manifest'):
         mm=inside(examples,case['migration_manifest']); migration=read_json(mm)

@@ -66,11 +66,9 @@ class RegressionAcceptanceTests(unittest.TestCase):
     def test_package_markdown_links_survive_resource_moves(self):
         from coverage_gate import MarkdownDocument
         from urllib.parse import urlsplit,unquote
-        # Runtime Markdown is independent of optional search tools and ignored caches.
-        paths=list(PACKAGE.glob('*.md'))
-        for folder in ('docs','examples','history','profiles','references','template','tests','scripts'):
-            paths.extend((PACKAGE/folder).rglob('*.md'))
-        for path in paths:
+        paths=subprocess.run(['rg','--files','-g','*.md'],cwd=PACKAGE,capture_output=True,text=True,check=True).stdout.splitlines()
+        for relative in paths:
+            path=PACKAGE/relative
             for link in MarkdownDocument(path.read_text(encoding='utf-8-sig')).links:
                 url=urlsplit(link)
                 if url.scheme or url.netloc: continue

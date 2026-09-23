@@ -21,11 +21,6 @@ from query import (query_dependencies, query_consumers, query_affected, query_pa
 from wiki_store import hash_file, load_metadata, metadata_path, WikiConflict
 
 
-SUBPROCESS_ENV = {**os.environ,
-                  'PYTHONPATH': os.pathsep.join(
-                      [str(PACKAGE / 'scripts')] + ([os.environ['PYTHONPATH']] if os.environ.get('PYTHONPATH') else []))}
-
-
 class PublishedQueryTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -199,7 +194,7 @@ class PublishedQueryTests(unittest.TestCase):
         before = self.committed_bytes()
         code = 'from publish import publish; import os,sys; publish(sys.argv[1],sys.argv[2],fault=lambda s: os._exit(71) if s==sys.argv[3] else None)'
         for stage in ('after_machine_index','after_lineage'):
-            result = subprocess.run([sys.executable,'-B','-c',code,str(run),str(self.wiki),stage],capture_output=True,timeout=45,env=SUBPROCESS_ENV)
+            result = subprocess.run([sys.executable,'-B','-c',code,str(run),str(self.wiki),stage],capture_output=True,timeout=45)
             self.assertEqual(result.returncode,71,result.stderr)
             with self.assertRaises(IndexError): query_page(self.wiki,PAGE_ID)
             self.assertEqual(recover(self.wiki)[0]['state'],'rolled_back')

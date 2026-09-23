@@ -358,33 +358,6 @@ def _verify_evidence(artifacts, roots):
 
 
 def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None, write_decision=False):
-    """Evaluate inputs; only explicit decision issuance records an observation.
-
-    Read-only gate calls (publisher, lint, archive verification) never add attempts.
-    A valid manifest identifies the run even when a later gate stage rejects it.
-    """
-    run = Path(run_dir).resolve()
-    history = None
-    if write_decision:
-        from validation_history import load_history, record_attempt
-        try:
-            manifest = read_json(run / 'manifest.json')
-            errors = validate_artifacts({'manifest': manifest}, required={'manifest'})
-            if not errors:
-                history = load_history(run, manifest)
-        except (ValueError, OSError) as exc:
-            return _gate_result('blocked', errors=[str(exc)], input_error=True)
-    result = _evaluate_bundle(run, policy_path=policy_path, roots=roots,
-                              profile_path=profile_path, write_decision=write_decision)
-    if history is not None:
-        try:
-            record_attempt(run, history, result)
-        except (ValueError, OSError) as exc:
-            return _gate_result('blocked', errors=[str(exc)], input_error=True)
-    return result
-
-
-def _evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None, write_decision=False):
     run = Path(run_dir).resolve()
     package = Path(__file__).resolve().parent.parent
     roots = {'project': run, **{k: Path(v).resolve() for k, v in (roots or {}).items()},

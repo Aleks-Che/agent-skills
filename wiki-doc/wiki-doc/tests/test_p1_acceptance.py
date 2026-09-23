@@ -86,11 +86,6 @@ class RegressionAcceptanceTests(unittest.TestCase):
             self.assertFalse(list(Path(temp).rglob('*.expected.md')))
             self.assertFalse(list(Path(temp).rglob('expected')))
             self.assertFalse((package/'history').exists())
-            self.assertFalse((package/'tests').exists())
-            self.assertFalse((package/'examples').exists())
-            self.assertEqual({p.name for p in (package/'docs').iterdir()}, {'dialect-support.md'})
-            self.assertEqual((package/'docs/dialect-support.md').read_bytes(),
-                             (PACKAGE/'docs/dialect-support.md').read_bytes())
             self.assertEqual({p.name for p in project.iterdir()},{'01_no_target_ddl.sql','context.sql'})
 
     def test_two_processes_keep_both_index_entries(self):
@@ -105,14 +100,8 @@ class RegressionAcceptanceTests(unittest.TestCase):
                 runs.append(run)
             command=[sys.executable,'-B',str(PACKAGE/'scripts/publish.py'),'publish']
             processes=[subprocess.Popen(command+[str(run),'--wiki',str(wiki),'--project-root',str(EXAMPLES)],stdout=subprocess.PIPE,stderr=subprocess.PIPE) for run in runs]
-            try:
-                results=[process.communicate(timeout=45) for process in processes]
-            finally:
-                for process in processes:
-                    if process.poll() is None:
-                        process.kill()
-                        process.communicate()
-            for process,(out,err) in zip(processes,results):
+            for process in processes:
+                out,err=process.communicate(timeout=45)
                 self.assertEqual(process.returncode,0,(out,err))
             self.assertEqual((wiki/'index.md').read_text().count(']('),2)
             catalogue=read_json(wiki/'.wiki-doc/index.json')

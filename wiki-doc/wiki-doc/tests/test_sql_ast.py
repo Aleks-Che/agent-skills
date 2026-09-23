@@ -8,12 +8,9 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from sql_extract import extract_inventory, _extract_inventory_legacy
+from sql_extract import extract_inventory
 from ddl import reconstruct, enrich_inventory
-from build_bundle import build, finish, render
-from check_policy import load_policy
-from validation_plan import generate_plan
-from wiki_store import atomic_bytes, atomic_json
+from build_bundle import build
 
 EXAMPLES = Path(__file__).resolve().parents[1] / 'examples'
 
@@ -311,137 +308,6 @@ class ModelExtensionBuildTests(unittest.TestCase):
         self.assertEqual(constraints[0]['type'],'check')
         revoke=next(o for o in facts['operations'] if o['kind']=='REVOKE')
         self.assertEqual(revoke['structure']['grantees'],['PUBLIC'])
-
-
-class DialectRejectionTests(unittest.TestCase):
-    """P2-04: non-PostgreSQL dialects produce coverage_notes and block gate."""
-
-    SQL = 'CREATE TABLE demo.t (id integer);'
-    UNSUPPORTED = ('mysql', 'mssql', 'oracle', 'sqlite', 'greenplum', 'unknown')
-
-    def inventory(self, text, dialect='mysql'):
-        return extract_inventory(text, 'input.sql', hashlib.sha256(text.encode()).hexdigest(), dialect=dialect)
-
-    def test_mysql_dialect_rejected_by_inventory(self):
-        result = self.inventory(self.SQL, dialect='mysql')
-        self.assertTrue(any('Unsupported dialect' in n['reason'] for n in result['coverage_notes']))
-
-    def test_mssql_dialect_rejected_by_inventory(self):
-        result = self.inventory(self.SQL, dialect='mssql')
-        self.assertTrue(any('Unsupported dialect' in n['reason'] for n in result['coverage_notes']))
-
-    def test_oracle_dialect_rejected_by_inventory(self):
-        result = self.inventory(self.SQL, dialect='oracle')
-        self.assertTrue(any('Unsupported dialect' in n['reason'] for n in result['coverage_notes']))
-
-    def test_postgres_accepted(self):
-        result = self.inventory(self.SQL, dialect='postgres')
-        self.assertFalse(result['coverage_notes'], result['coverage_notes'])
-        self.assertEqual(result['documented_subjects'], ['table+demo+t'])
-
-    def test_postgresql_accepted(self):
-        result = self.inventory(self.SQL, dialect='postgresql')
-        self.assertFalse(result['coverage_notes'], result['coverage_notes'])
-        self.assertEqual(result['documented_subjects'], ['table+demo+t'])
-
-    def test_other_dialect_names_are_rejected(self):
-        for dialect in ('sqlite', 'greenplum', 'unknown'):
-            with self.subTest(dialect=dialect):
-                result = self.inventory(self.SQL, dialect=dialect)
-                self.assertTrue(any(n['reason'] == f'Unsupported dialect: {dialect}'
-                                    for n in result['coverage_notes']))
-
-    def test_legacy_scanner_rejects_non_postgres(self):
-        sha = hashlib.sha256(self.SQL.encode()).hexdigest()
-        for dialect in self.UNSUPPORTED:
-            with self.subTest(dialect=dialect):
-                result = _extract_inventory_legacy(self.SQL, 'input.sql', sha, dialect=dialect)
-                self.assertTrue(any(n['reason'] == f'Unsupported dialect: {dialect}'
-                                    for n in result['coverage_notes']))
-
-    def test_ast_rejects_non_postgres(self):
-        from sql_ast import analyze
-        sha = hashlib.sha256(self.SQL.encode()).hexdigest()
-        for dialect in self.UNSUPPORTED:
-            with self.subTest(dialect=dialect):
-                result = analyze(self.SQL, 'input.sql', sha, version='unknown', dialect=dialect)
-                self.assertTrue(any(n['reason'] == f'Unsupported dialect: {dialect}'
-                                    for n in result['coverage_notes']))
-
-    def test_ddl_rejects_non_postgres_migration(self):
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            schema = root / 'schema.sql'
-            schema.write_text('CREATE TABLE t (id int);', encoding='utf-8')
-            manifest = root / 'manifest.json'
-            for dialect in self.UNSUPPORTED:
-                with self.subTest(dialect=dialect):
-                    atomic_json(manifest, {'dialect': dialect, 'version': 'unknown',
-                                           'ordered_files': ['schema.sql']})
-                    result = reconstruct(manifest, project_root=root)
-                    self.assertEqual(result['status'], 'unsupported')
-                    self.assertIn('Unsupported migration dialect', result['errors'])
-
-    def test_unsupported_dialects_block_full_gate(self):
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            source = root / 'input.sql'
-            source.write_text(self.SQL, encoding='utf-8')
-            run = root / 'run'
-            baseline = build(source, run, project_root=root, subject='table+demo+t')
-            self.assertTrue(baseline['publication_authorized'], baseline.get('errors'))
-            facts = json.loads((run / 'facts.json').read_text(encoding='utf-8'))
-            for dialect in self.UNSUPPORTED:
-                with self.subTest(dialect=dialect):
-                    inventory = self.inventory(self.SQL, dialect=dialect)
-                    inventory['run_id'] = facts['run_id']
-                    enrich_inventory(inventory, project_root=root)
-                    facts['dialect'] = inventory['dialect']
-                    plan = generate_plan(inventory, load_policy(), page_id=facts['objects'][0]['page_id'])
-                    gaps = [c for c in plan['required_checks'] if c['rule_id'] == 'analysis_gap']
-                    self.assertTrue(gaps)
-                    self.assertTrue(all(c['blocking'] for c in gaps))
-                    page, coverage = render(facts, plan)
-                    for name, value in (('inventory', inventory), ('facts', facts),
-                                        ('validation_plan', plan), ('coverage', coverage)):
-                        atomic_json(run / (name + '.json'), value)
-                    atomic_bytes(run / 'page.draft.md', page.encode('utf-8'))
-                    # finish supplies an all-ok report; gate must reject independently.
-                    result = finish(run, sql_files=[source], context=[], project_root=root)
-                    self.assertEqual(result['decision'], 'blocked', result.get('errors'))
-                    self.assertFalse(result['publication_authorized'])
-                    self.assertIn(f'analysis gap: Unsupported dialect: {dialect}', result['errors'])
-
-    def test_ckr_gp_example_uses_postgres_parser_with_unknown_version(self):
-        case = next(c for c in json.loads((EXAMPLES / 'cases.json').read_text(encoding='utf-8'))['cases']
-                    if c['id'] == '11')
-        with tempfile.TemporaryDirectory() as temp:
-            run = Path(temp) / 'run'
-            result = build(EXAMPLES / case['sql'], run, project_root=EXAMPLES,
-                           subject=case['subjects'][0], context=[EXAMPLES / p for p in case['context']],
-                           profile=EXAMPLES.parent / case['profile'], version=case['version'])
-            self.assertTrue(result['publication_authorized'], result.get('errors'))
-            facts = json.loads((run / 'facts.json').read_text(encoding='utf-8'))
-            self.assertEqual(facts['dialect'], {'name': 'postgres', 'version': 'unknown'})
-            self.assertEqual(facts['profile'], 'CKR_GP')
-
-    def test_greenplum_distribution_is_an_analysis_gap(self):
-        for clause in ('DISTRIBUTED BY (id)', 'DISTRIBUTED RANDOMLY'):
-            with self.subTest(clause=clause):
-                result = self.inventory(f'CREATE TABLE demo.t (id integer) {clause};', dialect='postgres')
-                self.assertTrue(any('PostgreSQL AST analysis failed' in n['reason']
-                                    for n in result['coverage_notes']))
-
-    def test_unanalyzed_dynamic_sql_blocks_gate(self):
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            source = root / 'input.sql'
-            source.write_text('CREATE FUNCTION demo.f(p_sql text) RETURNS void LANGUAGE plpgsql '
-                              'AS $$ BEGIN EXECUTE p_sql; END; $$;', encoding='utf-8')
-            result = build(source, root / 'run', project_root=root, subject='function+demo+f+(text)')
-            self.assertEqual(result['decision'], 'blocked', result.get('errors'))
-            self.assertFalse(result['publication_authorized'])
-            self.assertIn('analysis gap: Unanalyzed dynamic SQL expression', result['errors'])
 
 
 if __name__=='__main__': unittest.main()

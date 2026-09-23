@@ -2,7 +2,7 @@
 
 Дата: 2026-09-12. Источник требований: [REVIEW.md](REVIEW.md), прежде всего разделы 6–11.
 
-Статус: исходный план; P0 и P1 выполнены с проверочными исправлениями, отражёнными в [IMPLEMENTATION-STATUS.md](IMPLEMENTATION-STATUS.md). Приёмка P1 — [REVIEW-P1-COMPLETE.md](REVIEW-P1-COMPLETE.md). P2-01 проверен и исправлен: [REVIEW-P2-01.md](REVIEW-P2-01.md); P2-02 повторно проверен и исправлен: [P2-02-ACCEPTANCE.json](P2-02-ACCEPTANCE.json). P2-03 повторно проверен и исправлен в поддержанном подмножестве: [REVIEW-P2-03.md](REVIEW-P2-03.md), [P2-03-ACCEPTANCE.json](P2-03-ACCEPTANCE.json); P2-04 повторно проверен и исправлен — [REVIEW-P2-04.md](REVIEW-P2-04.md), [P2-04-ACCEPTANCE.json](P2-04-ACCEPTANCE.json), [матрица диалектов](wiki-doc/docs/dialect-support.md); P2-05 не начат. Пути новых файлов указаны относительно корня пакета `wiki-doc/`. Исходные оценки и снимок исходной точки ниже сохранены как история требований.
+Статус: исходный план; P0 и P1 выполнены с проверочными исправлениями, отражёнными в [IMPLEMENTATION-STATUS.md](IMPLEMENTATION-STATUS.md). Приёмка P1 — [REVIEW-P1-COMPLETE.md](REVIEW-P1-COMPLETE.md). P2-01 проверен и исправлен: [REVIEW-P2-01.md](REVIEW-P2-01.md); P2-02 повторно проверен и исправлен: [P2-02-ACCEPTANCE.json](P2-02-ACCEPTANCE.json). P2-03 повторно проверен и исправлен в поддержанном подмножестве: [REVIEW-P2-03.md](REVIEW-P2-03.md), [P2-03-ACCEPTANCE.json](P2-03-ACCEPTANCE.json); P2-04…P2-05 не начаты. Пути новых файлов указаны относительно корня пакета `wiki-doc/`. Исходные оценки и снимок исходной точки ниже сохранены как история требований.
 
 ## 1. Цель и проверенная исходная точка
 

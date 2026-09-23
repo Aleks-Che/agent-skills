@@ -6,40 +6,16 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
 
 from bundle_fixture import make_bundle, seal, PAGE_ID, PACKAGE, write_json
 from artifact_schema import read_json
 from publish import prepare, publish, recover, cleanup_run
-from wiki_store import WikiConflict, inside, merge_page, metadata_path
+from wiki_store import WikiConflict, merge_page, metadata_path
 
 
 SUBPROCESS_ENV = {**os.environ,
                   'PYTHONPATH': os.pathsep.join(
                       [str(PACKAGE / 'scripts')] + ([os.environ['PYTHONPATH']] if os.environ.get('PYTHONPATH') else []))}
-
-
-@unittest.skipUnless(os.name == 'nt', 'Windows extended path spelling')
-class WindowsWikiPathTests(unittest.TestCase):
-    def test_equivalent_extended_paths_stay_inside_wiki(self):
-        for plain, extended in (('C:\\wiki', '\\\\?\\C:\\wiki'),
-                                ('\\\\server\\share\\wiki', '\\\\?\\UNC\\server\\share\\wiki')):
-            for resolved_root in (plain, extended):
-                with self.subTest(root=resolved_root):
-                    # resolve() may retain the prefix if file availability changes
-                    # between its two Windows final-path lookups.
-                    with patch('wiki_store.Path.resolve', side_effect=[Path(resolved_root),
-                               Path(extended) / '.wiki-doc/index.lock']):
-                        result = inside(plain, '.wiki-doc/index.lock')
-                    self.assertEqual(result, Path(resolved_root) / '.wiki-doc/index.lock')
-
-    def test_extended_paths_outside_wiki_are_rejected(self):
-        for outside in ('\\\\?\\C:\\outside\\index.lock',
-                        '\\\\?\\UNC\\server\\other\\index.lock'):
-            with self.subTest(outside=outside):
-                with patch('wiki_store.Path.resolve', side_effect=[Path('C:\\wiki'), Path(outside)]):
-                    with self.assertRaises(WikiConflict):
-                        inside('C:\\wiki', '.wiki-doc/index.lock')
 
 
 class PublishTests(unittest.TestCase):

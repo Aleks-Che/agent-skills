@@ -4,3 +4,5 @@ wiki-doc/sql/
 wiki-doc/docs/
 wiki-doc/.runtime/
 wiki-doc/.p1-runs/
+wiki-doc/wiki-doc/scripts/__pycache__/
+wiki-doc/wiki-doc/tests/__pycache__/

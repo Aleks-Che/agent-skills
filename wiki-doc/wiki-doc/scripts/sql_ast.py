@@ -91,6 +91,33 @@ def columns_of(node):
     return result
 
 
+def constraint_details(c, column=None):
+    """Versioned constraint facts, using parser enum names rather than numeric ordinals."""
+    kind = c.contype.name.removeprefix('CONSTR_')
+    kind = {'PRIMARY': 'PRIMARY_KEY', 'FOREIGN': 'FOREIGN_KEY',
+            'NOTNULL': 'NOT_NULL'}.get(kind, kind)
+    result = dict(name=c.conname, type=kind, ddl=sql(c))
+    keys = c.fk_attrs or c.keys
+    if keys or column:
+        result['columns'] = [k.sval for k in keys] if keys else [column]
+    if c.pktable:
+        result['referenced_table'] = relation(c.pktable)
+        result['referenced_columns'] = [k.sval for k in c.pk_attrs or ()]
+    if c.raw_expr:
+        result['expression'] = sql(c.raw_expr)
+    return result
+
+
+def table_constraints(node):
+    result = []
+    for entry in node.tableElts or ():
+        if isinstance(entry, ast.Constraint):
+            result.append(constraint_details(entry))
+        elif isinstance(entry, ast.ColumnDef):
+            result.extend(constraint_details(c, entry.colname) for c in entry.constraints or ())
+    return result
+
+
 class Analyzer:
     def __init__(self, text, path, sha, version):
         require_parser()
@@ -113,6 +140,11 @@ class Analyzer:
         value = dict(source_ref=self.ref(line), reason=reason)
         if value not in self.notes:
             self.notes.append(value)
+
+    def check_merge_version(self, line):
+        major = self.version.split('.')[0]
+        if not major.isdigit() or int(major) < 15:
+            self.note(line, 'MERGE requires a confirmed PostgreSQL version >= 15')
 
     def item(self, kind, line, end=None, **details):
         key = (self.scope, kind)
@@ -171,8 +203,8 @@ class Analyzer:
         if kind not in ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'PERFORM', 'CALL', 'RETURN', 'ASSIGN', 'IF'):
             self.note(line, f'Unsupported query AST: {cls}')
             return
-        if kind == 'MERGE' and (not self.version.split('.')[0].isdigit() or int(self.version.split('.')[0]) < 15):
-            self.note(line, 'MERGE requires a confirmed PostgreSQL version >= 15')
+        if kind == 'MERGE':
+            self.check_merge_version(line)
         target = getattr(node, 'relation', None)
         reads, calls = self.dependencies(node, env, line, exclude=(id(target),) if target else ())
         formulas, conditions, outputs = [], [], []
@@ -248,9 +280,11 @@ class Analyzer:
                 self.temps[name] = ref
             else:
                 ref = name
+            constraints = table_constraints(node)
+            extension = dict(extension_version=1, constraints=constraints) if constraints else {}
             self.item('CREATE', line, line + raw.count('\n'), table_name=name, reference=ref,
                       physical=True, temporary=temporary, lifetime=node.oncommit.name,
-                      columns=columns_of(node), ddl=sql(node))['writes'] = [ref]
+                      columns=columns_of(node), ddl=sql(node), **extension)['writes'] = [ref]
         elif isinstance(node, ast.CreateTableAsStmt):
             name = relation(node.into.rel)
             temporary=node.into.rel.relpersistence=='t'
@@ -262,7 +296,19 @@ class Analyzer:
             return result
         elif isinstance(node, (ast.AlterTableStmt, ast.RenameStmt, ast.DropStmt, ast.CommentStmt, ast.TruncateStmt)):
             kind = {ast.AlterTableStmt:'ALTER',ast.RenameStmt:'ALTER',ast.DropStmt:'DROP',ast.CommentStmt:'COMMENT',ast.TruncateStmt:'TRUNCATE'}[type(node)]
-            item = self.item(kind, line, line + raw.count('\n'), ddl=sql(node), analysis='postgres_ast')
+            details = dict(ddl=sql(node), analysis='postgres_ast')
+            # Extract constraint details from ALTER TABLE ADD CONSTRAINT
+            if isinstance(node, ast.AlterTableStmt):
+                constraints = []
+                for cmd in node.cmds or ():
+                    if isinstance(cmd, ast.AlterTableCmd) and cmd.def_ and isinstance(cmd.def_, ast.Constraint):
+                        constraints.append(constraint_details(cmd.def_))
+                        if cmd.def_.indexname:
+                            self.note(line, 'Constraint USING INDEX requires index-column resolution')
+                if constraints:
+                    details['constraints'] = constraints
+                    details['extension_version'] = 1
+            item = self.item(kind, line, line + raw.count('\n'), **details)
             if getattr(node, 'relation', None):
                 item['writes'] = [relation(node.relation)]
             elif isinstance(node, ast.TruncateStmt):
@@ -271,6 +317,58 @@ class Analyzer:
             expression = node.funccall
             item = self.item('CALL', line, line + raw.count('\n'), formulas=[], conditions=[], analysis='postgres_ast')
             item['calls'] = ['.'.join(names(expression.funcname))]
+        elif isinstance(node, ast.CreateTrigStmt):
+            timing_map = {2: 'BEFORE', 0: 'AFTER', 64: 'INSTEAD OF'}
+            event_mask = {4: 'INSERT', 16: 'UPDATE', 8: 'DELETE', 32: 'TRUNCATE'}
+            timing = timing_map.get(node.timing, f'UNKNOWN({node.timing})')
+            events = [name for mask, name in event_mask.items() if node.events & mask]
+            target = relation(node.relation)
+            func = '.'.join(names(node.funcname))
+            item = self.item('TRIGGER', line, line + raw.count('\n'),
+                           extension_version=1, trigger_name=node.trigname, table=target,
+                           timing=timing, events=events,
+                           for_each_row=node.row, function=func,
+                           is_constraint=node.isconstraint,
+                           when=sql(node.whenClause) if node.whenClause else None,
+                           update_columns=[c.sval for c in node.columns or ()],
+                           arguments=[a.sval for a in node.args or ()],
+                           ddl=sql(node), analysis='postgres_ast')
+            item['calls'] = [func] if func else []
+            item['writes'] = [target]
+        elif isinstance(node, ast.IndexStmt):
+            target = relation(node.relation)
+            params = []
+            for p in node.indexParams or ():
+                if p.name:
+                    params.append(p.name)
+                elif p.expr:
+                    params.append(sql(p.expr))
+            item = self.item('INDEX', line, line + raw.count('\n'),
+                           extension_version=1, index_name=node.idxname, table=target,
+                           unique=node.unique, primary=node.primary,
+                           access_method=node.accessMethod or 'btree',
+                           columns=params,
+                           where=sql(node.whereClause) if node.whereClause else None,
+                           ddl=sql(node), analysis='postgres_ast')
+            item['writes'] = [target]
+        elif isinstance(node, ast.GrantStmt):
+            action = 'GRANT' if node.is_grant else 'REVOKE'
+            privs = [p.priv_name or 'ALL' for p in node.privileges or ()] or ['ALL']
+            objtype = node.objtype.name.removeprefix('OBJECT_')
+            grantees = [g.rolename or sql(g) for g in node.grantees or ()]
+            targets = [relation(o) for o in node.objects or () if isinstance(o, ast.RangeVar)]
+            if (node.targtype.name != 'ACL_TARGET_OBJECT' or objtype not in ('TABLE', 'SEQUENCE')
+                    or len(targets) != len(node.objects or ())):
+                self.note(line, 'Unsupported GRANT/REVOKE target; only explicit relations are supported')
+            item = self.item(action, line, line + raw.count('\n'),
+                           extension_version=1, privileges=privs, object_type=objtype,
+                           privilege_columns=[dict(privilege=p.priv_name or 'ALL', columns=[c.sval for c in p.cols or ()])
+                                              for p in node.privileges or ()],
+                           grantees=grantees, targets=targets,
+                           grant_option=node.grant_option,
+                           ddl=sql(node), analysis='postgres_ast')
+            if targets:
+                item['writes'] = targets
         elif isinstance(node, ast.CreateSchemaStmt):
             # Namespace setup is context, with no data operation to invent.
             return
@@ -354,6 +452,8 @@ class Analyzer:
                 return
             node = statements[0].stmt
             item['details']['command_kind'] = type(node).__name__.removesuffix('Stmt').upper()
+            if isinstance(node, ast.MergeStmt):
+                self.check_merge_version(line)
             reads, calls = self.dependencies(node, {}, line, exclude=(id(getattr(node,'relation',None)),))
             item['reads'] = [r for r in reads if '__dynamic_' not in r]
             item['calls'] = calls
@@ -422,6 +522,7 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
             if matches[0] not in selected: selected.append(matches[0])
     if not selected:
         raise ValueError('No supported object declaration')
+    analyzed = set()
     for raw, snippet, line, details in selected:
         engine.scope, engine.temps, engine.cte_nodes = details['canonical_key'], {}, {}
         declaration = engine.item('DECLARATION', line, line + snippet.count('\n'), **details)
@@ -467,18 +568,40 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
                 declaration['details']['output_columns'] = query['details'].get('columns',[]) if query else []
                 for index, alias in enumerate(node.into.colNames or ()):
                     if index < len(declaration['details']['output_columns']): declaration['details']['output_columns'][index]['name'] = alias.sval
-        if details['object_kind'] == 'table':
+        if details['object_kind'] in ('table', 'view', 'materialized_view', 'ctas'):
+            qualified = f"{details['schema']}.{details['name']}"
             for other in raw_stmts:
                 if other is raw or any(other is o[0] for o in objects): continue
                 target = getattr(other.stmt, 'relation', None)
-                if target and relation(target) == f"{details['schema']}.{details['name']}":
+                matches = bool(target) and relation(target) == qualified
+                if not matches and isinstance(other.stmt, ast.GrantStmt):
+                    matches = any(isinstance(o, ast.RangeVar) and relation(o) == qualified
+                                  for o in other.stmt.objects or ())
+                if matches:
                     statement_text, statement_line = source_statement(other, text)
                     engine.statement(other.stmt, statement_text, statement_line)
+                    analyzed.add(id(other))
     recognized = {id(o[0]) for o in objects if o[0]}
+    # Statements that are valid standalone or attached to a declaration
+    standalone_types = (ast.CreateTrigStmt, ast.IndexStmt, ast.GrantStmt)
     if not any(o[0] is None for o in objects):
         for raw in raw_stmts:
-            if id(raw) in recognized or isinstance(raw.stmt, ast.CreateSchemaStmt): continue
+            if id(raw) in recognized or id(raw) in analyzed or isinstance(raw.stmt, ast.CreateSchemaStmt): continue
             if isinstance(raw.stmt, (ast.InsertStmt,ast.UpdateStmt,ast.DeleteStmt,ast.AlterTableStmt,ast.CommentStmt)) and any(o[3]['object_kind']=='table' for o in objects): continue
+            if isinstance(raw.stmt, standalone_types):
+                # Never attach a top-level DDL/access statement to the last routine.
+                target = getattr(raw.stmt, 'relation', None)
+                targets = [relation(target)] if target else [relation(o) for o in getattr(raw.stmt, 'objects', ()) or ()
+                                                              if isinstance(o, ast.RangeVar)]
+                owners = {f"{o[3]['schema']}.{o[3]['name']}" for o in objects
+                          if o[3]['object_kind'] in ('table', 'view', 'materialized_view', 'ctas')}
+                if targets and set(targets) <= owners:
+                    continue  # Belongs to an explicitly unselected relation.
+                engine.scope = path
+                statement_text, statement_line = source_statement(raw, text)
+                engine.statement(raw.stmt, statement_text, statement_line)
+                engine.note(statement_line, 'Standalone extension requires a declared target relation in the selected SQL')
+                continue
             engine.note(1, f'Unanalyzed top-level statement: {type(raw.stmt).__name__}')
     if dialect.lower() not in ('postgres','postgresql'):
         engine.note(1, f'Unsupported dialect: {dialect}')

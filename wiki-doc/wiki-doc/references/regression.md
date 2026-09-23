@@ -1,6 +1,6 @@
 # Регрессионный цикл
 
-[cases.json](../examples/cases.json) задаёт 11 случаев и 14 отдельных предметов страниц.
+[cases.json](../examples/cases.json) задаёт 12 случаев и 15 отдельных предметов страниц.
 Для каждого случая в `examples/expected/<case>/` отдельно заданы факты, правила,
 решение, утверждения страницы и негативные мутации. Эти ожидания не входят во вход
 генератора. Они написаны по SQL и используются проверяющей стороной.
@@ -27,7 +27,10 @@ python scripts/run_regression.py --mode adapter --output <new_workspace> --repea
 `--adapter` — JSON-массив argv; shell не используется. `{request}` заменяется путём к
 JSON версии 1 с `skill_root`, `project_root`, `output_dir`, `sql`, `context`, `subjects`,
 `version`, `profile` и `migration_manifest`. SQL/контекст копируются с сохранением
-относительных путей; package содержит только runtime-инструкции, шаблоны и скрипты.
+относительных путей; package содержит только runtime-инструкции, шаблоны и скрипты,
+включая `docs/dialect-support.md`, `docs/concurrent-mode.md` и
+`docs/answer-templates.md` из ссылок SKILL.md. Эти документы входят в хэш инструкций
+manifest; исторический обзор из docs в изолированный пакет не копируется.
 В рабочем каталоге нет tests, history или expectations. Это изоляция контекста,
 не системная песочница для враждебного CLI. Адаптер должен соблюдать область входов.
 

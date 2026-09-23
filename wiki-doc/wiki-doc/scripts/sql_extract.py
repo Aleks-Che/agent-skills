@@ -35,6 +35,7 @@ SUPPORTED_CONSTRUCTS = frozenset({
     'PERFORM', 'CALL', 'EXECUTE',
     'RETURN',
     'CTE', 'TEMP_TABLE',
+    'TRIGGER', 'INDEX', 'CONSTRAINT', 'GRANT', 'REVOKE',
 })
 
 DML_KEYWORDS = {'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE'}
@@ -277,6 +278,10 @@ def extract_operations(sql_text: str, file_path: str, file_sha256: str,
         'PERFORM': r'\bPERFORM\b', 'CALL': r'\bCALL\b', 'EXECUTE': r'\bEXECUTE\b',
         'RETURN': r'\bRETURN\b', 'CTE': r'\bWITH\s+(' + identifier + r')\s+AS\s*\(',
         'TEMP_TABLE': r'\bCREATE\s+(?:LOCAL\s+)?TEMP(?:ORARY)?\s+TABLE\s+(' + identifier + ')',
+        'TRIGGER': r'\bCREATE\s+(?:CONSTRAINT\s+)?TRIGGER\s+(' + identifier + ')',
+        'INDEX': r'\bCREATE\s+(?:UNIQUE\s+)?INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?(' + identifier + ')',
+        'GRANT': r'\bGRANT\b',
+        'REVOKE': r'\bREVOKE\b',
     }
     matches = sorted((m.start(), kind, m) for kind, pattern in patterns.items()
                      for m in re.finditer(pattern, cleaned, re.I))
@@ -351,6 +356,48 @@ def extract_operations(sql_text: str, file_path: str, file_sha256: str,
                     add_note(start, stop, 'Unanalyzed dynamic SQL template')
             else:
                 add_note(start, stop, 'Unanalyzed dynamic SQL expression')
+        if kind == 'TRIGGER':
+            item.details['trigger_name'] = m.group(1)
+            # Extract table name from ON clause
+            on_match = re.search(r'\bON\s+(' + identifier + r')', segment, re.I)
+            if on_match:
+                item.writes = [_normalize_ref(on_match.group(1))]
+            # Extract function from EXECUTE PROCEDURE/FUNCTION
+            func_match = re.search(r'\bEXECUTE\s+(?:PROCEDURE|FUNCTION)\s+(' + identifier + r')', segment, re.I)
+            if func_match:
+                item.calls = [_normalize_ref(func_match.group(1))]
+            # Extract timing and events
+            timing = 'BEFORE' if re.search(r'\bBEFORE\b', segment, re.I) else ('AFTER' if re.search(r'\bAFTER\b', segment, re.I) else ('INSTEAD' if re.search(r'\bINSTEAD\s+OF\b', segment, re.I) else 'UNKNOWN'))
+            events = []
+            for event in ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE'):
+                if re.search(r'\b' + event + r'\b', segment, re.I):
+                    events.append(event)
+            item.details.update(timing=timing, events=events)
+        if kind == 'INDEX':
+            item.details['index_name'] = m.group(1)
+            # Extract table name from ON clause
+            on_match = re.search(r'\bON\s+(' + identifier + r')', segment, re.I)
+            if on_match:
+                item.writes = [_normalize_ref(on_match.group(1))]
+            # Extract unique flag
+            item.details['unique'] = bool(re.search(r'\bUNIQUE\s+INDEX\b', segment, re.I))
+            # Extract access method
+            using_match = re.search(r'\bUSING\s+(\w+)\b', segment, re.I)
+            item.details['access_method'] = using_match.group(1).lower() if using_match else 'btree'
+        if kind in ('GRANT', 'REVOKE'):
+            # Extract privileges
+            priv_match = re.search(r'\b(?:GRANT|REVOKE)\s+(.+?)\s+ON\b', segment, re.I)
+            if priv_match:
+                item.details['privileges'] = [p.strip() for p in priv_match.group(1).split(',')]
+            # Extract target objects
+            on_match = re.search(r'\bON\s+(?:TABLE\s+)?(.+?)\s+(?:TO|FROM)\b', segment, re.I)
+            if on_match:
+                targets = [t.strip() for t in on_match.group(1).split(',')]
+                item.writes = [_normalize_ref(t) for t in targets]
+            # Extract grantees
+            grantee_match = re.search(r'\b(?:TO|FROM)\s+(.+?)\s*;?\s*$', segment, re.I)
+            if grantee_match:
+                item.details['grantees'] = [g.strip() for g in grantee_match.group(1).split(',')]
         item.details['has_date_boundary'] = bool(re.search(r'\b(?:DATE|TIMESTAMP|INTERVAL)\b', segment, re.I))
         for field in ('reads','writes','calls'):
             setattr(item, field, list(dict.fromkeys(getattr(item, field))))
@@ -360,7 +407,7 @@ def extract_operations(sql_text: str, file_path: str, file_sha256: str,
         items.append(item)
     for pos, reason in lexical_issues:
         add_note(pos, pos + 1, reason)
-    for m in re.finditer(r'\b(?:MERGE|WITH|TRIGGER|INDEX|CONSTRAINT|GRANT|REVOKE|ALTER|DROP|TRUNCATE|IF|LOOP|EXCEPTION|DECLARE|COPY|DO|CASE)\b', cleaned, re.I):
+    for m in re.finditer(r'\b(?:MERGE|WITH|ALTER|DROP|TRUNCATE|IF|LOOP|EXCEPTION|DECLARE|COPY|DO|CASE)\b', cleaned, re.I):
         add_note(m.start(), m.end(), f'{m.group().upper()} requires analysis beyond the P0 subset')
     for m in re.finditer(r'\(\s*SELECT\b|\b(?:UNION|INTERSECT|EXCEPT)\b', cleaned, re.I):
         add_note(m.start(), m.end(), 'Nested/set query requires scoped analysis beyond P0')
@@ -369,7 +416,7 @@ def extract_operations(sql_text: str, file_path: str, file_sha256: str,
         if not fragment or re.fullmatch(r'END\s*;?', fragment, re.I):
             continue
         recognized = any(m.start() <= start < m.end() for start, _, _ in matches)
-        if not recognized or not re.match(r'(?:SELECT|INSERT|UPDATE|DELETE|MERGE|PERFORM|CALL|EXECUTE|CREATE|WITH|RETURN)\b', fragment, re.I):
+        if not recognized or not re.match(r'(?:SELECT|INSERT|UPDATE|DELETE|MERGE|PERFORM|CALL|EXECUTE|CREATE|WITH|RETURN|GRANT|REVOKE)\b', fragment, re.I):
             add_note(m.start(), m.end(), f'Unanalyzed executable fragment: {fragment[:60]}')
     return items, notes
 
@@ -528,7 +575,9 @@ def extract_inventory(sql_text, file_path, file_sha256, dialect='postgres', vers
         previous = _extract_inventory_legacy(sql_text, file_path, file_sha256, dialect, version, documented_subjects)
     except ValueError:
         return native
-    if not native['coverage_notes'] and not previous['coverage_notes'] and not any(i['kind'] in ('EXECUTE','CTAS','CTE') for i in native['items']):
+    if not native['coverage_notes'] and not previous['coverage_notes'] and not any(
+            i['kind'] in ('EXECUTE','CTAS','CTE','TRIGGER','INDEX','GRANT','REVOKE')
+            or i.get('details', {}).get('constraints') for i in native['items']):
         declarations = {i['details']['canonical_key']: i['details'] for i in native['items'] if i['kind'] == 'DECLARATION'}
         for item in previous['items']:
             if item['kind'] == 'DECLARATION':

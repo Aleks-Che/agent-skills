@@ -194,7 +194,7 @@ class PublishedQueryTests(unittest.TestCase):
         before = self.committed_bytes()
         code = 'from publish import publish; import os,sys; publish(sys.argv[1],sys.argv[2],fault=lambda s: os._exit(71) if s==sys.argv[3] else None)'
         for stage in ('after_machine_index','after_lineage'):
-            result = subprocess.run([sys.executable,'-B','-c',code,str(run),str(self.wiki),stage],capture_output=True,timeout=45)
+            result = subprocess.run([sys.executable,'-B','-c',code,str(run),str(self.wiki),stage],cwd=PACKAGE/'scripts',capture_output=True,timeout=45)
             self.assertEqual(result.returncode,71,result.stderr)
             with self.assertRaises(IndexError): query_page(self.wiki,PAGE_ID)
             self.assertEqual(recover(self.wiki)[0]['state'],'rolled_back')

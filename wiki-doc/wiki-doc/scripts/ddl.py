@@ -47,6 +47,17 @@ def apply_statement(state, node):
                 if subtype == 'AT_AlterColumnType': found['type'] = type_name(command.def_.typeName)
                 elif subtype == 'AT_ColumnDefault': found['default'] = sql(command.def_) or None
                 else: found['not_null'] = subtype == 'AT_SetNotNull'
+            elif subtype == 'AT_AddConstraint' and isinstance(command.def_, ast.Constraint):
+                constraint = command.def_
+                if constraint.indexname:
+                    raise ValueError('Constraint USING INDEX requires index-column resolution')
+                keys = [k.sval for k in constraint.keys or constraint.fk_attrs or ()]
+                if set(keys) - {c['name'] for c in columns}:
+                    raise ValueError(f'Unknown constraint columns in {key}: {keys}')
+                if constraint.contype.name == 'CONSTR_PRIMARY':
+                    for col in columns:
+                        if col['name'] in keys:
+                            col.update(primary_key=True, not_null=True)
             else:
                 raise ValueError(f'Unsupported ALTER action: {subtype}')
     elif isinstance(node, ast.RenameStmt):
@@ -93,7 +104,7 @@ def reconstruct(manifest_path=None, *, project_root=None):
     errors = validate_schema(manifest, load_schemas()['migration_manifest'], 'migration_manifest')
     if errors:
         raise ArtifactInputError('; '.join(errors))
-    if manifest['dialect'] not in ('postgres','postgresql'):
+    if manifest['dialect'].lower() not in ('postgres','postgresql'):
         return dict(status='unsupported', tables={}, inputs=[], errors=['Unsupported migration dialect'])
     state, inputs, seen = {}, [], set()
     for relative in manifest['ordered_files']:
@@ -115,7 +126,7 @@ def reconstruct(manifest_path=None, *, project_root=None):
 
 
 def catalog(files, root):
-    """Only actual CREATE declarations are type evidence; unordered ALTERs are gaps."""
+    """CREATE is type evidence; constraint additions after the same-file CREATE are ordered."""
     from pglast import ast
     result, functions, inputs, errors = {}, {}, [], []
     root = Path(root).resolve()
@@ -125,6 +136,7 @@ def catalog(files, root):
         data = path.read_bytes()
         ref = dict(path=path.relative_to(root).as_posix(), sha256=hashlib.sha256(data).hexdigest())
         inputs.append(ref)
+        local_tables = set()
         for raw in parse(data.decode('utf-8-sig')):
             node = raw.stmt
             if isinstance(node, ast.CreateStmt):
@@ -133,9 +145,16 @@ def catalog(files, root):
                 if key in result and result[key]['columns'] != value['columns']:
                     errors.append(f'Conflicting unordered definitions for {key}')
                 result[key] = value
+                local_tables.add(key)
             elif isinstance(node, ast.CreateFunctionStmt):
                 key = '.'.join(p.sval for p in node.funcname)
                 functions.setdefault(key, []).append(dict(signature=sql(node), source_ref={**ref,'start_line':1,'end_line':len(data.decode('utf-8-sig').splitlines())}))
+            elif (isinstance(node, ast.AlterTableStmt) and relation(node.relation) in local_tables
+                  and all(c.subtype.name == 'AT_AddConstraint' for c in node.cmds or ())):
+                try:
+                    apply_statement(result, node)
+                except ValueError as exc:
+                    errors.append(str(exc))
             elif isinstance(node, (ast.AlterTableStmt,ast.RenameStmt,ast.DropStmt)):
                 errors.append(f'Unordered migration DDL in {ref["path"]}; provide migration manifest')
     return dict(tables=result, functions=functions, inputs=inputs, errors=errors)

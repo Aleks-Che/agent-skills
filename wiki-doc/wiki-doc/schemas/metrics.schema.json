@@ -1,0 +1,366 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wiki-doc metrics snapshot",
+  "description": "Aggregated health metrics for a local wiki derived from index, lint, and archived bundles.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "pages",
+    "sources",
+    "checks",
+    "coverage",
+    "broken_links"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC timestamp of the metrics computation"
+    },
+    "pages": {
+      "$ref": "#/$defs/pages_metrics"
+    },
+    "sources": {
+      "$ref": "#/$defs/source_metrics"
+    },
+    "checks": {
+      "$ref": "#/$defs/check_metrics"
+    },
+    "coverage": {
+      "$ref": "#/$defs/coverage_metrics"
+    },
+    "broken_links": {
+      "$ref": "#/$defs/broken_link_metrics"
+    },
+    "decision_accuracy": {
+      "$ref": "#/$defs/decision_accuracy_metrics"
+    },
+    "iteration_stats": {
+      "$ref": "#/$defs/iteration_metrics"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "pages_metrics": {
+      "type": "object",
+      "required": [
+        "total",
+        "managed",
+        "legacy",
+        "current",
+        "changed",
+        "missing"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total pages in the wiki index"
+        },
+        "managed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Pages with verified bundles"
+        },
+        "legacy": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Pages without new provenance"
+        },
+        "current": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Managed pages whose committed bytes match disk"
+        },
+        "changed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Managed pages with modified disk bytes"
+        },
+        "missing": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Managed pages whose files are absent"
+        }
+      },
+      "additionalProperties": false
+    },
+    "source_metrics": {
+      "type": "object",
+      "required": [
+        "total_tracked",
+        "outdated",
+        "fresh",
+        "freshness_ratio"
+      ],
+      "properties": {
+        "total_tracked": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total tracked source files across all managed pages"
+        },
+        "outdated": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Source files whose current bytes differ from the archived hash"
+        },
+        "fresh": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Source files whose current bytes match the archived hash"
+        },
+        "freshness_ratio": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "fresh / total_tracked; null when no tracked sources exist"
+        },
+        "outdated_pages": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Distinct managed pages with at least one outdated tracked source"
+        },
+        "by_reason": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": "Outdated counts grouped by reason: source_changed, source_missing, project_root_unavailable, source_unreadable"
+        }
+      },
+      "additionalProperties": false
+    },
+    "check_metrics": {
+      "type": "object",
+      "required": [
+        "total_decisions",
+        "ready",
+        "revise",
+        "blocked",
+        "ready_ratio"
+      ],
+      "properties": {
+        "total_decisions": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of archived bundles with decisions"
+        },
+        "ready": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Bundles whose final decision was ready"
+        },
+        "revise": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Bundles whose final decision was revise"
+        },
+        "blocked": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Bundles whose final decision was blocked"
+        },
+        "ready_ratio": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "ready / total_decisions; null when no decisions exist"
+        },
+        "first_ready_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time",
+          "description": "Earliest ready decision timestamp found in archives"
+        },
+        "blocking_defect_total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Sum of blocking defect counts across all ready-issued bundles"
+        },
+        "blocking_inconclusive_total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Sum of blocking inconclusive counts across all ready-issued bundles"
+        }
+      },
+      "additionalProperties": false
+    },
+    "coverage_metrics": {
+      "type": "object",
+      "required": [
+        "total_checks",
+        "resolved",
+        "ok",
+        "defect",
+        "unknown",
+        "not_applicable",
+        "coverage_ratio",
+        "accuracy_ratio"
+      ],
+      "properties": {
+        "total_checks": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Sum of required checks across all archived decisions"
+        },
+        "resolved": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Checks resolved as ok or defect (numerator of coverage)"
+        },
+        "ok": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Checks confirmed correct"
+        },
+        "defect": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Checks that found a documentation defect"
+        },
+        "unknown": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Checks left inconclusive because analysis could not resolve them"
+        },
+        "not_applicable": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Checks confirmed not applicable to the documented scope"
+        },
+        "coverage_ratio": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "resolved / (resolved + unknown); null when no applicable checks exist"
+        },
+        "accuracy_ratio": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "ok / resolved; null when nothing resolved"
+        }
+      },
+      "additionalProperties": false
+    },
+    "broken_link_metrics": {
+      "type": "object",
+      "required": [
+        "total",
+        "files_affected",
+        "details"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of broken links found by lint"
+        },
+        "files_affected": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of files containing broken links"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "file",
+              "code"
+            ],
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "decision_accuracy_metrics": {
+      "type": "object",
+      "required": [
+        "erroneous_ready",
+        "total_mutations_tested"
+      ],
+      "properties": {
+        "erroneous_ready": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of mutated bundles that received ready despite containing defects"
+        },
+        "total_mutations_tested": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total negative mutations tested in regression"
+        },
+        "erroneous_ready_ratio": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "erroneous_ready / total_mutations_tested; null when no mutations tested"
+        }
+      },
+      "additionalProperties": false
+    },
+    "iteration_metrics": {
+      "type": "object",
+      "required": [
+        "total_publishes",
+        "unique_pages_published"
+      ],
+      "properties": {
+        "total_publishes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total committed journal entries (publish iterations)"
+        },
+        "unique_pages_published": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Distinct pages that have been published at least once"
+        },
+        "avg_iterations_per_page": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "total_publishes / unique_pages_published; null when no pages"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-19",
+  "reviewer": "Codex",
+  "scope": "P2-04 verification and fixes; completed-stage regression; P2-05 not started",
+  "runtime": {
+    "python": "3.12.7",
+    "pglast": "7.14",
+    "jsonschema": "4.26.0",
+    "markdown-it-py": "3.0.0",
+    "rfc3339-validator": "0.1.4",
+    "pytest": "9.0.3"
+  },
+  "tests": {
+    "passed": 662,
+    "skipped": 1,
+    "failed": 0,
+    "errors": 0,
+    "subtests_passed": 216,
+    "dialect_matrix_passed": 38,
+    "skip_reason": "Windows symlink creation unavailable (WinError 1314)"
+  },
+  "reference": {
+    "valid": true,
+    "cases": 12,
+    "subjects": 15,
+    "repeats": 3,
+    "full_agent_cycle_completed": false,
+    "ready": 45,
+    "checked": 45,
+    "max_outcome_variants": 1
+  },
+  "saved": {
+    "valid": true,
+    "cases": 12,
+    "subjects": 15,
+    "repeats": 3,
+    "full_agent_cycle_completed": false,
+    "ready": 45,
+    "checked": 45,
+    "max_outcome_variants": 1
+  },
+  "mutations": {
+    "valid": true,
+    "mutations": 44,
+    "false_ready": 0,
+    "false_ready_rate": 0.0
+  },
+  "publication": {
+    "valid": true,
+    "published": 15,
+    "all_idempotent": true,
+    "lint_valid": true,
+    "lint_issues": []
+  },
+  "metrics": {
+    "schema_valid": true,
+    "pages": {
+      "total": 15,
+      "managed": 15,
+      "legacy": 0,
+      "current": 15,
+      "changed": 0,
+      "missing": 0
+    },
+    "checks": {
+      "total_decisions": 15,
+      "ready": 15,
+      "revise": 0,
+      "blocked": 0,
+      "ready_ratio": 1.0,
+      "first_ready_at": "2026-09-19T05:33:01.336910+00:00",
+      "blocking_defect_total": 0,
+      "blocking_inconclusive_total": 0
+    },
+    "broken_links": {
+      "total": 0,
+      "files_affected": 0,
+      "details": []
+    },
+    "decision_accuracy": {
+      "erroneous_ready": 0,
+      "total_mutations_tested": 44,
+      "erroneous_ready_ratio": 0.0
+    }
+  },
+  "regressions": [
+    "Real SQL dialect/version refusals require input_error=false and the exact analysis gap.",
+    "MERGE in EXECUTE constant/format is blocked for version 14 and unknown, allowed for 15.",
+    "PostgreSQL aliases are case-insensitive in inventory and migration reconstruction.",
+    "The dialect matrix is copied to isolated runtime packages and hashed as an instruction."
+  ],
+  "inputs_sha256": {
+    "scripts/sql_ast.py": "4bc58cb70bf68e24877ea6b3be6e9462614cea286a14989cfb242f976a39599c",
+    "scripts/ddl.py": "fa98d715cf16f315a3a344cae8852c2e1d67bc3c606811598d99a4b7e74043aa",
+    "scripts/bundle.py": "5d578c28f6cd434a0fcedf64e22178867df5ca34473812c7bcf59d810b9caf76",
+    "scripts/run_regression.py": "7af8d44f23cf1f18ff0b4d366bd4c566eb00ba549bdf5c9dfcac23ed3d6fec5a",
+    "docs/dialect-support.md": "9e2f8480633d5cd2b8b0c161a2d748107cee314b6efda51849e6d5929b12d7e4",
+    "references/sql-support.md": "e49d180d3a937f0309240d65959650729b594e66d6cb4ed6a8061731e12147e4",
+    "references/regression.md": "f1efd8be6782eacb24630310cc53ff92aff7e70a0354f01c8050fd791f41e1ee",
+    "tests/test_dialect_matrix.py": "0ea2cf9eb5a476b79e15c3cfe4e4348d9ceb1bea2a14d510132652c7a32a7e44",
+    "tests/test_p0_gate_regressions.py": "dd5546b9f0a3a8eb726e90b4a031b262cf1c282ce8963ad7c3eac29bad3a3c5f",
+    "tests/test_p1_acceptance.py": "7b62a3ade7416ff582eb936c40d15b150905361fcd49566a7c70e6017797d57f",
+    "examples/cases.json": "a4af3177395d4e6c193e24bb7dce26cd2d83d1139726600db571b108f38ffb54",
+    "requirements.txt": "8dfbb719e295bf59a2797c5bb8b30b99e15cfee0d92a318130b45f8b7a4f74f5",
+    "SKILL.md": "7836e9860a7973e59aa6eaf477a46ffff8f7e3cf552ceace3d681632076dedac"
+  },
+  "artifacts": {
+    "pytest": ".runtime/p2-04-review/final-pytest.xml",
+    "reference": ".runtime/p2-04-review/final-reference-report.json",
+    "saved": ".runtime/p2-04-review/final/regression-report.json",
+    "mutations": ".runtime/p2-04-review/final-mutations/mutation-report.json",
+    "publication": ".runtime/p2-04-review/final/publication-report.json",
+    "metrics": ".runtime/p2-04-review/final/metrics-report.json"
+  },
+  "limitations": [
+    "Reference/saved adapter, not a full LLM cycle.",
+    "Static SQL parsing; no database execution.",
+    "Supported SQL subset only; server-version compatibility is not certified.",
+    "P2-05 remains not started."
+  ]
+}

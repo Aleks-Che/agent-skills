@@ -66,7 +66,7 @@ class RegressionAcceptanceTests(unittest.TestCase):
     def test_package_markdown_links_survive_resource_moves(self):
         from coverage_gate import MarkdownDocument
         from urllib.parse import urlsplit,unquote
-        paths=subprocess.run(['rg','--files','-g','*.md'],cwd=PACKAGE,capture_output=True,text=True,check=True).stdout.splitlines()
+        paths=sorted(path.relative_to(PACKAGE) for path in PACKAGE.rglob('*.md'))
         for relative in paths:
             path=PACKAGE/relative
             for link in MarkdownDocument(path.read_text(encoding='utf-8-sig')).links:
@@ -84,6 +84,9 @@ class RegressionAcceptanceTests(unittest.TestCase):
             self.assertFalse(list(Path(temp).rglob('*.expected.md')))
             self.assertFalse(list(Path(temp).rglob('expected')))
             self.assertFalse((package/'history').exists())
+            for name in ('dialect-support.md', 'concurrent-mode.md', 'answer-templates.md'):
+                self.assertEqual((package/'docs'/name).read_bytes(), (PACKAGE/'docs'/name).read_bytes())
+            self.assertFalse((package/'docs/SKILL-OVERVIEW.md').exists())
             self.assertEqual({p.name for p in project.iterdir()},{'01_no_target_ddl.sql','context.sql'})
 
     def test_two_processes_keep_both_index_entries(self):

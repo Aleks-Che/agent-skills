@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-19",
+  "reviewer": "Codex",
+  "scope": "P2-05 verification and fixes, Windows path race reproduction, P0-P2 regression",
+  "plan_status": "P0-P2 completed within the documented support and verification limits",
+  "runtime": {
+    "python": "3.12.7",
+    "platform": "win32",
+    "pglast": "7.14",
+    "jsonschema": "4.26.0",
+    "markdown-it-py": "3.0.0",
+    "rfc3339-validator": "0.1.4",
+    "pytest": "9.0.3"
+  },
+  "baseline_tests": {
+    "passed": 689,
+    "skipped": 1,
+    "failed": 0,
+    "subtests_passed": 216
+  },
+  "tests": {
+    "passed": 706,
+    "skipped": 1,
+    "failed": 0,
+    "errors": 0,
+    "subtests_passed": 224,
+    "elapsed_seconds": 429.29,
+    "operations_passed": 27,
+    "operations_acceptance_passed": 17,
+    "operations_subtests_passed": 8,
+    "skip_reason": "Windows symlink creation unavailable (WinError 1314)",
+    "command": "python -B -m pytest tests -q -p no:cacheprovider --tb=short"
+  },
+  "reference": {
+    "valid": true,
+    "cases": 12,
+    "subjects": 15,
+    "repeats": 3,
+    "full_agent_cycle_completed": false,
+    "ready": 45,
+    "checked": 45,
+    "max_outcome_variants": 1
+  },
+  "saved": {
+    "valid": true,
+    "cases": 12,
+    "subjects": 15,
+    "repeats": 3,
+    "full_agent_cycle_completed": false,
+    "ready": 45,
+    "checked": 45,
+    "max_outcome_variants": 1
+  },
+  "mutations": {
+    "valid": true,
+    "mutations": 44,
+    "false_ready": 0,
+    "false_ready_rate": 0.0
+  },
+  "publication": {
+    "valid": true,
+    "published": 15,
+    "all_idempotent": true,
+    "lint_valid": true,
+    "lint_issues": []
+  },
+  "concurrency": {
+    "repeats": 20,
+    "passed": 20
+  },
+  "read_commands": {
+    "valid": true,
+    "metrics_schema_valid": true,
+    "pages": 15,
+    "outdated": 0,
+    "lint_issues": 0,
+    "bundle_valid": true,
+    "wiki_unchanged": true,
+    "commands": [
+      "metrics",
+      "lint",
+      "query",
+      "index",
+      "bundle"
+    ]
+  },
+  "metrics": {
+    "schema_valid": true,
+    "pages": {
+      "total": 15,
+      "managed": 15,
+      "legacy": 0,
+      "current": 15,
+      "changed": 0,
+      "missing": 0
+    },
+    "checks": {
+      "total_decisions": 15,
+      "ready": 15,
+      "revise": 0,
+      "blocked": 0,
+      "ready_ratio": 1.0,
+      "first_ready_at": "2026-09-19T06:56:13.551882+00:00",
+      "blocking_defect_total": 0,
+      "blocking_inconclusive_total": 0
+    },
+    "broken_links": {
+      "total": 0,
+      "files_affected": 0,
+      "details": []
+    },
+    "decision_accuracy": {
+      "erroneous_ready": 0,
+      "total_mutations_tested": 44,
+      "erroneous_ready_ratio": 0.0
+    }
+  },
+  "regressions": [
+    "CLI inventory and plan use real input from another cwd; coverage success does not bypass full gate or publisher.",
+    "Prepare, successful/failed dry-run and read-only gate checks do not write into the wiki.",
+    "Inapplicable dry-run/cleanup flags are rejected for prepare/recover.",
+    "Journal entries preserve actual run/page identity; recovery records the recovered transaction.",
+    "Concurrent Unicode JSONL records remain complete; interrupted JSON/UTF-8 tails do not hide the next event.",
+    "Journal failures do not change gate or publisher results.",
+    "Deterministic Windows second-path-probe failure is accepted only for an equivalent resolved path; outside paths stay rejected.",
+    "Runtime copies and instruction fingerprints include both new operational documents."
+  ],
+  "inputs_sha256": {
+    "scripts/wiki_doc.py": "8ea0b79236f075cab4f30a0790f72fff28ca61000423cdf57201f31a6c4922f1",
+    "scripts/_version.py": "7a7a79f5c5b3709c2abe9abff1dbb6c08695043ae3b7946316d39c0c819d777f",
+    "scripts/stage_journal.py": "0a9f66ae977047dcd2b3a69bbdd36e7e6fdc26f1ecbcd2b385b4cd06706f7f7e",
+    "scripts/publish.py": "e1d3a5f287b73777e931fe8e04d796e536f98c502afbd0f72459781f88d81134",
+    "scripts/validation_gate.py": "51e01bb0a01c9ad61a582c4ed34429110744931b4bab4f82084d09357c7f71d4",
+    "scripts/wiki_store.py": "8ca4dd9ebca2fcea0c76a38f9f3d1a03b44d93e4584e1237b01254edfc214161",
+    "scripts/bundle.py": "f5c80b4a821bc373238593d290467e0f8bb381f4c52cefefc6fc3944183b8f93",
+    "scripts/run_regression.py": "817a5c32fd15ce7c92523289aea7c0d4edd94598b892df7cce6f9481e49506d7",
+    "docs/concurrent-mode.md": "adc840ce99d855a690097fac2a43ce7edf9b65f773c6c32b547bd73617c93163",
+    "docs/answer-templates.md": "be2160964dd350d04e2754c788274e3a5f3cba6d063185ba5e83de505b91a116",
+    "docs/dialect-support.md": "9e2f8480633d5cd2b8b0c161a2d748107cee314b6efda51849e6d5929b12d7e4",
+    "references/regression.md": "caeead6c0b94f598cb1d4aa1ea86c942764f8a91c9d7cb5344c0561074d5fe5e",
+    "tests/test_p2_05_operations.py": "d700f8fbdce5cf6b2cfbcab68afbbf97316a73393469c31a22c88eea0a182956",
+    "tests/test_p2_05_acceptance.py": "e486e4135146efada2c42869a5f3335a0a9810197376eb46eebaa8ca88b0a7d2",
+    "tests/test_p0_gate_regressions.py": "d92c9175dec8eab09f63383d2564b1300eb14f01ef29e3e148479c9be4265d54",
+    "tests/test_p1_acceptance.py": "996bd2e7ac410f50f7fb963e0f8362b568bd912800d47337f8712e0462233757",
+    "CHANGELOG.md": "8574ea83ce87eb5582bf66ca05eb39a545b4dc358a77527aa566c09798cec271",
+    "requirements.txt": "8dfbb719e295bf59a2797c5bb8b30b99e15cfee0d92a318130b45f8b7a4f74f5",
+    "SKILL.md": "713b6287539a385de3835ee7ef52f38566011df7513a7fa47083db00ffef35eb"
+  },
+  "artifacts": {
+    "pytest": ".runtime/p2-05-review/pytest-summary.json",
+    "reference": ".runtime/p2-05-review/reference-report.json",
+    "saved": ".runtime/p2-05-review/final/regression-report.json",
+    "mutations": ".runtime/p2-05-review/mutations/mutation-report.json",
+    "publication": ".runtime/p2-05-review/final/publication-report.json",
+    "metrics": ".runtime/p2-05-review/metrics-report.json",
+    "concurrency": ".runtime/p2-05-review/concurrency-report.json",
+    "read_commands": ".runtime/p2-05-review/read-commands-report.json"
+  },
+  "limitations": [
+    "Reference/saved adapter, not a full LLM cycle.",
+    "Static SQL parsing; no database execution.",
+    "Windows local filesystem tested; Linux and network filesystems not tested in this review.",
+    "Windows symlink creation test skipped due to missing OS privilege.",
+    "Stage journal is best-effort diagnostics, not the transaction recovery source or a complete audit trail.",
+    "Prior intermittent path failure has no trace; its exact cause cannot be proven retrospectively."
+  ]
+}

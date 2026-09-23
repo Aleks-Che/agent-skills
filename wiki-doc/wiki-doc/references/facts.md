@@ -83,6 +83,10 @@
 - `kind` выбирается из перечисления схемы; для конструкции вне перечисления
   используй `OTHER` и обязательный `kind_detail`. Это фиксирует границу классификации,
   а не подтверждает поддержку синтаксиса экстрактором.
+- Триггеры, индексы и права доступа — отдельные операции `TRIGGER`, `INDEX`,
+  `GRANT`, `REVOKE`; ограничения из `ALTER TABLE ADD CONSTRAINT` — операция
+  `ALTER` со `structure.constraints`. Им соответствуют обязательства `trigger`,
+  `index`, `access_rule` и `constraint` в плане, а не общий `operation`.
 
 Идентификатор операции стабилен между блоками одной генерации. При изменении SQL
 перестрой затронутые факты и покрытие; номера строк не являются вечными ID.
@@ -204,3 +208,26 @@ INTO/RETURN, определения и область CTE/temp, шаблоны �
 
 Необязательный `page_contract: claims-v1` включает строгую сверку фактических таблиц
 Markdown с реестром. Формат и границы — [regression.md](regression.md).
+
+## Расширения SQL, версия 1 (P2-03)
+
+Оболочки inventory/facts остаются версии 2. AST `details` и соответствующий
+`operations.structure` используют `extension_version: 1` для TRIGGER, INDEX,
+GRANT/REVOKE и CREATE/ALTER с ограничениями. Это обязательная версия расширения;
+неизвестное значение отклоняется схемой. Существующие операции без расширений
+не требуют этого поля.
+
+- TRIGGER: `trigger_name`, `table`, `timing`, `events`, `for_each_row`, `function`,
+  `is_constraint`, `when`, `update_columns`, `arguments`.
+- INDEX: `index_name` (может быть null), `table`, `unique`, `primary`,
+  `access_method`, `columns` (имена или выражения), `where`.
+- GRANT/REVOKE: `privileges`, `privilege_columns`, `object_type`, `grantees`,
+  `targets`, `grant_option`.
+- CREATE/ALTER: массив `constraints` с `name`, `type`, `ddl` и применимыми
+  `columns`, `expression`, `referenced_table`, `referenced_columns`.
+
+Полный нормализованный `ddl` операции сохраняет остальные SQL-модификаторы.
+Gate требует совпадения всей структуры с независимым AST, включая ограничения
+из CREATE TABLE. Результаты правил `trigger`, `index`, `constraint`, `access_rule`
+в `validation.json` ссылаются через `fact_ids` на соответствующую операцию.
+Удаление ограничения из структуры не отменяет отдельного обязательства плана.

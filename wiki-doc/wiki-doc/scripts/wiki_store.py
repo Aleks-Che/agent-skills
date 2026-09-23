@@ -3,7 +3,7 @@ import hashlib
 import json
 import os
 import re
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from urllib.parse import unquote, urlsplit
 
 from artifact_schema import read_json
@@ -13,15 +13,35 @@ from coverage_gate import MarkdownDocument
 class WikiConflict(ValueError): pass
 
 
+def _namespace_key(path):
+    """Compare resolved Windows DOS/UNC paths independently of the device prefix.
+
+    ntpath.realpath can retain the extended prefix when a replacement makes its
+    second OS probe fail. Resolution still happens before this comparison;
+    symlinks pointing outside the wiki are never accepted by spelling alone.
+    """
+    value = str(path)
+    if os.name == 'nt':
+        if value.startswith('\\\\?\\UNC\\'):
+            return PureWindowsPath('\\\\' + value[8:])
+        if re.match(r'^\\\\\?\\[A-Za-z]:\\', value):
+            return PureWindowsPath(value[4:])
+    return path
+
+
 def inside(root, relative):
     root=Path(root).resolve()
     rel=PurePosixPath(str(relative).replace('\\','/'))
     if rel.is_absolute() or '..' in rel.parts or ':' in str(rel):
         raise WikiConflict(f'Unsafe wiki-relative path: {relative}')
     path=(root / str(rel)).resolve()
-    if not path.is_relative_to(root) or path==root:
+    try:
+        suffix = _namespace_key(path).relative_to(_namespace_key(root))
+    except ValueError:
+        raise WikiConflict(f'Path escapes wiki: {relative}') from None
+    if not suffix.parts:
         raise WikiConflict(f'Path escapes wiki: {relative}')
-    return path
+    return root.joinpath(*suffix.parts)
 
 
 def digest(data): return hashlib.sha256(data).hexdigest() if data is not None else None

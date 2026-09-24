@@ -81,7 +81,9 @@ class WildcardProofTests(unittest.TestCase):
     def test_cte_shadow_does_not_use_physical_table_columns(self):
         query = 'WITH t AS (SELECT 1 AS different) SELECT * FROM t'
         tables = {'t': self.TABLES['demo.t']}
-        self.assertIsNone(expand_star_outputs(parse_sql(query)[0].stmt, tables))
+        # CTE t shadows physical table t: expansion uses the CTE column, not id/a.
+        self.assertEqual(expand_star_outputs(parse_sql(query)[0].stmt, tables),
+                         [('different', 't.different')])
 
     def test_quoted_names_survive_expansion_and_type_inference(self):
         query = 'SELECT "X".* FROM demo.t AS "X"'

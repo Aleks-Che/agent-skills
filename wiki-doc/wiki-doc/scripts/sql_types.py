@@ -70,58 +70,111 @@ def _match_star_sources(prefix, sources):
     return matched if len(matched) == 1 else []
 
 
+def _renamed_columns(columns, aliases=()):
+    """Apply a positional alias prefix only to an established output width."""
+    if not columns or len(aliases) > len(columns):
+        return None
+    result = []
+    for index, column in enumerate(columns):
+        expression = column.get('expression', '')
+        if expression == '*' or expression.endswith('.*'):
+            return None
+        name = aliases[index] if index < len(aliases) else column.get('name')
+        if not name:
+            return None
+        result.append({'name': name, 'type': column.get('type')})
+    return result
+
+
 def expand_wildcard_outputs(inventory, tables):
     """Expand SELECT * / qual.* outputs against established table columns.
 
     `tables` maps relation names to {'columns': [{'name':..., 'type':...}, ...]}.
     Entries whose sources are not fully established stay wildcards. Coverage
     notes for the wildcard gap are recomputed: only unexpanded items keep them.
+    CTE and derived-table output columns are added to `tables` as they are
+    resolved so later items can expand through them.  Iterates until fixpoint
+    so nested CTE/derived chains resolve in dependency order.
     """
-    unresolved_items = []
-    for item in inventory.get('items', []):
-        details = item.get('details', {})
-        still_wildcard = False
-        for key in ('columns', 'output_columns'):
-            outputs = details.get(key)
-            if not outputs or not any(isinstance(o, dict) and
-                                     (o.get('expression') == '*' or str(o.get('expression', '')).endswith('.*'))
-                                     for o in outputs):
+    def _register_cte_columns():
+        # Build CTE aliascolnames map from CTE items. When a CTE declares
+        # `WITH c(a, b) AS (...)`, the visible output columns are `a, b`,
+        # not the inner SELECT names — match PostgreSQL semantics.
+        cte_aliases = {}
+        for item in inventory.get('items', []):
+            if item.get('kind') != 'CTE':
                 continue
-            rebuilt = []
-            for entry in outputs:
-                expression = entry.get('expression') if isinstance(entry, dict) else None
-                if not (expression == '*' or str(expression).endswith('.*')):
-                    rebuilt.append(entry)
+            ref = item.get('details', {}).get('reference')
+            cols = item.get('details', {}).get('columns') or []
+            if ref and cols and all(isinstance(c, str) for c in cols):
+                cte_aliases[ref] = cols
+        for item in inventory.get('items', []):
+            details = item.get('details', {})
+            result_for = details.get('result_for')
+            if result_for and result_for.startswith(('@cte:', '@derived:')):
+                cols = _renamed_columns(details.get('columns') or details.get('output_columns'),
+                                        cte_aliases.get(result_for, ()))
+                if cols:
+                    tables[result_for] = {'columns': cols, 'source_ref': item['source_ref']}
+
+    def _expand_pass():
+        unresolved = []
+        changed = False
+        for item in inventory.get('items', []):
+            details = item.get('details', {})
+            still_wildcard = False
+            for key in ('columns', 'output_columns'):
+                outputs = details.get(key)
+                if not outputs or not any(isinstance(o, dict) and
+                                         (o.get('expression') == '*' or str(o.get('expression', '')).endswith('.*'))
+                                         for o in outputs):
                     continue
-                sources = entry.get('star_sources')
-                if not sources:
-                    rebuilt.append(entry)
-                    still_wildcard = True
-                    continue
-                covered = _match_star_sources(_star_prefix(expression), [tuple(s) for s in sources])
-                expanded = []
-                ok = bool(covered)
-                for alias, rel in covered:
-                    columns = (tables.get(rel) or {}).get('columns')
-                    if not columns:
-                        ok = False
-                        break
-                    owner = _source_owner(alias, rel)
-                    for column in columns:
-                        expanded.append(dict(name=column['name'],
-                                             expression=_column_ref(owner, column['name']),
-                                             expanded_from=expression))
-                if not ok:
-                    rebuilt.append(entry)
-                    still_wildcard = True
-                else:
-                    rebuilt.extend(expanded)
-            details[key] = rebuilt
-            if key == 'output_columns' and not still_wildcard:
-                for output, alias in zip(rebuilt, details.get('output_column_aliases', [])):
-                    output['name'] = alias
-        if still_wildcard:
-            unresolved_items.append(item)
+                rebuilt = []
+                for entry in outputs:
+                    expression = entry.get('expression') if isinstance(entry, dict) else None
+                    if not (expression == '*' or str(expression).endswith('.*')):
+                        rebuilt.append(entry)
+                        continue
+                    sources = entry.get('star_sources')
+                    if not sources:
+                        rebuilt.append(entry)
+                        still_wildcard = True
+                        continue
+                    covered = _match_star_sources(_star_prefix(expression), [tuple(s) for s in sources])
+                    expanded = []
+                    ok = bool(covered)
+                    for alias, rel in covered:
+                        columns = (tables.get(rel) or {}).get('columns')
+                        if not columns:
+                            ok = False
+                            break
+                        owner = _source_owner(alias, rel)
+                        for column in columns:
+                            expanded.append(dict(name=column['name'],
+                                                 expression=_column_ref(owner, column['name']),
+                                                 expanded_from=expression))
+                    if not ok:
+                        rebuilt.append(entry)
+                        still_wildcard = True
+                    else:
+                        rebuilt.extend(expanded)
+                        changed = True
+                details[key] = rebuilt
+                if key == 'output_columns' and not still_wildcard:
+                    for output, alias in zip(rebuilt, details.get('output_column_aliases', [])):
+                        output['name'] = alias
+            if still_wildcard:
+                unresolved.append(item)
+        return unresolved, changed
+
+    # Fixpoint: expand, register CTE columns, repeat until stable.
+    while True:
+        _register_cte_columns()
+        unresolved_items, changed = _expand_pass()
+        # Each successful pass removes at least one wildcard. Counting items
+        # misses progress when just one of several stars in an item resolves.
+        if not changed:
+            break
     if any(note.get('reason') == WILDCARD_NOTE for note in inventory.get('coverage_notes', [])) \
             or unresolved_items:
         kept = [n for n in inventory.get('coverage_notes', []) if n.get('reason') != WILDCARD_NOTE]
@@ -138,45 +191,73 @@ def expand_star_outputs(select_node, tables):
 
     Returns a flat [(name, expression)] list, or None when any wildcard source
     is not established. Target lists without wildcards are returned unchanged.
+    CTE references resolve to the CTE output columns (not shadowed physical
+    tables); derived tables resolve to their subquery output columns.
     """
     from pglast import ast
-    outputs = select_node.targetList or ()
-    if not star_targets(outputs):
+
+    def resolve(node, inherited_tables, inherited_ctes):
+        if not isinstance(node, ast.SelectStmt) or not node.targetList:
+            return None
+        local_tables, env = dict(inherited_tables), dict(inherited_ctes)
+
+        def register(ref, query, aliases=()):
+            outputs = resolve(query, local_tables, env)
+            columns = _renamed_columns(
+                [dict(name=name, expression=expr) for name, expr in outputs] if outputs else None,
+                aliases)
+            # An unresolved local source must still hide a physical namesake.
+            local_tables[ref] = {'columns': columns or []}
+
+        if star_targets(node.targetList):
+            with_ = node.withClause
+            if with_:
+                if with_.recursive:
+                    return None
+                for cte in with_.ctes:
+                    ref = f'@cte:{id(cte)}:{cte.ctename}'
+                    register(ref, cte.ctequery, [n.sval for n in cte.aliascolnames or ()])
+                    env[cte.ctename] = ref
+            derived_refs = {}
+
+            def derived(item):
+                if isinstance(item, ast.JoinExpr):
+                    derived(item.larg)
+                    derived(item.rarg)
+                elif isinstance(item, ast.RangeSubselect) and item.alias:
+                    ref = f'@derived:{id(item)}:{item.alias.aliasname}'
+                    register(ref, item.subquery, [n.sval for n in item.alias.colnames or ()])
+                    derived_refs[id(item.subquery)] = ref
+
+            for item in node.fromClause or ():
+                derived(item)
+            sources = from_relations(node, env=env, derived_refs=derived_refs)
+            if sources is None:
+                return None
         result = []
-        for target in outputs:
-            name = target.name
-            if not name and isinstance(target.val, ast.ColumnRef) and isinstance(target.val.fields[-1], ast.String):
-                name = target.val.fields[-1].sval
-            result.append((name, sql(target.val)))
-        return result
-    sources = from_relations(select_node)
-    if sources is None:
-        return None
-    result = []
-    for target in outputs:
-        value = target.val
-        if isinstance(value, ast.ColumnRef) and isinstance(value.fields[-1], ast.A_Star):
-            expression = sql(value)
-            prefix = ''
-            if len(value.fields) > 1:
+        for target in node.targetList:
+            value = target.val
+            if isinstance(value, ast.ColumnRef) and isinstance(value.fields[-1], ast.A_Star):
                 prefix = '.'.join(_identifier(p.sval) for p in value.fields[:-1]
                                   if isinstance(p, ast.String))
-            covered = _match_star_sources(prefix, [tuple(s) for s in sources])
-            if not covered:
-                return None
-            for alias, rel in covered:
-                columns = (tables.get(rel) or {}).get('columns')
-                if not columns:
+                covered = _match_star_sources(prefix, sources)
+                if not covered:
                     return None
-                owner = _source_owner(alias, rel)
-                for column in columns:
-                    result.append((column['name'], _column_ref(owner, column['name'])))
-        else:
-            name = target.name
-            if not name and isinstance(value, ast.ColumnRef) and isinstance(value.fields[-1], ast.String):
-                name = value.fields[-1].sval
-            result.append((name, sql(value)))
-    return result
+                for alias, ref in covered:
+                    columns = (local_tables.get(ref) or {}).get('columns')
+                    if not columns:
+                        return None
+                    owner = _source_owner(alias, ref)
+                    result.extend((column['name'], _column_ref(owner, column['name']))
+                                  for column in columns)
+            else:
+                name = target.name
+                if not name and isinstance(value, ast.ColumnRef) and isinstance(value.fields[-1], ast.String):
+                    name = value.fields[-1].sval
+                result.append((name, sql(value)))
+        return result
+
+    return resolve(select_node, tables, {})
 
 
 def column_catalog(inventory,sql_files,context_files,root,migration_manifest=None):

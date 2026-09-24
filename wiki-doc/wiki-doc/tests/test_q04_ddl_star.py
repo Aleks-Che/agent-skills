@@ -225,6 +225,51 @@ class WildcardExpansionTests(unittest.TestCase):
         self.assertTrue(any('Wildcard output columns require DDL expansion' in n['reason']
                             for n in inv['coverage_notes']))
 
+    def test_star_through_cte_expands_from_cte_columns(self):
+        inv = extract_inventory(
+            'CREATE VIEW demo.v AS WITH c AS (SELECT id, x FROM demo.t) SELECT * FROM c;',
+            'source.sql', 'a' * 64)
+        unresolved = expand_wildcard_outputs(inv, {
+            'demo.t': {'columns': [{'name': 'id', 'type': 'integer'}, {'name': 'x', 'type': 'text'}]}})
+        self.assertEqual(unresolved, [])
+        self.assertFalse(any('Wildcard' in n['reason'] for n in inv['coverage_notes']))
+
+    def test_star_through_derived_table_expands(self):
+        inv = extract_inventory(
+            'CREATE VIEW demo.v AS SELECT * FROM (SELECT id, x FROM demo.t) AS d;',
+            'source.sql', 'a' * 64)
+        unresolved = expand_wildcard_outputs(inv, {
+            'demo.t': {'columns': [{'name': 'id', 'type': 'integer'}, {'name': 'x', 'type': 'text'}]}})
+        self.assertEqual(unresolved, [])
+        self.assertFalse(any('Wildcard' in n['reason'] for n in inv['coverage_notes']))
+
+    def test_cte_aliascolnames_override_select_names(self):
+        inv = extract_inventory(
+            'CREATE VIEW demo.v AS WITH c(a, b) AS (SELECT id, x FROM demo.t) SELECT * FROM c;',
+            'source.sql', 'a' * 64)
+        unresolved = expand_wildcard_outputs(inv, {
+            'demo.t': {'columns': [{'name': 'id', 'type': 'integer'}, {'name': 'x', 'type': 'text'}]}})
+        self.assertEqual(unresolved, [])
+        self.assertFalse(any('Wildcard' in n['reason'] for n in inv['coverage_notes']))
+        # The CTE aliascolnames `a, b` override the inner SELECT names `id, x`,
+        # so the outer projection shows `a, b` (not `id, x`).
+        projection = next(i for i in inv['items']
+                          if i['kind'] == 'SELECT' and any(
+                              isinstance(c, dict) and c.get('expanded_from') == '*'
+                              for c in i['details'].get('columns') or ()))
+        self.assertEqual([(c['name'], c['expression']) for c in projection['details']['columns']],
+                         [('a', 'c.a'), ('b', 'c.b')])
+
+    def test_nested_cte_wildcard_resolves_through_chain(self):
+        inv = extract_inventory(
+            'CREATE VIEW demo.v AS WITH a AS (SELECT id, x FROM demo.t), '
+            'b AS (SELECT * FROM a) SELECT * FROM b;',
+            'source.sql', 'a' * 64)
+        unresolved = expand_wildcard_outputs(inv, {
+            'demo.t': {'columns': [{'name': 'id', 'type': 'integer'}, {'name': 'x', 'type': 'text'}]}})
+        self.assertEqual(unresolved, [])
+        self.assertFalse(any('Wildcard' in n['reason'] for n in inv['coverage_notes']))
+
 
 class ExternalFunctionContractTests(unittest.TestCase):
     def test_last_day_and_add_months_are_identified_not_unresolved(self):
@@ -360,10 +405,12 @@ class DdlAcceptanceTests(unittest.TestCase):
         # state; drop-only scripts of other tables are unordered and out of
         # this acceptance scope, so they are not smuggled in as context.
         catalogue = column_catalog(inv, [sql], [], root, migration_manifest=manifest)
-        # DDL acceptance is not full Q-04 acceptance: local CTE/derived
+        # DDL acceptance is not full Q-04 acceptance: most local CTE/derived
         # projections remain unexpanded even with the reviewed target DDL.
+        # One wildcard resolved through a simple CTE/derived chain after the
+        # CTE/derived expansion pass; the rest need deeper analysis.
         self.assertEqual(sum(n['reason'] == 'Wildcard output columns require DDL expansion'
-                             for n in inv['coverage_notes']), 72)
+                             for n in inv['coverage_notes']), 71)
         core = 's_gp_p1024_dmr_svd_kb_ckr_uup_gp_core'
         reviewed = {f'{core}.ckr_uup_db_onboarding_main',
                     f'{core}.ckr_uup_db_onboarding_meet_tasks',

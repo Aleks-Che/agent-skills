@@ -41,6 +41,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- CTE/derived wildcard review: preserve unnamed trailing columns under partial
+  CTE aliases, reject unknown output widths and excess aliases, distinguish
+  CTE scope from FROM aliases and qualified physical relations, and link nested
+  derived results through `result_for`. Expand to a real fixpoint without a
+  ten-pass limit. Keep `source_ref` on local column evidence so bundle building
+  does not crash. Positional INSERT mappings use the same scoped projections.
+- Add 15 independent regression tests in `test_q04_wildcard_review.py`, including
+  full gate positive/negative controls. Q-04 remains in progress: the control SQL
+  retains 71 wildcard gaps plus EXCEPTION after DDL enrichment/column catalog.
 - Completion audit: reject unsound catalog DROP proofs (changed join/guards,
   NOT IN, LIMIT/OFFSET, early RETURN, initializers and unsafe identifiers),
   including the bypass of Greenplum distribution-column protection.
@@ -48,8 +57,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   retain quoted identifiers and apply declared VIEW/CTAS names after expansion.
 - Check Oracle contract arity and correct ADD_MONTHS return type; pin acceptance
   DDL order and hashes. Add 12 regression tests in `test_q04_completion_review.py`.
-- Reopen Q-04: the large control still has 72 wildcard gaps plus EXCEPTION,
-  including with target DDL. The external acceptance test now verifies those
+- Reopen Q-04: the initial completion audit found 72 wildcard gaps plus EXCEPTION,
+  including with target DDL (now 71 wildcard gaps). The external acceptance test verifies those
   blockers; passing it does not claim complete analysis.
 - `scripts/sql_gp.py` masks `WITH (orientation = ROW)` lexically so
   PostgreSQL def_arg grammar does not reject the parse view.

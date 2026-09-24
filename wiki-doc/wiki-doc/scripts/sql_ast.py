@@ -58,21 +58,29 @@ def relation(node):
     return (node.schemaname + '.' if node.schemaname else '') + node.relname
 
 
-def from_relations(node):
+def from_relations(node, *, env=None, temps=None, derived_refs=None):
     """Return (alias, relation) star-expansion sources of a query, or None if any
-    FROM item is not a plain relation (subquery, function, VALUES, nested join of
-    those). Only plain ON/CROSS joins preserve a simple concatenation of
-    columns; USING/NATURAL joins and aliases that rename columns need their
-    own projection model and remain unresolved."""
-    if getattr(node, 'withClause', None):
-        return None
+    FROM item is not a plain relation, CTE reference, or derived table.
+    Only plain ON/CROSS joins preserve a simple concatenation of columns;
+    USING/NATURAL joins and aliases that rename columns need their own
+    projection model and remain unresolved.  CTE references are returned as
+    (alias, cte_name) for env resolution; derived tables as (alias, alias_name)."""
     result = []
     def visit(item):
         if isinstance(item, ast.RangeVar):
             if item.alias and item.alias.colnames:
                 result.append(None)
             else:
-                result.append([item.alias.aliasname if item.alias else None, relation(item)])
+                ref = relation(item)
+                if not item.schemaname:
+                    ref = (env or {}).get(ref, (temps or {}).get(ref, ref))
+                result.append([item.alias.aliasname if item.alias else None, ref])
+        elif isinstance(item, ast.RangeSubselect):
+            if item.alias and item.alias.aliasname and not item.alias.colnames:
+                result.append([item.alias.aliasname,
+                               (derived_refs or {}).get(id(item.subquery), item.alias.aliasname)])
+            else:
+                result.append(None)
         elif isinstance(item, ast.JoinExpr):
             if item.isNatural or item.usingClause or item.alias:
                 result.append(None)
@@ -315,9 +323,15 @@ class Analyzer:
                 if child is with_ or type(child).__name__ in QUERY_TYPES:
                     continue
                 yield from direct_walk(child)
+        # Derived aliases belong to this FROM, not the CTE namespace inherited
+        # by subqueries. Link their actual query result for fixpoint expansion.
+        derived_refs = {}
         for n in direct_walk(node):
             if isinstance(n, ast.RangeSubselect) and n.alias and n.alias.aliasname:
                 derived.append(n.alias.aliasname)
+                if not n.alias.colnames:
+                    derived_refs[id(n.subquery)] = f'@derived:{self.scope}:{statement_no}:{n.alias.aliasname}'
+        for n in direct_walk(node):
             if isinstance(n, ast.ResTarget) and n.val is not None:
                 expression = sql(n.val)
                 if cls == 'SelectStmt' and n in (node.targetList or ()):
@@ -326,10 +340,10 @@ class Analyzer:
                         name = n.val.fields[-1].sval
                     entry = dict(name=name, expression=expression)
                     if isinstance(n.val, ast.ColumnRef) and isinstance(n.val.fields[-1], ast.A_Star):
-                        sources = from_relations(node)
+                        sources = from_relations(node, env=env, temps=self.temps,
+                                                 derived_refs=derived_refs)
                         if sources is not None:
-                            entry['star_sources'] = [
-                                [alias, env.get(rel, self.temps.get(rel, rel))] for alias, rel in sources]
+                            entry['star_sources'] = sources
                     outputs.append(entry)
                 if not isinstance(n.val, (ast.ColumnRef, ast.A_Const)) or kind in ('UPDATE', 'ASSIGN'):
                     formulas.append(expression)
@@ -381,7 +395,9 @@ class Analyzer:
         for child in subqueries(node):
             if isinstance(child, ast.SelectStmt) and child.valuesLists and not child.targetList:
                 continue  # VALUES is not a SELECT occurrence in source SQL.
-            self.analyze_query(child, sql(child), line, env=env, branch=branch, guard=guard)
+            result = self.analyze_query(child, sql(child), line, env=env, branch=branch, guard=guard)
+            if result and id(child) in derived_refs:
+                result['details']['result_for'] = derived_refs[id(child)]
         return item
 
     def statement(self, node, raw, line, forced_kind=None, branch=None, gp_span=None, guard=()):

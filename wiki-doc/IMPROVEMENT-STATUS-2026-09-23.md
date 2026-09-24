@@ -4,27 +4,35 @@
 Этот файл — журнал выполнения задач Q-01…Q-09. История предыдущего этапа находится
 в [IMPLEMENTATION-STATUS.md](IMPLEMENTATION-STATUS.md).
 
-**Текущий итог повторного аудита 2026-09-24:** Q-02/Q-03 — `done`,
+**Текущий итог 2026-09-24 (повторный аудит CTE/derived wildcard):** Q-02/Q-03 — `done`,
 Q-01/Q-04 — `in_progress`, Q-05…Q-09 — `planned`.
-Закрытие Q-04 в поздней сессии оказалось преждевременным: контрольный SQL
-имеет **73 blocking analysis_gap (72 wildcard через CTE/подзапросы + EXCEPTION)**,
-включая анализ с приёмочным DDL. Заявление об одном gap отозвано.
-Обычный прогон 895/4 skipped скрывал падение внешнего теста большого SQL:
-его ожидание десяти gaps устарело после появления wildcard-проверок.
+Реализовано раскрытие SELECT * через CTE и производные таблицы:
+`from_relations` теперь возвращает CTE/derived источники, `expand_wildcard_outputs`
+строит маппинг колонок CTE/derived и итерирует до фиксированной точки для
+вложенных цепочек. Один wildcard контрольного SQL раскрыт через простую
+CTE/derived-цепочку (72 → 71 после `column_catalog`). Остальные 71 wildcard
+и EXCEPTION-gap остаются блокирующими. Повторная проверка выявила обрезание
+колонок частичным списком CTE-имён, недоказанное раскрытие неизвестной ширины,
+смешение CTE/FROM/физических имён, незавершённую итерацию и падение build без
+source_ref. Исправлено; добавлены 15 независимых регрессионных тестов, включая
+полный положительный gate и три отрицательных подслучая.
 
+Предыдущий аудит 2026-09-24: Q-04 закрыт преждевременно; контрольный SQL
+имеет **73 blocking analysis_gap (72 wildcard через CTE/подзапросы + EXCEPTION)**.
 Исправлены доказательство DO-шаблона, ложная развёртка JOIN USING/NATURAL и
 переименований, quoted/output-имена и контракт add_months/число аргументов.
 DDL-приёмка закрепляет последовательность и хеши десяти файлов
 (четыре CREATE-файла с десятью таблицами и шесть ALTER-файлов);
 она не доказывает production-порядок миграций.
 Подробности и актуальные результаты:
-[REVIEW-Q04-COMPLETION.md](REVIEW-Q04-COMPLETION.md),
-[Q04-COMPLETION-REVIEW.json](Q04-COMPLETION-REVIEW.json).
-Полный прогон — **907 tests / 1 skipped / 0 failed** с внешней приёмкой;
-финальные уточнения — повторные 72 Q-04 и 20 AST-тестов без ошибок.
-Reference: исторический набор — 15/15, Q-набор — 5/11, один повтор каждого.
+[REVIEW-Q04-WILDCARD.md](REVIEW-Q04-WILDCARD.md),
+[Q04-WILDCARD-REVIEW.json](Q04-WILDCARD-REVIEW.json).
+Текущий полный unit-прогон: **926 tests / 925 passed / 1 skipped / 0 failed**,
+включая три внешних acceptance-теста; Q-набор — **216**, Q-04 — **91**, без пропусков.
+Текущий reference, три повтора: исторический набор — **45/45**, Q-набор — **15/33**
+(5/11 в каждом повторе). Результаты стабильны; это полуавтоматический цикл.
 Незакрытые q01/q04/q05/q08/q09/q11 остаются отдельной приёмкой Q-01/Q-06/Q-07.
-Следующее действие — раскрытие локальных CTE/derived wildcard Q-04 и приёмка Q-01.
+Следующее действие — продолжить раскрытие CTE/derived wildcard Q-04 и приёмка Q-01.
 
 Исторический результат повторного ревью Q-03 (не новый прогон Q-04):
 Повторное ревью выявило и исправило ложные ready, потери GP-атрибутов,
@@ -250,6 +258,35 @@ reference-ожиданий Q-набора (5/11, случаи q01/q04/q05/q08/q0
   DISTRIBUTED-доказательство парсит нормализованный фрагмент. Положительный
   тест `GreenplumStorageValueTests`.
 
+**Реализация CTE/derived wildcard expansion после повторного аудита (2026-09-24):**
+
+- **`sql_ast.from_relations`:** убрана ранняя ошибка `withClause` → `None`;
+  CTE-источники возвращаются как `(alias, cte_name)` для разрешения через `env`;
+  `RangeSubselect` возвращает `(alias, alias_name)` для derived-таблиц.
+  USING/NATURAL JOIN и переименованные алиасы по-прежнему остаются unresolved.
+- **`sql_ast.analyze_query`:** scoped-ссылки derived отделены от `env` CTE;
+  фактический результат подзапроса связан через `result_for`. Вложенные
+  wildcard-проекции распространяются после раскрытия внутренних SELECT.
+  Квалифицированное физическое имя не разрешается как имя CTE с точкой.
+- **`sql_types.expand_wildcard_outputs`:** итерация до остановки прогресса,
+  без лимита 10 и без сравнения только количества unresolved-операций.
+  Колонки CTE/derived регистрируются вместе с `source_ref`; частичные
+  `aliascolnames` переименовывают префикс, сохраняя хвост. Список имён не
+  устанавливает неизвестную ширину; избыток имён сохраняет wildcard-gap.
+- **`sql_types.expand_star_outputs`:** тот же порядок колонок при позиционном
+  INSERT через вложенные CTE/derived. Локальный источник, включая unresolved,
+  скрывает одноимённую физическую таблицу; квалифицированная таблица доступна.
+- **Первоначальные тесты:** пять сценариев (четыре новых и один обновлённый:
+  `test_star_through_cte_expands_from_cte_columns`,
+  `test_star_through_derived_table_expands`,
+  `test_cte_aliascolnames_override_select_names` — верифицирует переопределение
+  имён через `aliascolnames`,
+  `test_nested_cte_wildcard_resolves_through_chain`,
+  обновлён `test_cte_shadow_does_not_use_physical_table_columns`).
+  Wildcard-gap контрольного SQL: 72 → 71 после `column_catalog`.
+- **Повторный аудит:** 15 новых тестов `test_q04_wildcard_review.py`;
+  протокол и результаты — [REVIEW-Q04-WILDCARD.md](REVIEW-Q04-WILDCARD.md).
+
 **Приёмка тела на SQL SHA-256 `168dc680…cb4941c3`:**
 
 - [x] 77 INSERT / 77 DELETE / 1 UPDATE; main — 68 расчётных + 1 ретро.
@@ -262,14 +299,23 @@ reference-ожиданий Q-набора (5/11, случаи q01/q04/q05/q08/q0
       источника INSERT. Проверена область объявления операций.
 - [x] 164 add_log_add; заключительные init_type_oper/start_oper/add_log_add/
       add_log/end_oper и четыре STACKED-присваивания обработчика не потеряны.
-- [x] Все **73** coverage_notes порождают blocking analysis_gap:
+- [x] Все **73** coverage_notes сырого inventory до enrichment порождают blocking analysis_gap:
       wildcard CTE/derived — 72, момент перехода в EXCEPTION — 1.
       Контракты внешних функций сняли девять call-gaps; оставшийся wildcard-анализ
       не был учтён в прежнем заявлении об одном gap.
 - [x] Простой SELECT * по установленному DDL реализован; нераскрытые wildcards
       сохраняют блокировку (`WildcardExpansionTests`).
+- [x] **Раскрытие SELECT * через CTE и производные таблицы (2026-09-24):**
+      `from_relations` теперь возвращает CTE/derived источники (не `None`);
+      `analyze_query` связывает scoped derived-источники с `result_for`;
+      `expand_wildcard_outputs`
+      строит маппинг колонок CTE/derived и итерирует до фиксированной точки
+      для вложенных цепочек; `expand_star_outputs` учитывает CTE-shadowing.
+      Один wildcard контрольного SQL раскрыт через простую CTE/derived-цепочку
+      (72 → 71 после `column_catalog`). Повторный аудит добавляет 15 тестов
+      областей, частичных aliascolnames, цепочек и полного gate.
 - [ ] Раскрытие SELECT * через CTE и производные таблицы контрольного объекта:
-      72 случая остаются неразобранными; Q-04 не завершён.
+      71 случай остаётся неразобранным; Q-04 не завершён.
 - [x] Каталог-зависимые динамические DROP/ADD реализованы доказуемым шаблоном;
       `ddl.reconstruct` больше не отклоняет DO-шаблон (`DoMigrationTests`).
 - [x] Приёмка DDL и миграционного состояния реального проекта выполнена
@@ -280,8 +326,10 @@ reference-ожиданий Q-набора (5/11, случаи q01/q04/q05/q08/q0
 
 **Незакрытые критерии и граница готовности:**
 
-- [ ] Q-04: построить структуру локальных CTE/derived в их области и раскрыть
-      72 wildcard-выхода; сейчас наличие target DDL этого не обеспечивает.
+- [ ] Q-04: продолжить раскрытие CTE/derived wildcard-выходов контрольного
+      объекта (осталось 71); реализована базовая инфраструктура (fixpoint
+      итерация, связи result_for, CTE-shadowing), но сложные проекции
+      контрольного SQL ещё не разобраны.
 
 - [ ] Момент перехода в EXCEPTION остаётся блокирующим analysis_gap —
       намеренное ограничение статического анализа (план: «неизвестный момент
@@ -294,29 +342,25 @@ reference-ожиданий Q-набора (5/11, случаи q01/q04/q05/q08/q0
       колонки в разных ветках (расхождение q09); относится к контракту фактов
       Q-06/Q-07.
 
-**Проверки поздней сессии (история; актуальный аудит — REVIEW-Q04-COMPLETION.md):**
+**Проверки исходной сессии CTE/derived wildcard (2026-09-24, история):**
 
 | Команда | Каталог | Результат |
 |---|---|---|
-| `python -X utf8 -B -m unittest discover -s tests -p "test_q0*.py"` | wiki-doc/wiki-doc | 185 tests, 3 skipped, 0 failed |
-| `python -X utf8 -B -m unittest discover -s tests -p "test_[a-o]*.py"` | wiki-doc/wiki-doc | 493 tests, 0 failed (271.9s) |
-| `python -X utf8 -B -m unittest discover -s tests -p "test_[p-z]*.py"` | wiki-doc/wiki-doc | 402 tests, 4 skipped, 0 failed (259.6s) |
-| `python -X utf8 -B -m unittest tests.test_q04_ddl_star.DdlAcceptanceTests` c `WIKI_DOC_ACCEPTANCE_PROJECT` | wiki-doc/wiki-doc | 2 tests, 0 failed (16.2s) |
-| build+gate smoke (SELECT * + last_day, temp wiki) | repo root | `decision=ready`, `publication_authorized=true`, unknowns по last_day, без coverage_notes |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_q0*.py"` | wiki-doc/wiki-doc | 201 tests, 3 skipped, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_sql_ast.py"` | wiki-doc/wiki-doc | 20 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_dialect_matrix.py"` | wiki-doc/wiki-doc | 41 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_inventory_plan.py"` | wiki-doc/wiki-doc | 22 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_review_fixes.py"` | wiki-doc/wiki-doc | 41 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_p0_gate_regressions.py"` | wiki-doc/wiki-doc | 36 tests, 1 skipped, 0 failed |
+| `python -X utf8 -B -m unittest tests.test_q04_ddl_star.DdlAcceptanceTests` c `WIKI_DOC_ACCEPTANCE_PROJECT` | wiki-doc/wiki-doc | 2 tests, 0 failed |
+| `python -X utf8 -B -m unittest tests.test_q04_body_analysis.AcceptanceNumbersTests` c `WIKI_DOC_ACCEPTANCE_PROJECT` | wiki-doc/wiki-doc | 1 test, 0 failed |
 
-Уникальный итог по двум непересекающимся discover-паттернам: **895 tests,
-4 skipped, 0 failed** (было 871/1/0; +24 из `test_q04_ddl_star.py`).
+Сценарии CTE/derived: 5 (`test_star_through_cte_expands_from_cte_columns`,
+`test_star_through_derived_table_expands`, `test_cte_aliascolnames_override_select_names`,
+`test_nested_cte_wildcard_resolves_through_chain`, обновлён
+`test_cte_shadow_does_not_use_physical_table_columns`).
+Wildcard-gap контрольного SQL: 72 → 71 после `column_catalog`.
 Python 3.12.7. SQL в БД не исполнялся. LLM-цикл и публикация не запускались.
-Прогон выше без WIKI_DOC_ACCEPTANCE_PROJECT: 3 скипа acceptance-тестов.
-
-**История:** прежний отчёт сообщал 852 tests / 1 skipped и 17 тестов Q-04;
-затем 871 test после ревью Codex. Эти результаты не покрывали закрытые
-в этой сессии работы.
-
-**Следующее действие:** завершить локальные wildcard-проекции Q-04 и приёмку
-Q-01 (согласование ожиданий и проверка ошибок старой документации), затем Q-05.
-Ошибки DO/JOIN из повторного аудита исправлены; они перечислены в
-[REVIEW-Q04-COMPLETION.md](REVIEW-Q04-COMPLETION.md).
 
 ### Q-02. Устранить аварийное завершение анализа
 

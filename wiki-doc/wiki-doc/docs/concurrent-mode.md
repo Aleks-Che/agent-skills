@@ -62,6 +62,8 @@ prepare; последующая ручная правка не перезапи�
 - `error` при ошибке фактической публикации или recovery.
 
 Prepare, dry-run, gate без выпуска решения, lint и query не пишут этот журнал.
+Команда Q-05 `wiki_doc.py prepare` сохраняет inventory/plan-события отдельно,
+в `<run_dir>/.wiki-doc/journal.jsonl`; опубликованную wiki она не меняет.
 API `StageJournal.record` принимает 10 имён этапов, но inventory/plan/draft/lint/
 query/regression автоматически не инструментированы. Прямые вызовы Python API
 gate/publisher также не добавляют диагностических событий сами по себе.

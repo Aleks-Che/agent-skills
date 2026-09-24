@@ -34,6 +34,49 @@ JSON, зависимостей, установки схем или CLI. Повт
 отклоняются. UTF-8 с BOM поддерживается. Схемы поставляются локально; отсутствующая
 схема не пропускается молча.
 
+## Подготовка запуска Q-05
+
+Запускай CLI из той копии пакета, которую указываешь в `--skill-root`:
+
+```text
+python <skill_root>/scripts/wiki_doc.py prepare --skill-root <skill_root> --project-root <project_root> --wiki-root <wiki_root> --subject <object> --sql path/to/object.sql --context path/to/ddl.sql --output <new_run_dir>
+python <skill_root>/scripts/wiki_doc.py verify-run --run-dir <new_run_dir>
+```
+
+Корни project/wiki должны существовать. SQL, context и migration manifest
+разрешаются относительно project_root либо задаются абсолютными путями внутри
+него. `--migration-manifest` задаёт выбранный порядок и версию DDL;
+`--profile` — явный профиль, иначе действует обычное обнаружение по идентификаторам.
+Каталог запуска должен быть новым и находиться вне wiki_root. По умолчанию это
+`<cwd>/.wiki-doc-runs/<run_id>`. Подготовка не создаёт и не меняет опубликованную
+wiki; диагностический журнал inventory/plan записывается только внутри run_dir.
+
+`run_context.json` версии 1 фиксирует корни, канонический subject, dialect/version,
+профиль и `preparation_manifest`. Последний использует обычный manifest v2:
+SQL, context, manifest миграций, все ordered_files, `tool_versions`, run_id/page_id,
+но пока содержит только два артефакта — inventory и validation_plan. Это снимок
+подготовки, а не полный manifest для gate. `runtime_hash` — SHA-256 канонического
+JSON существующих tool_versions, а не второй независимый каталог runtime.
+В состав версий входят runtime-инструкции из docs и активный профиль.
+
+Inventory включает DDL enrichment и анализ типов `column_catalog`; план учитывает
+активный профиль. При analysis_gap сохраняются диагностические inventory/plan и
+limitation.json с причиной и путями файлов. Успешный run_context пишется атомарно
+последним. Повторный prepare в занятый каталог отклоняется без изменения файлов;
+после отказа или неполной записи нужен новый каталог.
+
+`verify-run` проверяет схемы, хеши прочитанных байтов, все входы/артефакты,
+runtime, run_id, subject/page_id и повторно строит inventory/plan по SQL/DDL.
+Обновление хеша ошибочного артефакта не скрывает расхождение. Verify не пишет файлы.
+Старый контекст без preparation_manifest требует новой подготовки.
+Статусы `prepared` и `verified` имеют `publication_authorized: false` и
+`generation_completed: false`. Они не удостоверяют происхождение страницы и не
+подменяют полный gate/publisher. Автоматическое продолжение writer/validator,
+восстановление всей цепочки и строгая приёмка происхождения страниц остаются Q-05.
+Снимки без внешней доверенной фиксации не являются криптографической подписью
+авторства. Код выхода 0 означает успешную подготовку/проверку, 1 — limitation/invalid;
+ошибки синтаксиса аргументов CLI имеют код 2.
+
 ## Общие связи
 
 Перед построением итогового плана `column_catalog` дополняет DECLARATION.details

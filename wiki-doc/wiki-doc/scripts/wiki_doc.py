@@ -1,4 +1,4 @@
-"""Unified CLI for wiki-doc: inventory, plan, validate, gate, lint, publish, query, metrics, identity, index, bundle, regression.
+"""Unified CLI for wiki-doc: inventory, plan, validate, gate, lint, publish, query, metrics, identity, index, bundle, regression, prepare, verify-run.
 
 Usage:
   python scripts/wiki_doc.py <subcommand> [options]
@@ -16,6 +16,8 @@ Subcommands:
   index       Rebuild wiki index and lineage
   bundle      Create or verify artifact bundle
   regression  Run regression scenarios
+  prepare     Prepare a verifiable run context (Q-05)
+  verify-run  Verify a prepared run context (Q-05)
 
 Each subcommand delegates to the corresponding module. All existing
 scripts remain available as standalone entry points for backward
@@ -114,6 +116,16 @@ def cmd_regression(argv: list[str] | None = None) -> int:
     return _delegate('run_regression', argv)
 
 
+def cmd_prepare(argv: list[str] | None = None) -> int:
+    """Delegate to run_prepare.py prepare."""
+    return _delegate('run_prepare', (['prepare'] + (argv or [])))
+
+
+def cmd_verify_run(argv: list[str] | None = None) -> int:
+    """Delegate to run_prepare.py verify."""
+    return _delegate('run_prepare', (['verify'] + (argv or [])))
+
+
 SUBCOMMANDS = {
     'inventory': cmd_inventory,
     'plan': cmd_plan,
@@ -127,6 +139,8 @@ SUBCOMMANDS = {
     'index': cmd_index,
     'bundle': cmd_bundle,
     'regression': cmd_regression,
+    'prepare': cmd_prepare,
+    'verify-run': cmd_verify_run,
 }
 
 

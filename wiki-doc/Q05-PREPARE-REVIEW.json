@@ -1,0 +1,1142 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-24",
+  "scope": "Audit Q-05 preparation and verification, fix integrity/admission defects",
+  "status": {
+    "Q-01": "in_progress",
+    "Q-02": "done",
+    "Q-03": "done",
+    "Q-04": "in_progress",
+    "Q-05": "in_progress",
+    "Q-06": "planned",
+    "Q-07": "planned",
+    "Q-08": "planned",
+    "Q-09": "planned"
+  },
+  "python": "3.12.7 (tags/v3.12.7:0b05ead, Oct  1 2024, 03:06:41) [MSC v.1941 64 bit (AMD64)]",
+  "executable": "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+  "dependencies": {
+    "pglast": "7.14",
+    "jsonschema": "4.26.0",
+    "markdown-it-py": "3.0.0",
+    "rfc3339-validator": "0.1.4"
+  },
+  "final_tool_versions": {
+    "scripts_sha256": "2500cea6c0795820375c4774a97963ba5ec9f29c0cef607b5ccac77fa758449d",
+    "skill_md_sha256": "e3336d6373b5fbfc94eac3dd5657fe12a410d8b80471d550ac120f88db02034d",
+    "template_sha256": "bf92174bbc499f279092568744e1c24bc04b0a112caedb61a49a2863a8716630",
+    "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+  },
+  "baseline_counterexamples": {
+    "tests": 17,
+    "failures": 16,
+    "errors": 4,
+    "returncode": 1,
+    "note": "Error count includes four malformed-JSON subcases; six additional controls were added after fixes.",
+    "command": [
+      "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "-X",
+      "utf8",
+      "-B",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "wiki-doc/wiki-doc/tests",
+      "-p",
+      "test_q05_prepare_review.py",
+      "-v"
+    ],
+    "log": ".runtime/q05-prepare-audit/before.log",
+    "sha256": "eba313d26dd34220432a9afe3d9db0918a3d6f1a157ffdf800c4ee56371dfd3e",
+    "original_module": ".runtime/q05-prepare-audit/run_prepare.before.py",
+    "original_module_sha256": "583dab5c875b3030ad3faed9249405a4f6cb67a1584ef558b383a36300b43b47"
+  },
+  "unit_full_run": {
+    "tests": 987,
+    "skipped": 1,
+    "failed_modules": [],
+    "seconds": 182.156,
+    "results": [
+      {
+        "module": "test_artifact_regressions.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_artifact_regressions.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 49,
+        "skipped": 0,
+        "seconds": 19.828,
+        "log": ".runtime/q05-prepare-audit/test_artifact_regressions.log",
+        "log_sha256": "26b3af6953137a442fa92adca177f6d6a6215eb21c38fe4bfd00f1e76a5df931"
+      },
+      {
+        "module": "test_artifacts.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_artifacts.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 30,
+        "skipped": 0,
+        "seconds": 2.703,
+        "log": ".runtime/q05-prepare-audit/test_artifacts.log",
+        "log_sha256": "b58244de2dced9be22ae1db748d567f53f6c9f1b5f782cbb235db12de0b25399"
+      },
+      {
+        "module": "test_check_policy.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_check_policy.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 37,
+        "skipped": 0,
+        "seconds": 1.468,
+        "log": ".runtime/q05-prepare-audit/test_check_policy.log",
+        "log_sha256": "83c6dc2ad0883d356c386f28de410fa14d70d1ab146dd37713af3dc54116e98e"
+      },
+      {
+        "module": "test_coverage_gate.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_coverage_gate.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 87,
+        "skipped": 0,
+        "seconds": 49.078,
+        "log": ".runtime/q05-prepare-audit/test_coverage_gate.log",
+        "log_sha256": "8fe7882e1c56f67316daa88a8b36da951c5e3d1afc0f688424517157a2ceee2a"
+      },
+      {
+        "module": "test_dialect_matrix.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_dialect_matrix.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 41,
+        "skipped": 0,
+        "seconds": 14.11,
+        "log": ".runtime/q05-prepare-audit/test_dialect_matrix.log",
+        "log_sha256": "d147a3c7bb4d49184eacfb8e34a5096e119a27d3589e23f5979b5890bf41e59a"
+      },
+      {
+        "module": "test_evidence_bundle.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_evidence_bundle.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 55,
+        "skipped": 0,
+        "seconds": 9.687,
+        "log": ".runtime/q05-prepare-audit/test_evidence_bundle.log",
+        "log_sha256": "fd5676ab0859345365b2fe2d37209a3075aabded4e052c04bd948359cb8a1c2e"
+      },
+      {
+        "module": "test_identity.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_identity.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 103,
+        "skipped": 0,
+        "seconds": 1.157,
+        "log": ".runtime/q05-prepare-audit/test_identity.log",
+        "log_sha256": "49132f2b050c89e5c0ce406025cfc88d9c9b1315c973439632229e3f4bafd70f"
+      },
+      {
+        "module": "test_index_query.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_index_query.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 29,
+        "skipped": 0,
+        "seconds": 84.203,
+        "log": ".runtime/q05-prepare-audit/test_index_query.log",
+        "log_sha256": "427782c477e6d8cd6d37604b7fc0d44e92ea715ddfdb24a03f4e222a58a4b1cf"
+      },
+      {
+        "module": "test_inventory_plan.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_inventory_plan.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 22,
+        "skipped": 0,
+        "seconds": 3.0,
+        "log": ".runtime/q05-prepare-audit/test_inventory_plan.log",
+        "log_sha256": "631921d7192ef7e147de713660cc03c086eff0b7496fa03b2fe6ffcfc98d3340"
+      },
+      {
+        "module": "test_metrics.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_metrics.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 40,
+        "skipped": 0,
+        "seconds": 126.531,
+        "log": ".runtime/q05-prepare-audit/test_metrics.log",
+        "log_sha256": "a8b60da2b03a1e9d38525d591ce4020fe8953f3355e224746a17f766163f3d5d"
+      },
+      {
+        "module": "test_p0_gate_regressions.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p0_gate_regressions.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 36,
+        "skipped": 1,
+        "seconds": 34.672,
+        "log": ".runtime/q05-prepare-audit/test_p0_gate_regressions.log",
+        "log_sha256": "58d71197808800452d08a41bbc73bcdf8cb7028cd0db6839ea7dde78623000e3"
+      },
+      {
+        "module": "test_p1_acceptance.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p1_acceptance.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 12,
+        "skipped": 0,
+        "seconds": 31.672,
+        "log": ".runtime/q05-prepare-audit/test_p1_acceptance.log",
+        "log_sha256": "2cd9d1e3d5d5593d57efc7709def0eb091470a6aa56b922ee00be4fca7880ed9"
+      },
+      {
+        "module": "test_p2_03_acceptance.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p2_03_acceptance.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 16,
+        "skipped": 0,
+        "seconds": 21.359,
+        "log": ".runtime/q05-prepare-audit/test_p2_03_acceptance.log",
+        "log_sha256": "26ca493dc7de453c970a40a17a04039e2b36f6050819b02ae2b28cc9ee6265ef"
+      },
+      {
+        "module": "test_p2_03_model_extensions.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p2_03_model_extensions.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 28,
+        "skipped": 0,
+        "seconds": 1.406,
+        "log": ".runtime/q05-prepare-audit/test_p2_03_model_extensions.log",
+        "log_sha256": "5b6625d4cf0c43b92585218f4a7bf1341f75819b2488dea784355ffc774079c9"
+      },
+      {
+        "module": "test_p2_05_acceptance.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p2_05_acceptance.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 17,
+        "skipped": 0,
+        "seconds": 55.282,
+        "log": ".runtime/q05-prepare-audit/test_p2_05_acceptance.log",
+        "log_sha256": "c1fd2189b56872cee24a5e429375623f7622fbe9ba4442a2ac4d37722c9f9f8a"
+      },
+      {
+        "module": "test_p2_05_operations.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_p2_05_operations.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 27,
+        "skipped": 0,
+        "seconds": 12.297,
+        "log": ".runtime/q05-prepare-audit/test_p2_05_operations.log",
+        "log_sha256": "bafb9442980206a729665d406b1c51bef92cd9f89af6f254b19a7e8ff073d763"
+      },
+      {
+        "module": "test_publish.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_publish.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 11,
+        "skipped": 0,
+        "seconds": 58.046,
+        "log": ".runtime/q05-prepare-audit/test_publish.log",
+        "log_sha256": "4d913251eb189a22b795363587009c01c39261d30d6a19a553746b0d58ae8fd2"
+      },
+      {
+        "module": "test_q01_expectations.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q01_expectations.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 30,
+        "skipped": 0,
+        "seconds": 4.656,
+        "log": ".runtime/q05-prepare-audit/test_q01_expectations.log",
+        "log_sha256": "892bcb8e414928a18f2169b9bfdb5e1a4fb77ebe4aeb9fdaaeb9fe73b35863f7"
+      },
+      {
+        "module": "test_q01_reference_review.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q01_reference_review.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 11,
+        "skipped": 0,
+        "seconds": 13.891,
+        "log": ".runtime/q05-prepare-audit/test_q01_reference_review.log",
+        "log_sha256": "599547142d4c6602c2d4150bbb1894a3aae1000c2bf189af487d0b243856fecc"
+      },
+      {
+        "module": "test_q02_fallback_diagnostics.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q02_fallback_diagnostics.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 30,
+        "skipped": 0,
+        "seconds": 15.453,
+        "log": ".runtime/q05-prepare-audit/test_q02_fallback_diagnostics.log",
+        "log_sha256": "0fdb81ffde4278dde853ac2a35288a1c2ed41b046b45970d5fe12ef491aaaaff"
+      },
+      {
+        "module": "test_q03_greenplum.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q03_greenplum.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 30,
+        "skipped": 0,
+        "seconds": 10.875,
+        "log": ".runtime/q05-prepare-audit/test_q03_greenplum.log",
+        "log_sha256": "2e59ca143c7fd1216e3433e16fe6222dd5ee618a3bb5402bc2e34edcafbc8459"
+      },
+      {
+        "module": "test_q03_review.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q03_review.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 35,
+        "skipped": 0,
+        "seconds": 12.718,
+        "log": ".runtime/q05-prepare-audit/test_q03_review.log",
+        "log_sha256": "d99eb6e2f0196d7c2d44b98396607c7d740e4f2f4e88346d3ca3c11008420564"
+      },
+      {
+        "module": "test_q04_body_analysis.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q04_body_analysis.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 17,
+        "skipped": 0,
+        "seconds": 16.812,
+        "log": ".runtime/q05-prepare-audit/test_q04_body_analysis.log",
+        "log_sha256": "0b9aad642faaec01797b0f46347a95ba71632f346213a52ef841d8bcb30b7cda"
+      },
+      {
+        "module": "test_q04_completion_review.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q04_completion_review.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 12,
+        "skipped": 0,
+        "seconds": 1.672,
+        "log": ".runtime/q05-prepare-audit/test_q04_completion_review.log",
+        "log_sha256": "ccaebc466765112f0dd2bc6e98446b934a0a4dcddefe73cf8397cdec68c4582e"
+      },
+      {
+        "module": "test_q04_ddl_star.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q04_ddl_star.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 30,
+        "skipped": 0,
+        "seconds": 18.641,
+        "log": ".runtime/q05-prepare-audit/test_q04_ddl_star.log",
+        "log_sha256": "4287f02e83bc62d7691c182e235911ce82485d2cb189690e1a5b1f8993bd08e5"
+      },
+      {
+        "module": "test_q04_review.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q04_review.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 19,
+        "skipped": 0,
+        "seconds": 4.922,
+        "log": ".runtime/q05-prepare-audit/test_q04_review.log",
+        "log_sha256": "f37df1af5623e7bbfd46543e3a0d457d5744e7df8abcf8c749f93359c578b56d"
+      },
+      {
+        "module": "test_q04_setops_review.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q04_setops_review.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 15,
+        "skipped": 0,
+        "seconds": 4.813,
+        "log": ".runtime/q05-prepare-audit/test_q04_setops_review.log",
+        "log_sha256": "9fa3646065e959f3de84c0401abbca0026cab690357afe360bea3386043858da"
+      },
+      {
+        "module": "test_q04_wildcard_review.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q04_wildcard_review.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 15,
+        "skipped": 0,
+        "seconds": 3.203,
+        "log": ".runtime/q05-prepare-audit/test_q04_wildcard_review.log",
+        "log_sha256": "fcd0539b85225ae784887ec3f34cf4a4f3580cc24f424dc9ddb27fccfd3aa578"
+      },
+      {
+        "module": "test_q05_prepare_review.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q05_prepare_review.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 23,
+        "skipped": 0,
+        "seconds": 18.891,
+        "log": ".runtime/q05-prepare-audit/test_q05_prepare_review.log",
+        "log_sha256": "28ec80d033f242654b407a919a945246945d1523185e2e69a8bbb6d6f3f5815c"
+      },
+      {
+        "module": "test_q05_run_prepare.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_q05_run_prepare.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 10,
+        "skipped": 0,
+        "seconds": 17.719,
+        "log": ".runtime/q05-prepare-audit/test_q05_run_prepare.log",
+        "log_sha256": "eed0f44dfaa181264ea24d3d648e5416d685e18ae662190f6eb1435c71c978a4"
+      },
+      {
+        "module": "test_review_fixes.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_review_fixes.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 41,
+        "skipped": 0,
+        "seconds": 22.703,
+        "log": ".runtime/q05-prepare-audit/test_review_fixes.log",
+        "log_sha256": "38fb0d8029eeaee65ca558541619dc0d838d211cda4f8797027569e2c745cfa7"
+      },
+      {
+        "module": "test_sql_ast.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_sql_ast.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 20,
+        "skipped": 0,
+        "seconds": 1.828,
+        "log": ".runtime/q05-prepare-audit/test_sql_ast.log",
+        "log_sha256": "edb5ada288b9249c27b9058c7ba2cd285a2309f25812e7300eb07520a0d4fad8"
+      },
+      {
+        "module": "test_validation_gate.py",
+        "command": [
+          "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-X",
+          "utf8",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_validation_gate.py",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 9,
+        "skipped": 0,
+        "seconds": 1.281,
+        "log": ".runtime/q05-prepare-audit/test_validation_gate.log",
+        "log_sha256": "c04c8b977b52e4cdcff93670acf9b3ce81a892c8a4d9b36fad0c505c9eadbb4f"
+      }
+    ],
+    "valid": true,
+    "passed": 986,
+    "modules": 33,
+    "q_tests": 277,
+    "q05_tests": 33,
+    "acceptance_project": "C:/work/git/my-repos/test-sql-wiki",
+    "skip_reason": "Windows symlink creation unavailable: WinError 1314"
+  },
+  "reference_runs": {
+    "reference": {
+      "command": [
+        "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-X",
+        "utf8",
+        "-B",
+        "scripts/run_regression.py",
+        "--manifest",
+        "examples/cases.json",
+        "--output",
+        "../.runtime/q05-prepare-audit/reference",
+        "--mode",
+        "reference",
+        "--repeats",
+        "3"
+      ],
+      "cwd": "wiki-doc/wiki-doc",
+      "report": ".runtime/q05-prepare-audit/reference/regression-report.json",
+      "sha256": "2a072661402fd9b87c3eca070e1699289e9f4ebb400df3b7354d28f4f149be74",
+      "valid": true,
+      "passed": 45,
+      "total": 45,
+      "repeats": 3,
+      "seconds": 122.437,
+      "outcome_variants": {
+        "01/function+demo+load_missing+()": 1,
+        "02/table+demo+events_log": 1,
+        "03/function+demo+fn_with_cte+(date)": 1,
+        "04/function+demo+refresh_summary+(bigint,integer)": 1,
+        "05/function+demo+fn_default_value+(character varying,character varying)": 1,
+        "06/function+archive+orders_summary+()": 1,
+        "06/function+core+orders_summary+()": 1,
+        "06/function+core+orders_summary+(bigint)": 1,
+        "07/function+demo+fn_dynamic+(text)": 1,
+        "08/migration+08_alter_migration.sql+08": 1,
+        "09/function+demo+total_for+(bigint)": 1,
+        "09/view+demo+order_totals": 1,
+        "10/ctas+demo+event_clock": 1,
+        "11/function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()": 1,
+        "12/table+demo+accounts": 1
+      },
+      "failed_cases": [],
+      "first_repeat": [
+        {
+          "case": "01",
+          "subject": "function+demo+load_missing+()",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "02",
+          "subject": "table+demo+events_log",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "03",
+          "subject": "function+demo+fn_with_cte+(date)",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "04",
+          "subject": "function+demo+refresh_summary+(bigint,integer)",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "05",
+          "subject": "function+demo+fn_default_value+(character varying,character varying)",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "06",
+          "subject": "function+core+orders_summary+()",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "06",
+          "subject": "function+archive+orders_summary+()",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "06",
+          "subject": "function+core+orders_summary+(bigint)",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "07",
+          "subject": "function+demo+fn_dynamic+(text)",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "08",
+          "subject": "migration+08_alter_migration.sql+08",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "09",
+          "subject": "view+demo+order_totals",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "09",
+          "subject": "function+demo+total_for+(bigint)",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "10",
+          "subject": "ctas+demo+event_clock",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "11",
+          "subject": "function+s_gp_p1024_dmr_svd_kb_ckr_demo_gp_core+audit_probe+()",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "12",
+          "subject": "table+demo+accounts",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        }
+      ]
+    },
+    "reference-q": {
+      "command": [
+        "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-X",
+        "utf8",
+        "-B",
+        "scripts/run_regression.py",
+        "--manifest",
+        "examples/cases-q.json",
+        "--output",
+        "../.runtime/q05-prepare-audit/reference-q",
+        "--mode",
+        "reference",
+        "--repeats",
+        "3"
+      ],
+      "cwd": "wiki-doc/wiki-doc",
+      "report": ".runtime/q05-prepare-audit/reference-q/regression-report.json",
+      "sha256": "f2a0ba71b33885d73671f6608fc29c179753ef8c2489e8f1a6092bc9f571a565",
+      "valid": false,
+      "passed": 30,
+      "total": 33,
+      "repeats": 3,
+      "seconds": 102.125,
+      "outcome_variants": {
+        "q01/function+q_hist+apply_retro+(boolean)": 1,
+        "q02/function+q_out+count_phoned_clients+()": 1,
+        "q03/function+q_out+pick_next_task+(bigint)": 1,
+        "q04/function+q_out+calc_norm+(bigint,date)": 1,
+        "q05/function+q_out+gp_master_probe+(text)": 1,
+        "q06/function+q_out+two_inserts+()": 1,
+        "q07/function+q_out+xml_filter_blob+(bigint)": 1,
+        "q08/function+q_out+load_positional+()": 1,
+        "q09/function+q_out+load_kpi_levels+()": 1,
+        "q10/function+q_out+load_norm_plan+(bigint,date)": 1,
+        "q11/function+q_out+load_rr_sl+()": 1
+      },
+      "failed_cases": [
+        "q09"
+      ],
+      "first_repeat": [
+        {
+          "case": "q01",
+          "subject": "function+q_hist+apply_retro+(boolean)",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q02",
+          "subject": "function+q_out+count_phoned_clients+()",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q03",
+          "subject": "function+q_out+pick_next_task+(bigint)",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q04",
+          "subject": "function+q_out+calc_norm+(bigint,date)",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q05",
+          "subject": "function+q_out+gp_master_probe+(text)",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q06",
+          "subject": "function+q_out+two_inserts+()",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q07",
+          "subject": "function+q_out+xml_filter_blob+(bigint)",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q08",
+          "subject": "function+q_out+load_positional+()",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q09",
+          "subject": "function+q_out+load_kpi_levels+()",
+          "decision": "revise",
+          "valid": false,
+          "errors": [
+            "facts column col_3: expression differs from SQL mapping",
+            "facts column col_5: expression differs from SQL mapping",
+            "facts column col_5: expression type differs from independently supported inference",
+            "facts column col_5: expression differs from SQL mapping"
+          ]
+        },
+        {
+          "case": "q10",
+          "subject": "function+q_out+load_norm_plan+(bigint,date)",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q11",
+          "subject": "function+q_out+load_rr_sl+()",
+          "decision": "ready",
+          "valid": true,
+          "errors": []
+        }
+      ]
+    }
+  },
+  "quick_skill_validation": {
+    "valid": true,
+    "stdout": "Skill is valid!"
+  },
+  "diff_check": {
+    "valid": true
+  },
+  "source_sha256": {
+    "scripts/run_prepare.py": "5e1e76aef05b0da873b4870351fa4e179b646d90d164348128d12a0fbf71dfe1",
+    "scripts/wiki_doc.py": "e6a3571c9e4b70bc4b7724a0f33e728016d987e409f91a3d0d1b8b9eb8cbcc14",
+    "tests/test_q05_run_prepare.py": "13d1b0bf422e1c045a6ebeb94adab198474513c6be8155eea87589e7357bce75",
+    "tests/test_q05_prepare_review.py": "5635f7074930b1989c636cc719c2a213ed03617253c91ad97910188b3386afd0",
+    "SKILL.md": "846266c00f87d5f19398afee35790f4a78e4c398d44674dcee775cde1dfb5a55",
+    "references/artifacts.md": "3342a40e16aa35d1011dc2e7685a6576f4e73d254d7127c65caea10391f0df10",
+    "docs/concurrent-mode.md": "8a342f4902949568e863df1940a2b3fea528fa06c536ff151315907785b02ce4"
+  },
+  "fixes": [
+    "Bind preparation and verification to the explicitly executing skill copy",
+    "Reuse bundle tool_versions, manifest builder, evidence hashes and strict JSON/schema readers",
+    "Bind SQL, DDL context, migration manifest, ordered migration files and active profile",
+    "Derive type/profile obligations and independently reconstruct inventory/plan on verify",
+    "Reject gaps, changed input snapshots, artifact substitutions, foreign IDs and malformed contexts",
+    "Create new run directories exclusively; commit preparation last; preserve existing runs",
+    "Keep preparation journal outside published wiki and verification read-only",
+    "Return explicit false publication/generation authorization flags"
+  ],
+  "limitations": [
+    "Automatic writer/validator/gate/publisher handoff and full-chain resume remain unfinished",
+    "Strict generated-page provenance admission for CI is not implemented",
+    "Unsigned local context is not cryptographic proof of authorship or historical stage order",
+    "Q-01/Q-04 remain in progress; q09 reference failure remains unchanged"
+  ],
+  "full_llm_cycle": false,
+  "sql_executed_in_database": false,
+  "user_wiki_published": false,
+  "existing_tracked_bytecode_change_preserved": true
+}

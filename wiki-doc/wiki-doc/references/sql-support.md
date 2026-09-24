@@ -18,8 +18,8 @@
 |---|---|
 | FUNCTION / PROCEDURE | Идентичность, входные типы, имена/режимы/DEFAULT параметров, RETURNS, volatility |
 | SELECT / PERFORM / CALL | Отдельные вхождения, reads/calls, выражения, фильтры |
-| INSERT / UPDATE FROM / DELETE USING | Цель отдельно от источников, колонки INSERT, назначения UPDATE |
-| MERGE, PostgreSQL ≥15 | USING как источник; условие сопоставления и отдельные ветви с назначениями; проверка версии действует и для MERGE в разбираемом EXECUTE |
+| INSERT / UPDATE FROM / DELETE USING | Цель отдельно от источников, колонки INSERT, назначения UPDATE; INSERT/UPDATE сохраняют полный SQL в `structure.query` |
+| MERGE, PostgreSQL ≥15 | USING как источник; условие сопоставления и отдельные ветви с назначениями; статический MERGE сохраняет `structure.query`; проверка версии действует и для MERGE в разбираемом EXECUTE |
 | CTE / TEMP | Идентификатор с областью, локальная зависимость, определение, порядок, ON COMMIT |
 | VIEW / MATERIALIZED VIEW / CTAS | Выходные имена и выражения; CTAS создаёт и заполняет цель |
 | PL/pgSQL IF / ELSIF / ELSE / ASSIGN / INTO / RETURN | Цепочка guards и путь ветки; ELSIF/ELSE учитывают FALSE и NULL предыдущих условий; цели присваивания, INTO, RETURN |

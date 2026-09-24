@@ -397,6 +397,10 @@ class Analyzer:
             # exact SQL tree. Returning its left leaf loses UNION/ALL and may
             # incorrectly attribute one branch's expression/type to the result.
             details['query'] = sql(node)
+        if isinstance(node, (ast.InsertStmt, ast.UpdateStmt, ast.MergeStmt)):
+            # Preserve every assignment and its branch/source context even when
+            # a target column has no single expression across these statements.
+            details['query'] = sql(node)
         if isinstance(node,ast.UpdateStmt): details['assignments']=[dict(target=t.name,expression=sql(t.val)) for t in node.targetList or ()]
         if isinstance(node,ast.InsertStmt) and node.cols: details['target_columns']=[t.name for t in node.cols]
         if kind=='RETURN': details['return_expression']=raw

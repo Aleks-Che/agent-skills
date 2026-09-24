@@ -336,6 +336,73 @@ class GreenplumStorageValueTests(unittest.TestCase):
         self.assertEqual(create['details']['distributed'], {'mode': 'BY', 'columns': ['id']})
 
 
+class MultiBranchColumnExpressionTests(unittest.TestCase):
+    """A null aggregate cannot substitute for evidence of each SQL mapping."""
+
+    def test_null_expression_without_operation_queries_is_rejected(self):
+        from sql_types import check_types
+        facts = {
+            'columns': [
+                {'id': 'col_1', 'object_id': 'obj_1', 'name': 'val',
+                 'type_target': 'numeric', 'type_expression': None,
+                 'expression': None, 'expression_status': 'unknown',
+                 'source_refs': []},
+                {'id': 'col_2', 'object_id': 'obj_1', 'name': 'id',
+                 'type_target': 'int', 'type_expression': 'int',
+                 'expression': 's.id', 'expression_status': 'known',
+                 'source_refs': []},
+            ],
+            'objects': [{'id': 'obj_1', 'kind': 'table', 'schema': 'demo', 'name': 'tgt'}],
+            'documented_object_ids': set(),
+            'definitions': [{'id': 'def_1', 'object_id': 'obj_1', 'status': 'resolved', 'source_refs': []}],
+        }
+        catalogue = {
+            'tables': {'demo.tgt': {'columns': [
+                {'name': 'id', 'type': 'int'}, {'name': 'val', 'type': 'numeric'}]}},
+            'mappings': [
+                {'table': 'demo.tgt', 'name': 'val', 'expression': 's.amount',
+                 'type_expression': 'numeric', 'source_ref': {}},
+                {'table': 'demo.tgt', 'name': 'val', 'expression': 's.amount * 2',
+                 'type_expression': 'numeric', 'source_ref': {}},
+                {'table': 'demo.tgt', 'name': 'id', 'expression': 's.id',
+                 'type_expression': 'int', 'source_ref': {}},
+                {'table': 'demo.tgt', 'name': 'id', 'expression': 's.id',
+                 'type_expression': 'int', 'source_ref': {}},
+            ],
+            'functions': {},
+        }
+        errors = check_types(facts, catalogue)
+        self.assertEqual(errors, [
+            'facts column col_1: SQL mapping variant lacks its operation query',
+            'facts column col_1: SQL mapping variant lacks its operation query'])
+
+    def test_non_null_expression_still_checked_against_all_mappings(self):
+        from sql_types import check_types
+        facts = {
+            'columns': [
+                {'id': 'col_1', 'object_id': 'obj_1', 'name': 'val',
+                 'type_target': 'numeric', 'type_expression': 'numeric',
+                 'expression': 's.amount * 2', 'expression_status': 'known',
+                 'source_refs': []},
+            ],
+            'objects': [{'id': 'obj_1', 'kind': 'table', 'schema': 'demo', 'name': 'tgt'}],
+            'documented_object_ids': set(),
+            'definitions': [{'id': 'def_1', 'object_id': 'obj_1', 'status': 'resolved', 'source_refs': []}],
+        }
+        catalogue = {
+            'tables': {'demo.tgt': {'columns': [{'name': 'val', 'type': 'numeric'}]}},
+            'mappings': [
+                {'table': 'demo.tgt', 'name': 'val', 'expression': 's.amount',
+                 'type_expression': 'numeric', 'source_ref': {}},
+                {'table': 'demo.tgt', 'name': 'val', 'expression': 's.amount * 2',
+                 'type_expression': 'numeric', 'source_ref': {}},
+            ],
+            'functions': {},
+        }
+        errors = check_types(facts, catalogue)
+        self.assertIn('facts column col_1: multiple SQL mappings require a null expression/type summary with unknown status', errors)
+
+
 class DdlAcceptanceTests(unittest.TestCase):
     """Q-04 DDL acceptance on the pinned control project (when reachable)."""
 

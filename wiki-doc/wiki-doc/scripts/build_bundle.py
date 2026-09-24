@@ -17,7 +17,7 @@ from identity import page_id
 from page_claims import expected_claims,check_page_claims
 from profiles import detect_profile,access_findings,CKR
 from sql_extract import extract_inventory
-from sql_types import column_catalog
+from sql_types import column_catalog, group_mappings, mapping_variants
 from validation_plan import generate_plan
 from validation_gate import evaluate_bundle
 from wiki_store import atomic_json,atomic_bytes
@@ -92,7 +92,11 @@ def build(sql_path,run_dir,*,project_root,subject,context=(),migration_manifest=
     catalogue=column_catalog(inv,[source],context,root,migration_manifest)
     used=set(objects)
     if d['object_kind']=='migration': used.update(catalogue['tables'])
-    mappings={(m['table'],m['name']):m for m in catalogue['mappings'] if m['table'] in used}
+    groups=group_mappings(m for m in catalogue['mappings'] if m['table'] in used)
+    mappings={}
+    for key,group in groups.items():
+        mappings[key]=(dict(group[0],expression=None,type_expression=None)
+                       if len(mapping_variants(group))>1 else group[0])
     # Include targets with unknown DDL so absence remains a fact, never an external label.
     for name,column in mappings:
         if name not in catalogue['tables']:
@@ -127,8 +131,11 @@ def build(sql_path,run_dir,*,project_root,subject,context=(),migration_manifest=
                                     for field in ('type_target','type_expression') if entry[field] is not None}
             facts['columns'].append(entry)
             if entry['type_target'] is None or entry['expression_status']=='unknown':
+                reason=('No single expression/type applies to all SQL assignments; exact variants remain in operation.structure.query.'
+                        if len(mapping_variants(groups.get((name,column['name']),[])))>1 else
+                        'SQL/DDL does not establish the target or expression type in the supported static subset; see the separate expression_status.')
                 facts['unknowns'].append(dict(id=f'unknown_{len(facts["unknowns"])+1}',what=f'Type evidence for {name}.{column["name"]}',
-                    reason='SQL/DDL does not establish the target or expression type in the supported static subset; see the separate expression_status.',related_facts=[cid]))
+                    reason=reason,related_facts=[cid]))
     findings=access_findings(inv,chosen) if chosen else []
     if chosen: main['access_observations']=findings
     plan=generate_plan(inv,load_policy(),page_id=pid,profile_active=bool(chosen),profile_path=profile_path)

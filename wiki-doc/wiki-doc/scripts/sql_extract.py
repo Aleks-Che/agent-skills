@@ -684,6 +684,18 @@ def extract_inventory(sql_text, file_path, file_sha256, dialect='postgres', vers
             i['kind'] in ('EXECUTE','CTAS','CTE','TRIGGER','INDEX','GRANT','REVOKE')
             or i.get('details', {}).get('constraints') for i in native['items']):
         declarations = {i['details']['canonical_key']: i['details'] for i in native['items'] if i['kind'] == 'DECLARATION'}
+        def dml_key(item):
+            anchor = item['anchor']
+            return tuple(anchor[k] for k in ('object_or_scope', 'construct', 'ordinal'))
+        native_dml = {dml_key(i): i for i in native['items'] if i['kind'] in ('INSERT', 'UPDATE', 'MERGE')}
+        previous_dml = {dml_key(i): i for i in previous['items'] if i['kind'] in ('INSERT', 'UPDATE', 'MERGE')}
+        if native_dml.keys() != previous_dml.keys() or any(
+                native_dml[k].get('writes', []) != i.get('writes', []) for k, i in previous_dml.items()):
+            return native
+        # Keep stable legacy anchors, but never discard the AST query evidence
+        # needed to document individual target-column assignments.
+        for key, item in previous_dml.items():
+            item.setdefault('details', {})['query'] = native_dml[key]['details']['query']
         for item in previous['items']:
             if item['kind'] == 'DECLARATION':
                 info = declarations.get(item['details']['canonical_key'], {})

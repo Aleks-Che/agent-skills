@@ -34,10 +34,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   → writes graph.
 - **Q-07 mutation matrix (partial)**: D01–D11 mutation annotations across all
   Q cases; tests for mutation detection, review-label/assertion linking,
-  annotation fields and target resolution. Fresh bundles: 36/36 executed
-  mutations detected, 0 false-ready, 4 q09 mutations untested (`valid: false`).
-  D12 compatibility/window/example prose probes, graph mutations and the q09
-  multi-expression limitation remain open.
+  annotation fields and target resolution. Fresh bundles: 40/40 executed
+  mutations detected, 0 false-ready, 0 untested (`valid: true`).
+  The former `D12ContentMutationTests` only changed a claim property, SQL
+  condition and object name; renamed to `ClaimTableMutationTests`, with
+  fail-on-missing-target and specific detection checks. Restoring original
+  bytes is a positive control, not an equivalent explanation. D12 prose,
+  window-cause/call-example and graph acceptance remain open.
+  q09 preserves every assignment as a visible operation SQL query; null column
+  summaries require independently distinct variants and a planned unknown.
 
 ### Changed
 
@@ -71,6 +76,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- q09 follow-up: close the false-ready bypass where null/omitted column
+  expressions disabled type checking. Single mappings remain mandatory;
+  multi-variant summaries retain every INSERT/UPDATE/MERGE query and SQL
+  binding. Equal expression text with different source types is not merged.
+  New regressions check fresh-hash mutations, missing/swapped queries and
+  independently required unknowns. Existing artifact fields are reused;
+  affected bundles must be rebuilt from SQL under the current runtime hash.
 - Regression runner: accept expected `blocked`/`revise` without publication,
   check the expected diagnostics, and keep mutation controls strictly ready.
   Reject unexecuted repair counts and empty suites instead of reporting completion.

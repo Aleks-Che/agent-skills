@@ -289,6 +289,22 @@ def expand_star_outputs(select_node, tables):
     return resolve(select_node, tables, {})
 
 
+def group_mappings(mappings):
+    groups = {}
+    for mapping in mappings:
+        groups.setdefault((mapping['table'], mapping['name']), []).append(mapping)
+    return groups
+
+
+def mapping_variants(mappings):
+    """Distinct SQL expressions/types; repeated occurrences are retained separately."""
+    from validation_gate import _expression_key
+    from identity import normalize_type
+    return {(_expression_key(m['expression']) if m['expression'] is not None else None,
+             normalize_type(m['type_expression']) if m['type_expression'] is not None else None)
+            for m in mappings}
+
+
 def column_catalog(inventory,sql_files,context_files,root,migration_manifest=None):
     """Returns known target declarations and positional INSERT/CTAS outputs.
 
@@ -342,6 +358,8 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
             if expanded is not None and (not has_star or len(expanded) == len(column_names)):
                 for name,(_source_name,value) in zip(column_names,expanded):
                     mappings.append(dict(table=target,name=name,expression=value,source_ref=ref))
+        for mapping in mappings[before:]:
+            mapping.update(query=sql(node), kind=type(node).__name__.removesuffix('Stmt').upper())
         for child in walk(node):
             if child is not node and isinstance(child,ast.InsertStmt): inspect(child,ref)
         aliases={r.alias.aliasname if r.alias else r.relname:relation(r) for r in walk(node) if isinstance(r,ast.RangeVar)}
@@ -407,6 +425,10 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
         used.update(tables)
     unknowns = {(m['table'], m['name']) for m in mappings
                 if m['table'] in used and m['type_expression'] is None}
+    # A column-wide null summary is an independently derived limitation. It
+    # must not remove an obligation just because all individual types are known.
+    unknowns.update(key for key, group in group_mappings(mappings).items()
+                    if key[0] in used and len(mapping_variants(group)) > 1)
     unknowns.update((table, column['name']) for table in used
                     for column in tables.get(table, {}).get('columns', [])
                     if column.get('type') is None)
@@ -423,6 +445,7 @@ def check_types(facts,catalogue):
     """Reject invented target types, swapped expression types and dropped DDL columns."""
     errors=[]
     objects={o['id']:o for o in facts['objects']}
+    groups=group_mappings(catalogue['mappings'])
     for col in facts['columns']:
         obj=objects[col['object_id']]
         key=obj.get('canonical_key') if obj['kind'] in ('cte','temp_table') else f"{obj.get('schema')}.{obj['name']}"
@@ -432,10 +455,26 @@ def check_types(facts,catalogue):
         same=lambda a,b: a==b if a is None or b is None else normalize_type(a)==normalize_type(b)
         if not same(col['type_target'],expected['type'] if expected else None):
             errors.append(f"facts column {col['id']}: target type is not established by SQL/ordered DDL")
-        for mapping in catalogue['mappings']:
-            if mapping['table']==key and mapping['name']==col['name']:
-                from validation_gate import _expression_key
-                if col.get('expression') and _expression_key(col['expression'])!=_expression_key(mapping['expression'] or ''):
+        mappings=groups.get((key,col['name']),[])
+        from validation_gate import _expression_key
+        if len(mapping_variants(mappings)) > 1:
+            if ('expression' not in col or col['expression'] is not None
+                    or col['type_expression'] is not None or col.get('expression_status')!='unknown'):
+                errors.append(f"facts column {col['id']}: multiple SQL mappings require a null expression/type summary with unknown status")
+            # Null describes only the aggregate. The exact statements must remain
+            # visible as operation claims, independently checked by the SQL gate.
+            for mapping in mappings:
+                if not mapping.get('query') or not any(
+                        op['kind']==mapping.get('kind') and col['object_id'] in op.get('writes',[])
+                        and _expression_key(op.get('structure',{}).get('query',''))==_expression_key(mapping['query'])
+                        for op in facts.get('operations',[])):
+                    errors.append(f"facts column {col['id']}: SQL mapping variant lacks its operation query")
+        else:
+            for mapping in mappings:
+                actual,expected_expression=col.get('expression'),mapping['expression']
+                matches=(actual==expected_expression if actual is None or expected_expression is None
+                         else _expression_key(actual)==_expression_key(expected_expression))
+                if not matches:
                     errors.append(f"facts column {col['id']}: expression differs from SQL mapping")
                 if not same(col['type_expression'],mapping['type_expression']):
                     errors.append(f"facts column {col['id']}: expression type differs from independently supported inference")

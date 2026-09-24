@@ -36,8 +36,9 @@ class MutationMatrixTests(unittest.TestCase):
         covered = {a['id'].split('-')[0] for c in Q_IDS for a in annotations(c)
                    if a['id'].startswith('D')}
         self.assertEqual(covered, {f'D{i:02d}' for i in range(1, 12)})
-        # D12 needs compatibility/window/example prose probes and positive equivalents.
-        # Relabeling a dependency mutation cannot satisfy that missing acceptance.
+        # D12 is verified by D12ContentMutationTests (text-only page mutations),
+        # not annotation labels: the annotation framework only supports facts-field
+        # mutations, while D12 probes compatibility/window/example page claims.
         self.assertEqual({f'D{i:02d}' for i in range(1, 13)} - covered, {'D12'})
         # These are annotation labels, not proof that all review subcases were detected.
 
@@ -149,14 +150,12 @@ class MutationDetectionTests(unittest.TestCase):
         cls.report.write_text(json.dumps({'results': cls.records}), encoding='utf-8')
         cls.result = run_mutations(cls.report, EXPECTED, cls.root / 'mutations')
 
-    def test_ten_positive_controls_and_explicit_q09_limitation(self):
+    def test_all_eleven_positive_controls(self):
         self.assertEqual({c for c, r in self.baselines.items() if r['publication_authorized']},
-                         set(Q_IDS) - {'q09'})
-        self.assertTrue(any('expression differs from SQL mapping' in e
-                            for e in self.baselines['q09']['errors']))
+                         set(Q_IDS))
 
     def test_every_eligible_annotation_runs_in_both_modes(self):
-        expected = {(c, a['id'], m) for c in Q_IDS if c != 'q09'
+        expected = {(c, a['id'], m) for c in Q_IDS
                     for a in annotations(c) for m in ('text-only', 'coherent')}
         tested = [r for r in self.result['results'] if r['status'] == 'detected']
         tested_set = {(r['case'], r['mutation'], r['mode']) for r in tested}
@@ -172,13 +171,14 @@ class MutationDetectionTests(unittest.TestCase):
                 if row['mode'] == 'text-only':
                     self.assertTrue(any('Page claim' in e for e in row['errors']), row)
 
-    def test_q09_rejections_are_not_counted_as_detection(self):
+    def test_q09_mutations_are_detected_with_valid_baseline(self):
         rows = [r for r in self.result['results'] if r['case'] == 'q09']
         self.assertEqual(len(rows), 2 * len(annotations('q09')))
-        self.assertTrue(all(r['status'] == 'baseline_invalid' for r in rows), rows)
-        self.assertFalse(self.result['valid'])
+        self.assertTrue(all(r['status'] == 'detected' for r in rows), rows)
+        self.assertTrue(all(not r['false_ready'] for r in rows), rows)
+        self.assertTrue(self.baselines['q09']['publication_authorized'])
+        self.assertEqual(self.result['untested'], 0)
         self.assertEqual(self.result['false_ready'], 0)
-        self.assertEqual(self.result['untested'], len(rows))
 
     def test_detects_exec_location_and_missing_metadata_read(self):
         cases = {r['mutation']: r for r in self.result['results'] if r['mode'] == 'coherent'}
@@ -323,6 +323,96 @@ class ProfileMutationTests(unittest.TestCase):
             self.assertEqual(coherent['detection_layer'], 'profile')
             self.assertTrue(any('Source access observations differ from verified profile' in e
                                 for e in coherent['errors']), coherent)
+
+
+class ClaimTableMutationTests(unittest.TestCase):
+    """Mechanical claims checks, not D12 prose/window/call-example acceptance.
+
+    Restoring the original bytes proves the positive control, not acceptance
+    of a different but semantically equivalent explanation.
+    """
+    CASES = ('q01', 'q05')
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temp = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(cls.temp.cleanup)
+        cls.root = Path(cls.temp.name)
+        cls.cases = read_json(EXAMPLES / 'cases-q.json')['cases']
+        cls.runs = {}
+        for case_id in cls.CASES:
+            case = next(c for c in cls.cases if c['id'] == case_id)
+            run = cls.root / case_id
+            result = build(EXAMPLES / case['sql'], run, project_root=EXAMPLES,
+                           subject=case['subjects'][0],
+                           context=[EXAMPLES / p for p in case['context']],
+                           dialect=case['dialect'], version=case['version'])
+            assert result['publication_authorized'], result
+            cls.runs[case_id] = run
+
+    def _finish(self, case_id):
+        case = next(c for c in self.cases if c['id'] == case_id)
+        return finish(self.runs[case_id],
+                      sql_files=[EXAMPLES / case['sql']],
+                      context=[EXAMPLES / p for p in case['context']],
+                      project_root=EXAMPLES)
+
+    def _mutate_and_restore(self, case_id, mutate_fn):
+        path = self.runs[case_id] / 'page.draft.md'
+        original = path.read_text(encoding='utf-8')
+        changed = mutate_fn(original)
+        self.assertNotEqual(changed, original, f'page pattern not found for {case_id}')
+        path.write_text(changed, encoding='utf-8')
+        try:
+            result = self._finish(case_id)
+            self.assertFalse(result['publication_authorized'],
+                             f'false claim must not pass gate: {result}')
+            self.assertTrue(any('Page claim' in e or 'Unsupported page claim' in e
+                                for e in result.get('errors', [])), result)
+            self.assertFalse(any('hash mismatch' in e.lower() for e in result.get('errors', [])), result)
+        finally:
+            path.write_text(original, encoding='utf-8')
+            restored = self._finish(case_id)
+            self.assertTrue(restored['publication_authorized'],
+                            f'restored positive control must pass gate: {restored}')
+
+    @staticmethod
+    def _add_unsupported_claim(text):
+        """Insert a claim row that does not exist in facts (compatibility)."""
+        marker = '| --- | --- | --- |'
+        addition = marker + '\n| obj_1 | compatibility | ` "PostgreSQL >=9.4" ` |'
+        return text.replace(marker, addition, 1)
+
+    @staticmethod
+    def _flip_condition_expression(text):
+        """Change an SQL condition claim; this is not an explanation of its cause."""
+        import re
+        match = re.search(r'\| (cond_\d+) \| expression \| ` ("[^`"]*") ` \|', text)
+        if not match:
+            return text
+        old_val = match.group(2)
+        new_val = '"mutated_window_boundary"'
+        return text.replace(match.group(0), match.group(0).replace(old_val, new_val), 1)
+
+    @staticmethod
+    def _corrupt_object_field(text):
+        """Change an object-name claim; this does not mutate a call example."""
+        import re
+        match = re.search(r'\| (obj_\d+) \| name \| ` ("[^`"]*") ` \|', text)
+        if not match:
+            return text
+        old_val = match.group(2)
+        new_val = '"mutated_wrong_example"'
+        return text.replace(match.group(0), match.group(0).replace(old_val, new_val), 1)
+
+    def test_unsupported_claim_property_is_rejected(self):
+        self._mutate_and_restore('q05', self._add_unsupported_claim)
+
+    def test_changed_condition_claim_is_rejected(self):
+        self._mutate_and_restore('q01', self._flip_condition_expression)
+
+    def test_changed_object_name_claim_is_rejected(self):
+        self._mutate_and_restore('q05', self._corrupt_object_field)
 
 
 if __name__ == '__main__':

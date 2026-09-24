@@ -377,6 +377,114 @@ def cmd_provenance(args: argparse.Namespace) -> int:
     return 0 if result['valid'] else 1
 
 
+def cmd_resume(args: argparse.Namespace) -> int:
+    """Resume mechanical stages; missing writer/validator output requires action.
+
+    Existing files are checked as artifacts, never taken as evidence that a stage
+    executed. Missing decision/publication may be produced by finalize; a missing
+    manifest may be assembled only from complete, checked authoring output.
+    """
+    run = Path(args.run_dir).resolve()
+    run_id = None
+    try:
+        context = verify_prepared(run)
+        run_id = context['run_id']
+        project, wiki = Path(context['project_root']), Path(context['wiki_root'])
+        before = context['preparation_manifest']
+        snapshots = {run / RUN_CONTEXT_FILE: sha256_file(run / RUN_CONTEXT_FILE)}
+        from artifact_schema import read_artifact_set, validate_artifacts
+        from bundle import ARTIFACT_NAMES
+        from validation_gate import _verify_evidence
+        from publish import _check_plan
+
+        artifacts = read_artifact_set(run, snapshot_hashes=snapshots)
+        errors = validate_artifacts(artifacts, required={'inventory', 'validation_plan'})
+        if errors:
+            raise ValueError('; '.join(errors))
+        # In-memory evidence scope for checking partial output. Absent stages are
+        # not created or marked complete; the full gate remains mandatory.
+        evidence_manifest = copy.deepcopy(before)
+        for name in ARTIFACT_NAMES:
+            path = run / ('page.draft.md' if name == 'draft' else name + '.json')
+            if not path.exists():
+                continue
+            if name == 'draft':
+                draft = path.read_bytes()
+                draft.decode('utf-8-sig')
+                snapshots[path] = sha256_bytes(draft)
+            evidence_manifest['artifacts'][name] = dict(path=path.name, sha256=snapshots[path])
+        errors = _verify_evidence(dict(
+            manifest=evidence_manifest, inventory=artifacts['inventory'],
+            facts=artifacts.get('facts', {'inputs': []}),
+            validation=artifacts.get('validation', {'checks': []})),
+            {'project': project, 'wiki': wiki, 'run': run, 'package': PACKAGE})
+        if errors:
+            raise ValueError('; '.join(errors))
+        if 'manifest' in artifacts:
+            # Never silently reseal a damaged or incomplete existing checkpoint.
+            _bound_bundle(run, context)
+        publication = run / 'publication.json'
+        publication_ref = None
+        if publication.exists():
+            read_json(publication, snapshot_hashes=snapshots)
+            publication_ref = dict(path=publication.name, sha256=snapshots[publication])
+            evidence_manifest['publication_plan'] = publication_ref
+            # Use the publisher's contract even before the full manifest is written.
+            selected = copy.deepcopy(artifacts.get('manifest', evidence_manifest))
+            selected.setdefault('publication_plan', publication_ref)
+            _check_plan(run, wiki, manifest=selected)
+        if 'draft' in evidence_manifest['artifacts'] and 'coverage' in artifacts and 'facts' in artifacts:
+            from coverage_gate import validate_coverage
+            coverage = validate_coverage(artifacts['coverage'], draft.decode('utf-8-sig'),
+                artifacts['facts'], artifacts['validation_plan'], wiki_root=wiki, link_roots=[project])
+            if not coverage.valid:
+                raise ValueError('; '.join(coverage.errors))
+
+        def unchanged():
+            if verify_prepared(run) != context:
+                raise ValueError('Prepared context changed during resume')
+            if any(sha256_file(path) != digest for path, digest in snapshots.items()):
+                raise ValueError('Artifacts changed during resume inspection')
+
+        unchanged()
+        missing = [name for name in ('facts', 'draft', 'coverage', 'validation')
+                   if name not in evidence_manifest['artifacts']]
+        if missing:
+            _print(_result('needs_action', run_id=run_id, run_dir=str(run),
+                next_stage=missing[0], missing_artifacts=missing,
+                available_artifacts=sorted(evidence_manifest['artifacts']),
+                schema_checked_artifacts=sorted(artifacts),
+                message='Writer/validator output is incomplete; provide the missing artifacts and resume. '
+                        'No writer/validator adapter is configured; no stage was executed.'))
+            return 1
+        if 'manifest' not in artifacts:
+            sources = [resolve_reference(ref, {'project': project}) for ref in before['sql_files']]
+            ddl = [resolve_reference(ref, {'project': project}) for ref in before.get('context_files', [])]
+            migration = resolve_reference(before['migration_manifest'], {'project': project}) if before.get('migration_manifest') else None
+            manifest = create_manifest(run_id=run_id, page_id=before['page_id'], sql_files=sources,
+                context_files=ddl, migration_manifest=migration, artifacts_dir=run,
+                project_dir=project, tool_versions=before['tool_versions'])
+            unchanged()
+            if (run / 'manifest.json').exists():
+                raise ValueError('Manifest appeared during resume; retry with its checked snapshot')
+            atomic_json(run / 'manifest.json', manifest)
+            _bound_bundle(run, context)
+        elif publication_ref and not artifacts['manifest'].get('publication_plan'):
+            # Crash after publisher preparation but before manifest binding: keep
+            # the original expected page/index hashes, including editor conflicts.
+            manifest = copy.deepcopy(artifacts['manifest'])
+            manifest['publication_plan'] = publication_ref
+            unchanged()
+            atomic_json(run / 'manifest.json', manifest)
+            _bound_bundle(run, context)
+        # Finalize recomputes gate even if an old decision says ready. Publisher
+        # performs transaction recovery under its own lock before replacing files.
+        return cmd_finalize(args)
+    except Exception as exc:
+        _print(_result('blocked', run_id=run_id, run_dir=str(run), errors=[str(exc)]))
+        return 1
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
@@ -397,6 +505,8 @@ def main(argv=None):
     prov.add_argument('--wiki-root', required=True)
     prov.add_argument('--page', nargs='+', required=True, help='Selected wiki-relative page paths; legacy/audit files are not selected implicitly')
     prov.add_argument('--project-root', help='Override current SQL project root for source freshness and links')
+    resume = sub.add_parser('resume', help='Check saved output and continue manifest/gate/publication; incomplete writer/validator needs action')
+    resume.add_argument('--run-dir', required=True)
     args = parser.parse_args(argv)
     if args.command == 'prepare':
         return cmd_prepare(args)
@@ -406,6 +516,8 @@ def main(argv=None):
         return cmd_finalize(args)
     elif args.command == 'provenance':
         return cmd_provenance(args)
+    elif args.command == 'resume':
+        return cmd_resume(args)
     return 2
 
 

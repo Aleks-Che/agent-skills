@@ -1,4 +1,4 @@
-"""Original Q-05 controls, using complete runnable skill copies and real CLI calls."""
+﻿"""Original Q-05 controls, using complete runnable skill copies and real CLI calls."""
 import json
 from pathlib import Path
 import subprocess
@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 
+sys.path.insert(0, str(Path(__file__).parent))
 from test_q05_prepare_review import copy_runtime
 from run_prepare import _hash_tree, RUN_CONTEXT_FILE, LIMITATION_FILE
 

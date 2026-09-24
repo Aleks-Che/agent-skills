@@ -1,4 +1,4 @@
-"""Unified CLI for wiki-doc: inventory, plan, validate, gate, lint, publish, query, metrics, identity, index, bundle, regression, prepare, verify-run, finalize, provenance.
+"""Unified CLI for wiki-doc: inventory, plan, validate, gate, lint, publish, query, metrics, identity, index, bundle, regression, prepare, verify-run, finalize, provenance, resume.
 
 Usage:
   python scripts/wiki_doc.py <subcommand> [options]
@@ -20,6 +20,7 @@ Subcommands:
   verify-run  Verify a prepared run context (Q-05)
   finalize    Verify authored artifacts, gate and publish a prepared run (Q-05)
   provenance  Verify selected pages, archives and publisher transactions (Q-05)
+  resume      Check saved output and continue manifest/gate/publication (Q-05)
 
 Each subcommand delegates to the corresponding module. All existing
 scripts remain available as standalone entry points for backward
@@ -138,6 +139,11 @@ def cmd_provenance(argv: list[str] | None = None) -> int:
     return _delegate('run_prepare', (['provenance'] + (argv or [])))
 
 
+def cmd_resume(argv: list[str] | None = None) -> int:
+    """Delegate to run_prepare.py resume."""
+    return _delegate('run_prepare', (['resume'] + (argv or [])))
+
+
 SUBCOMMANDS = {
     'inventory': cmd_inventory,
     'plan': cmd_plan,
@@ -155,6 +161,7 @@ SUBCOMMANDS = {
     'verify-run': cmd_verify_run,
     'finalize': cmd_finalize,
     'provenance': cmd_provenance,
+    'resume': cmd_resume,
 }
 
 

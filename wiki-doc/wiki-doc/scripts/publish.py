@@ -169,14 +169,14 @@ def _index_rebase_safe(root,plan,current):
                for line in suffix.splitlines() if line.strip())
 
 
-def _check_plan(run,root):
+def _check_plan(run,root,*,manifest=None):
     plan=read_json(run/'publication.json')
     required={'schema_version','run_id','page_id','canonical_key','wiki_root','draft_sha256',
               'expected_page_sha256','expected_index_sha256','expected_metadata_sha256','index_base'}
     if not isinstance(plan,dict) or set(plan)!=required or plan['schema_version']!=1:
         raise WikiConflict('Invalid publication preparation contract')
     if Path(plan['wiki_root']).resolve()!=root: raise WikiConflict('Prepared wiki root differs from destination')
-    manifest=read_json(run/'manifest.json')
+    manifest=read_json(run/'manifest.json') if manifest is None else manifest
     if plan['run_id']!=manifest['run_id'] or plan['page_id']!=manifest['page_id']:
         raise WikiConflict('Publication plan belongs to another run/page')
     reference=manifest.get('publication_plan')

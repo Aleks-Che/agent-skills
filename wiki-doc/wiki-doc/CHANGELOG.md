@@ -41,6 +41,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Set-operation audit: preserve every UNION/INTERSECT/EXCEPT node, ALL, operand
+  order and nesting, local WITH and root ORDER BY/LIMIT/OFFSET. The full gate
+  checks this structure against SQL. Output width is checked on both operands;
+  left names do not establish common expression/type evidence. Direct set
+  outputs retain null expression/type with unknown status. Add 15 regression
+  tests, including fresh-hash mutations and false-ready controls.
+- The large control now retains three physical-source wildcard gaps plus
+  EXCEPTION after the pinned DDL/column catalog pass; Q-04 remains in progress.
 - CTE/derived wildcard review: preserve unnamed trailing columns under partial
   CTE aliases, reject unknown output widths and excess aliases, distinguish
   CTE scope from FROM aliases and qualified physical relations, and link nested
@@ -48,8 +56,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   ten-pass limit. Keep `source_ref` on local column evidence so bundle building
   does not crash. Positional INSERT mappings use the same scoped projections.
 - Add 15 independent regression tests in `test_q04_wildcard_review.py`, including
-  full gate positive/negative controls. Q-04 remains in progress: the control SQL
-  retains 71 wildcard gaps plus EXCEPTION after DDL enrichment/column catalog.
+  full gate positive/negative controls. That earlier snapshot retained
+  71 wildcard gaps plus EXCEPTION after DDL enrichment/column catalog.
 - Completion audit: reject unsound catalog DROP proofs (changed join/guards,
   NOT IN, LIMIT/OFFSET, early RETURN, initializers and unsafe identifiers),
   including the bypass of Greenplum distribution-column protection.
@@ -58,7 +66,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Check Oracle contract arity and correct ADD_MONTHS return type; pin acceptance
   DDL order and hashes. Add 12 regression tests in `test_q04_completion_review.py`.
 - Reopen Q-04: the initial completion audit found 72 wildcard gaps plus EXCEPTION,
-  including with target DDL (now 71 wildcard gaps). The external acceptance test verifies those
+  including with target DDL (now three wildcard gaps). The external acceptance test verifies those
   blockers; passing it does not claim complete analysis.
 - `scripts/sql_gp.py` masks `WITH (orientation = ROW)` lexically so
   PostgreSQL def_arg grammar does not reject the parse view.

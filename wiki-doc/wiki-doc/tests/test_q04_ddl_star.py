@@ -270,6 +270,36 @@ class WildcardExpansionTests(unittest.TestCase):
         self.assertEqual(unresolved, [])
         self.assertFalse(any('Wildcard' in n['reason'] for n in inv['coverage_notes']))
 
+    def test_union_all_cte_expands_from_left_operand(self):
+        inv = extract_inventory(
+            'CREATE VIEW demo.v AS WITH a AS (SELECT id, x FROM demo.t), '
+            'b AS (SELECT * FROM a UNION ALL SELECT * FROM a) SELECT * FROM b;',
+            'source.sql', 'a' * 64)
+        unresolved = expand_wildcard_outputs(inv, {
+            'demo.t': {'columns': [{'name': 'id', 'type': 'integer'}, {'name': 'x', 'type': 'text'}]}})
+        self.assertEqual(unresolved, [])
+        self.assertFalse(any('Wildcard' in n['reason'] for n in inv['coverage_notes']))
+
+    def test_three_way_union_inventories_all_operands(self):
+        # PostgreSQL parses `a UNION b UNION c` left-associatively as
+        # `(a UNION b) UNION c`. The middle operand `b` must still be analysed
+        # so its reads (and any wildcards) are not silently dropped.
+        inv = extract_inventory(
+            'CREATE VIEW demo.v AS WITH b AS '
+            '(SELECT id FROM demo.t UNION ALL SELECT id FROM demo.t '
+            'UNION ALL SELECT id FROM demo.t) SELECT * FROM b;',
+            'source.sql', 'a' * 64)
+        union_operands = [i for i in inv['items']
+                          if i.get('kind') == 'SELECT'
+                          and not i['details'].get('set_operation')
+                          and 'demo.t' in (i.get('reads') or [])]
+        self.assertEqual(len(union_operands), 3,
+                         f'expected 3 UNION operands, got {len(union_operands)}')
+        unresolved = expand_wildcard_outputs(inv, {
+            'demo.t': {'columns': [{'name': 'id', 'type': 'integer'}]}})
+        self.assertEqual(unresolved, [])
+        self.assertFalse(any('Wildcard' in n['reason'] for n in inv['coverage_notes']))
+
 
 class ExternalFunctionContractTests(unittest.TestCase):
     def test_last_day_and_add_months_are_identified_not_unresolved(self):
@@ -405,12 +435,12 @@ class DdlAcceptanceTests(unittest.TestCase):
         # state; drop-only scripts of other tables are unordered and out of
         # this acceptance scope, so they are not smuggled in as context.
         catalogue = column_catalog(inv, [sql], [], root, migration_manifest=manifest)
-        # DDL acceptance is not full Q-04 acceptance: most local CTE/derived
+        # DDL acceptance is not full Q-04 acceptance: a few local CTE/derived
         # projections remain unexpanded even with the reviewed target DDL.
-        # One wildcard resolved through a simple CTE/derived chain after the
-        # CTE/derived expansion pass; the rest need deeper analysis.
+        # UNION ALL CTE chains and nested derived tables now expand; the
+        # remaining gaps are physical table wildcards without established DDL.
         self.assertEqual(sum(n['reason'] == 'Wildcard output columns require DDL expansion'
-                             for n in inv['coverage_notes']), 71)
+                             for n in inv['coverage_notes']), 3)
         core = 's_gp_p1024_dmr_svd_kb_ckr_uup_gp_core'
         reviewed = {f'{core}.ckr_uup_db_onboarding_main',
                     f'{core}.ckr_uup_db_onboarding_meet_tasks',

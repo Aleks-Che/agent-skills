@@ -3,7 +3,7 @@ from pathlib import Path
 from ddl import catalog, reconstruct
 from sql_ast import (sql, type_name, relation, walk, require_parser, quote,
                      from_relations, star_targets, WILDCARD_NOTE,
-                     EXTERNAL_FUNCTION_CONTRACTS)
+                     SET_OUTPUT_NOTE, set_output_columns, EXTERNAL_FUNCTION_CONTRACTS)
 from sql_gp import prepare as gp_prepare
 
 
@@ -76,7 +76,7 @@ def _renamed_columns(columns, aliases=()):
         return None
     result = []
     for index, column in enumerate(columns):
-        expression = column.get('expression', '')
+        expression = column.get('expression') or ''
         if expression == '*' or expression.endswith('.*'):
             return None
         name = aliases[index] if index < len(aliases) else column.get('name')
@@ -96,6 +96,11 @@ def expand_wildcard_outputs(inventory, tables):
     resolved so later items can expand through them.  Iterates until fixpoint
     so nested CTE/derived chains resolve in dependency order.
     """
+    def anchor_key(anchor):
+        return tuple(anchor.get(k) for k in ('object_or_scope', 'construct', 'ordinal'))
+
+    by_anchor = {anchor_key(i['anchor']): i for i in inventory.get('items', [])}
+
     def _register_cte_columns():
         # Build CTE aliascolnames map from CTE items. When a CTE declares
         # `WITH c(a, b) AS (...)`, the visible output columns are `a, b`,
@@ -134,6 +139,17 @@ def expand_wildcard_outputs(inventory, tables):
                     expression = entry.get('expression') if isinstance(entry, dict) else None
                     if not (expression == '*' or str(expression).endswith('.*')):
                         rebuilt.append(entry)
+                        continue
+                    if entry.get('set_operands'):
+                        operands = [by_anchor.get(anchor_key(a), {}).get('details', {}).get('columns')
+                                    for a in entry['set_operands']]
+                        expanded = set_output_columns(*operands)
+                        if expanded is None:
+                            rebuilt.append(entry)
+                            still_wildcard = True
+                        else:
+                            rebuilt.extend(expanded)
+                            changed = True
                         continue
                     sources = entry.get('star_sources')
                     if not sources:
@@ -175,11 +191,18 @@ def expand_wildcard_outputs(inventory, tables):
         # misses progress when just one of several stars in an item resolves.
         if not changed:
             break
-    if any(note.get('reason') == WILDCARD_NOTE for note in inventory.get('coverage_notes', [])) \
+    if any(note.get('reason') in (WILDCARD_NOTE, SET_OUTPUT_NOTE) for note in inventory.get('coverage_notes', [])) \
             or unresolved_items:
-        kept = [n for n in inventory.get('coverage_notes', []) if n.get('reason') != WILDCARD_NOTE]
+        # Keep unsupported set nodes (e.g. VALUES operands) which have no
+        # projection placeholder and therefore cannot be resolved by this pass.
+        kept = [n for n in inventory.get('coverage_notes', []) if n.get('reason') != WILDCARD_NOTE
+                and not (n.get('reason') == SET_OUTPUT_NOTE and any(
+                    i['source_ref'] == n['source_ref'] and i['details'].get('set_operation')
+                    for i in inventory.get('items', [])))]
         for item in unresolved_items:
-            note = dict(source_ref=item['source_ref'], reason=WILDCARD_NOTE)
+            pending_set = any(isinstance(c, dict) and c.get('set_operands') for key in ('columns','output_columns')
+                              for c in item['details'].get(key, []))
+            note = dict(source_ref=item['source_ref'], reason=SET_OUTPUT_NOTE if pending_set else WILDCARD_NOTE)
             if note not in kept:
                 kept.append(note)
         inventory['coverage_notes'] = kept
@@ -197,7 +220,7 @@ def expand_star_outputs(select_node, tables):
     from pglast import ast
 
     def resolve(node, inherited_tables, inherited_ctes):
-        if not isinstance(node, ast.SelectStmt) or not node.targetList:
+        if not isinstance(node, ast.SelectStmt):
             return None
         local_tables, env = dict(inherited_tables), dict(inherited_ctes)
 
@@ -209,7 +232,7 @@ def expand_star_outputs(select_node, tables):
             # An unresolved local source must still hide a physical namesake.
             local_tables[ref] = {'columns': columns or []}
 
-        if star_targets(node.targetList):
+        if star_targets(node.targetList) or node.op:
             with_ = node.withClause
             if with_:
                 if with_.recursive:
@@ -218,6 +241,12 @@ def expand_star_outputs(select_node, tables):
                     ref = f'@cte:{id(cte)}:{cte.ctename}'
                     register(ref, cte.ctequery, [n.sval for n in cte.aliascolnames or ()])
                     env[cte.ctename] = ref
+            if node.op:
+                operands = [resolve(child, local_tables, env) for child in (node.larg, node.rarg)]
+                columns = [[dict(name=name, expression=expr) for name, expr in values]
+                           if values is not None else None for values in operands]
+                projected = set_output_columns(*columns)
+                return [(c['name'], c['expression']) for c in projected] if projected is not None else None
             derived_refs = {}
 
             def derived(item):
@@ -235,7 +264,7 @@ def expand_star_outputs(select_node, tables):
             if sources is None:
                 return None
         result = []
-        for target in node.targetList:
+        for target in node.targetList or ():
             value = target.val
             if isinstance(value, ast.ColumnRef) and isinstance(value.fields[-1], ast.A_Star):
                 prefix = '.'.join(_identifier(p.sval) for p in value.fields[:-1]
@@ -356,6 +385,12 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
                 selected=(isinstance(n,ast.ViewStmt) and relation(n.view)==target) or (isinstance(n,ast.CreateTableAsStmt) and relation(n.into.rel)==target)
                 if selected: aliases={r.alias.aliasname if r.alias else r.relname:relation(r) for r in walk(n.query) if isinstance(r,ast.RangeVar)}
         for out in d.get('output_columns',[]):
+            if out['name'] is None and out['expression'] is None:
+                note = dict(source_ref=declaration['source_ref'],
+                            reason='Set operation output names require explicit aliases')
+                if note not in inventory['coverage_notes']:
+                    inventory['coverage_notes'].append(note)
+                continue
             name=out['name'] or out['expression']
             mappings.append(dict(table=target,name=name,expression=out['expression'],source_ref=declaration['source_ref'],aliases=aliases))
         attributes = {k:i['details'][k] for i in inventory['items'] if i['kind']=='CTAS' and i.get('details',{}).get('reference')==target for k in ('distributed','storage_parameters','gp_extension_version') if k in i['details']}
@@ -383,7 +418,7 @@ def check_types(facts,catalogue):
         for mapping in catalogue['mappings']:
             if mapping['table']==key and mapping['name']==col['name']:
                 from validation_gate import _expression_key
-                if col.get('expression') and _expression_key(col['expression'])!=_expression_key(mapping['expression']):
+                if col.get('expression') and _expression_key(col['expression'])!=_expression_key(mapping['expression'] or ''):
                     errors.append(f"facts column {col['id']}: expression differs from SQL mapping")
                 if not same(col['type_expression'],mapping['type_expression']):
                     errors.append(f"facts column {col['id']}: expression type differs from independently supported inference")

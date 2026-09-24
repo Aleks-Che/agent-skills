@@ -75,7 +75,7 @@ def build(sql_path,run_dir,*,project_root,subject,context=(),migration_manifest=
         structural={k:v for k,v in details.items() if k in ('branches','branch','ddl','temporary','lifetime','reference','confirmed_call_effects','group_by','arguments','command_kind','query','assignments','target_columns','into','assignment_target','return_expression','result_for',
                     'extension_version','constraints','trigger_name','table','timing','events','for_each_row','function','is_constraint','when','update_columns',
                     'index_name','unique','primary','access_method','columns','where','privileges','privilege_columns','object_type','grantees','targets','grant_option',
-                    'distributed','storage_parameters','gp_extension_version','guards','derived_aliases','order_by','limit','offset','raise_level','message','diagnostic','raise_condition','raise_options','rethrow')
+                    'distributed','storage_parameters','gp_extension_version','guards','derived_aliases','order_by','limit','offset','raise_level','message','diagnostic','raise_condition','raise_options','rethrow','set_operation')
                     and (k != 'columns' or item['kind'] == 'INDEX')}
         if structural: entry['structure']=structural
         if item['kind']=='EXECUTE':

@@ -122,6 +122,22 @@ def source_statement(raw, text):
 BUILTINS = frozenset('sum avg count min max now coalesce nullif greatest least round abs lower upper trim substring extract date_trunc to_char to_date row_number rank dense_rank lag lead format concat concat_ws length current_date timezone generate_series trunc to_number xmlagg make_interval'.split())
 QUERY_TYPES = ('SelectStmt', 'InsertStmt', 'UpdateStmt', 'DeleteStmt', 'MergeStmt')
 WILDCARD_NOTE = 'Wildcard output columns require DDL expansion'
+SET_OUTPUT_NOTE = 'Set operation output widths are unresolved or differ between operands'
+
+
+def set_output_columns(left, right):
+    """Names come from the left, but width must be established on both sides.
+
+    A set result has no single scalar expression: operand expressions and the
+    set operation together define it. Common-type inference is not implied.
+    """
+    if not left or not right or len(left) != len(right):
+        return None
+    if any(c.get('expression') == '*' or str(c.get('expression', '')).endswith('.*')
+           for c in [*left, *right]):
+        return None
+    return [dict(name=c.get('name'), expression=None) for c in left]
+
 # Oracle-compatibility date functions used by the control projects (orafce on
 # Greenplum, Oracle SQL semantics). Contracts are cited, not invented:
 # LAST_DAY(d) -> DATE, last calendar day of the month containing d;
@@ -314,6 +330,7 @@ class Analyzer:
             return
         if kind == 'MERGE':
             self.check_merge_version(line)
+        is_set = isinstance(node, ast.SelectStmt) and bool(node.op)
         target = getattr(node, 'relation', None)
         reads, calls = self.dependencies(node, env, line, exclude=(id(target),) if target else ())
         formulas, conditions, outputs, derived = [], [], [], []
@@ -366,6 +383,11 @@ class Analyzer:
         if getattr(node,'sortClause',None): details['order_by']=[sql(s) for s in node.sortClause]
         if getattr(node,'limitCount',None) is not None: details['limit']=sql(node.limitCount)
         if getattr(node,'limitOffset',None) is not None: details['offset']=sql(node.limitOffset)
+        if is_set:
+            # Retain the set node itself, including clause ownership and the
+            # exact SQL tree. Returning its left leaf loses UNION/ALL and may
+            # incorrectly attribute one branch's expression/type to the result.
+            details['query'] = sql(node)
         if isinstance(node,ast.UpdateStmt): details['assignments']=[dict(target=t.name,expression=sql(t.val)) for t in node.targetList or ()]
         if isinstance(node,ast.InsertStmt) and node.cols: details['target_columns']=[t.name for t in node.cols]
         if kind=='RETURN': details['return_expression']=raw
@@ -392,12 +414,25 @@ class Analyzer:
                     yield child
                 else:
                     yield from subqueries(child)
+        results = {}
         for child in subqueries(node):
             if isinstance(child, ast.SelectStmt) and child.valuesLists and not child.targetList:
                 continue  # VALUES is not a SELECT occurrence in source SQL.
             result = self.analyze_query(child, sql(child), line, env=env, branch=branch, guard=guard)
+            results[id(child)] = result
             if result and id(child) in derived_refs:
                 result['details']['result_for'] = derived_refs[id(child)]
+        if is_set:
+            left, right = results.get(id(node.larg)), results.get(id(node.rarg))
+            if left and right:
+                operands = [left['anchor'], right['anchor']]
+                item['details']['set_operation'] = dict(operator=node.op.name.removeprefix('SETOP_'),
+                                                       all=bool(node.all), left=operands[0], right=operands[1])
+                item['details']['columns'] = set_output_columns(
+                    left['details'].get('columns'), right['details'].get('columns')) or [
+                        dict(name=None, expression='*', set_operands=operands)]
+            else:
+                self.note(line, SET_OUTPUT_NOTE)
         return item
 
     def statement(self, node, raw, line, forced_kind=None, branch=None, gp_span=None, guard=()):
@@ -805,7 +840,7 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
         elif isinstance(node, ast.ViewStmt):
             query=engine.analyze_query(node.query, snippet, line)
             outputs = query['details'].get('columns',[]) if query else []
-            if node.aliases and star_targets(node.query.targetList):
+            if node.aliases and (star_targets(node.query.targetList) or node.query.op):
                 declaration['details']['output_column_aliases'] = [a.sval for a in node.aliases]
             for index, alias in enumerate(node.aliases or ()):
                 if index < len(outputs): outputs[index]['name'] = alias.sval
@@ -814,7 +849,7 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
             query=engine.statement(node, snippet, line, gp_span=statement_byte_span(raw, parse_text))
             if isinstance(node, ast.CreateTableAsStmt):
                 declaration['details']['output_columns'] = query['details'].get('columns',[]) if query else []
-                if node.into.colNames and star_targets(node.query.targetList):
+                if node.into.colNames and (star_targets(node.query.targetList) or node.query.op):
                     declaration['details']['output_column_aliases'] = [a.sval for a in node.into.colNames]
                 for index, alias in enumerate(node.into.colNames or ()):
                     if index < len(declaration['details']['output_columns']): declaration['details']['output_columns'][index]['name'] = alias.sval
@@ -858,9 +893,9 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
     for item in engine.items:
         if item['kind'] == 'DECLARATION' and engine.external_calls:
             item['details']['external_functions'] = sorted(engine.external_calls)
-        if any(o.get('expression') == '*' or o.get('expression','').endswith('.*') for o in item['details'].get('output_columns',[])):
+        if any(o.get('expression') == '*' or str(o.get('expression','')).endswith('.*') for o in item['details'].get('output_columns',[])):
             engine.note(item['source_ref']['start_line'], WILDCARD_NOTE)
-        if any(c.get('expression') == '*' or c.get('expression','').endswith('.*')
+        if any(c.get('expression') == '*' or str(c.get('expression','')).endswith('.*')
                for c in item['details'].get('columns',[]) if isinstance(c, dict)):
             engine.note(item['source_ref']['start_line'], WILDCARD_NOTE)
     return dict(schema_version=2, run_id='00000000-0000-0000-0000-000000000000',

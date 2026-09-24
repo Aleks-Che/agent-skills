@@ -229,7 +229,7 @@ def _fact_checks(artifacts, rebuilt, required, draft):
                       ('branches','branch','ddl','temporary','lifetime','reference','confirmed_call_effects','group_by','arguments','command_kind','query','assignments','target_columns','into','assignment_target','return_expression','result_for',
                        'extension_version','constraints','trigger_name','table','timing','events','for_each_row','function','is_constraint','when','update_columns',
                        'index_name','unique','primary','access_method','columns','where','privileges','privilege_columns','object_type','grantees','targets','grant_option',
-                       'distributed','storage_parameters','gp_extension_version','guards','derived_aliases','order_by','limit','offset','raise_level','message','diagnostic','raise_condition','raise_options','rethrow')
+                       'distributed','storage_parameters','gp_extension_version','guards','derived_aliases','order_by','limit','offset','raise_level','message','diagnostic','raise_condition','raise_options','rethrow','set_operation')
                       and (k not in ('columns',) or item['kind'] == 'INDEX')}
         if structural and op.get('structure') != structural:
             errors.append(f"facts {op['id']}: structure differs from independent SQL inventory")
@@ -260,11 +260,11 @@ def _fact_checks(artifacts, rebuilt, required, draft):
         outputs = declaration['details'].get('output_columns', [])
         for output in outputs:
             if not any((output['name'] and c['name'] == output['name']) or
-                       (not output['name'] and _expression_key(c.get('expression') or '') == _expression_key(output['expression']))
+                       (not output['name'] and _expression_key(c.get('expression') or '') == _expression_key(output['expression'] or ''))
                        for c in columns):
                 errors.append(f'facts columns: missing output {output["name"] or output["expression"]}')
             for col in columns:
-                if output['name'] and col['name'] == output['name'] and _expression_key(col.get('expression') or '') != _expression_key(output['expression']):
+                if output['name'] and col['name'] == output['name'] and _expression_key(col.get('expression') or '') != _expression_key(output['expression'] or ''):
                     errors.append(f'facts column {col["id"]}: expression differs from SQL output')
         named = {o['name'] for o in outputs if o['name']}
         if outputs and all(o['name'] for o in outputs):

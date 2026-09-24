@@ -148,7 +148,7 @@ def generate_plan(inventory, policy, page_id=None, object_kind=None,
             subjects = [f'{field}/{name}' for field in ('reads', 'writes', 'calls') for name in item.get(field, [])]
             fields = item.get('details', {})
             text = ' '.join(fields.get('formulas',[]) + fields.get('conditions',[]) +
-                            [c.get('expression','') for c in fields.get('columns',[])])
+                            [c.get('expression') or '' for c in fields.get('columns',[])])
             code = mask_sql(text, mask_identifiers=False)[0]
             subjects += ['feature/' + name for name in profile['features'] if re.search(r'\b' + re.escape(name) + r'\b', code, re.I)]
             for subject in sorted(set(subjects)):

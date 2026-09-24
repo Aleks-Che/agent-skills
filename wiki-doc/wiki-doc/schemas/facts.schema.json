@@ -686,6 +686,17 @@
         "structure": {
           "type": "object",
           "properties": {
+            "set_operation": {
+              "type": "object",
+              "required": ["operator", "all", "left", "right"],
+              "properties": {
+                "operator": {"enum": ["UNION", "INTERSECT", "EXCEPT"]},
+                "all": {"type": "boolean"},
+                "left": {"$ref": "#/$defs/set_operand_anchor"},
+                "right": {"$ref": "#/$defs/set_operand_anchor"}
+              },
+              "additionalProperties": false
+            },
             "extension_version": {
               "const": 1
             },
@@ -1051,6 +1062,16 @@
           }
         }
       ]
+    },
+    "set_operand_anchor": {
+      "type": "object",
+      "required": ["object_or_scope", "construct", "ordinal"],
+      "properties": {
+        "object_or_scope": {"type": "string", "minLength": 1},
+        "construct": {"const": "SELECT"},
+        "ordinal": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
     },
     "column_entry": {
       "type": "object",

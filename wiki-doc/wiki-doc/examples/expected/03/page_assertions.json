@@ -7,7 +7,8 @@
     {
       "group": "objects",
       "selector": {
-        "kind": "cte"
+        "kind": "cte",
+        "name": "active_users"
       },
       "field": "physical",
       "value": true,

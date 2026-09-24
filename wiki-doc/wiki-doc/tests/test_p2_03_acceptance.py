@@ -143,7 +143,9 @@ class ExtensionGateTests(unittest.TestCase):
         atomic_json(report, {'results': [dict(repeat=1, case='12', subject=SUBJECT,
                     run_dir=str(self.run), project_root=str(EXAMPLES), profile=None)]})
         result = run_mutations(report, EXAMPLES / 'expected', self.root / 'mutations')
+        self.assertTrue(result['valid'], result)
         self.assertEqual(result['mutations'], 16)
+        self.assertEqual(result['tested_mutations'], 16)
         self.assertEqual(result['false_ready'], 0, result)
         for row in result['results']:
             self.assertTrue(row['oracle_errors'], row)

@@ -270,8 +270,8 @@ CASES = {
         ],
         'mutations': [
             {'group': 'objects', 'selector': {'canonical_key': 'function+q_out+gp_master_probe+(text)'},
-             'field': 'volatility', 'value': 'stable',
-             'id': 'D05-invent-volatility-claim'},
+             'field': 'execute_on', 'value': 'ANY',
+             'id': 'D05-deny-execute-on-master'},
         ],
     },
     'q06': {
@@ -318,7 +318,8 @@ CASES = {
              'claim': 'the second CTE computes amount as qty * price; losing the product while keeping the CTE name is incomplete coverage'},
         ],
         'mutations': [
-            {'group': 'objects', 'selector': {'kind': 'cte', 'name': 'tm'},
+            {'group': 'objects', 'selector': {'kind': 'cte', 'name': 'tm',
+             'canonical_key': '@cte:function+q_out+two_inserts+():1:tm'},
              'field': 'physical', 'value': True,
              'id': 'D11-mark-cte-physical'},
             {'group': 'conditions', 'selector': {'expression': 'o.amount IS NOT NULL'},
@@ -379,6 +380,9 @@ CASES = {
              'field': 'expression',
              'value': 'xmlelement(name filters, xmlelement(name filter, f.value))',
              'id': 'D06-drop-xmlagg'},
+            {'group': 'operations', 'selector': {'kind': 'SELECT', 'order': 1},
+             'field': 'reads', 'value': [],
+             'id': 'D09-remove-metadata-read'},
         ],
     },
     'q08': {
@@ -433,7 +437,7 @@ CASES = {
              'claim': 'the chosen schema state is the declared migration order, not file mtime or file name guessing'},
         ],
         'mutations': [
-            {'group': 'columns', 'selector': {'name': 'amount'},
+            {'group': 'columns', 'selector': {'name': 'amount', 'expression': 's.amount'},
              'field': 'type_target', 'value': 'text',
              'id': 'D10-wrong-amount-type'},
         ],
@@ -547,6 +551,9 @@ CASES = {
             {'group': 'formulas', 'selector': {'expression': 'h.hours / 8.0'},
              'field': 'expression', 'value': 'h.hours',
              'id': 'D08-lose-hour-normalization'},
+            {'group': 'conditions', 'selector': {'expression': 'h.user_id = p_uid AND h.on_date = p_date'},
+             'field': 'expression', 'value': 'true',
+             'id': 'D09-remove-essential-where'},
         ],
     },
     'q11': {

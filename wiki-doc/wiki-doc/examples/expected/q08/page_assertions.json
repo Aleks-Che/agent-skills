@@ -7,7 +7,8 @@
     {
       "group": "columns",
       "selector": {
-        "name": "amount"
+        "name": "amount",
+        "expression": "s.amount"
       },
       "field": "type_target",
       "value": "text",

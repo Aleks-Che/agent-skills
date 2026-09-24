@@ -9,9 +9,9 @@
       "selector": {
         "canonical_key": "function+q_out+gp_master_probe+(text)"
       },
-      "field": "volatility",
-      "value": "stable",
-      "id": "D05-invent-volatility-claim"
+      "field": "execute_on",
+      "value": "ANY",
+      "id": "D05-deny-execute-on-master"
     }
   ]
 }

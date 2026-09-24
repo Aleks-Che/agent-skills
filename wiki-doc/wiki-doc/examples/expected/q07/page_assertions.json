@@ -12,6 +12,16 @@
       "field": "expression",
       "value": "xmlelement(name filters, xmlelement(name filter, f.value))",
       "id": "D06-drop-xmlagg"
+    },
+    {
+      "group": "operations",
+      "selector": {
+        "kind": "SELECT",
+        "order": 1
+      },
+      "field": "reads",
+      "value": [],
+      "id": "D09-remove-metadata-read"
     }
   ]
 }

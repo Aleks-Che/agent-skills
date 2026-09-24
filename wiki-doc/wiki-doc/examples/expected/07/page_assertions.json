@@ -7,7 +7,8 @@
     {
       "group": "operations",
       "selector": {
-        "kind": "EXECUTE"
+        "kind": "EXECUTE",
+        "order": 1
       },
       "field": "structure.arguments.1",
       "value": "'events_fixed'",

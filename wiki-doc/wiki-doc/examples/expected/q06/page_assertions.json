@@ -8,7 +8,8 @@
       "group": "objects",
       "selector": {
         "kind": "cte",
-        "name": "tm"
+        "name": "tm",
+        "canonical_key": "@cte:function+q_out+two_inserts+():1:tm"
       },
       "field": "physical",
       "value": true,

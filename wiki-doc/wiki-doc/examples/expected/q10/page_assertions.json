@@ -12,6 +12,15 @@
       "field": "expression",
       "value": "h.hours",
       "id": "D08-lose-hour-normalization"
+    },
+    {
+      "group": "conditions",
+      "selector": {
+        "expression": "h.user_id = p_uid AND h.on_date = p_date"
+      },
+      "field": "expression",
+      "value": "true",
+      "id": "D09-remove-essential-where"
     }
   ]
 }

@@ -3,7 +3,7 @@
   "derived_from": "fixtures/q11_rr_sl.sql",
   "authoring": "hand-derived from source SQL, independent of extractor and writer",
   "deparse_deltas": [
-    "pipeline deparse emits CAST(count(*) AS numeric) and tightens WHERE( spacing; source form kept as oracle truth"
+    "::numeric is represented as CAST(count(*) AS numeric); FILTER whitespace is canonicalised in facts and mutation selectors without changing either formula"
   ],
   "assertions": [
     {

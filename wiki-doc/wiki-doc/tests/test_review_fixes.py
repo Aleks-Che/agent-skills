@@ -385,6 +385,8 @@ class GateAcceptanceTests(unittest.TestCase):
         write_json(self.run, 'facts', facts)
         inv = extract_inventory(sql, 'source.sql', sha, version='15')
         inv['run_id'] = facts['run_id']
+        from sql_types import column_catalog
+        column_catalog(inv, [self.run / 'source.sql'], [], self.run)
         write_json(self.run, 'inventory', inv)
         plan = generate_plan(inv, load_policy(), page_id=pid)
         write_json(self.run, 'validation_plan', plan)
@@ -400,7 +402,7 @@ class GateAcceptanceTests(unittest.TestCase):
                            'blocking': c['blocking'], 'category': c['category'],
                            'reason': 'The view and output expression agree with SQL; types remain unknown.',
                            'evidence': [{'root': 'project', **ref}],
-                           'fact_ids': [{'operation': 'op_001', 'formula': 'formula_001', 'condition': 'cond_001'}.get(c['rule_id'], 'obj_1')]})
+                           'fact_ids': [{'operation': 'op_001', 'formula': 'formula_001', 'condition': 'cond_001', 'unknown': 'types'}.get(c['rule_id'], 'obj_1')]})
         write_json(self.run, 'validation', {'schema_version': 2, 'run_id': facts['run_id'], 'page_id': pid, 'checks': checks})
         def issue():
             manifest = create_manifest(page_id=pid, sql_files=[self.run / 'source.sql'], artifacts_dir=self.run,

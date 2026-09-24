@@ -192,6 +192,20 @@
         "details": {
           "type": "object",
           "properties": {
+            "type_unknowns": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "required": ["table", "name"],
+                "properties": {
+                  "table": {"type": "string", "minLength": 1},
+                  "name": {"type": "string", "minLength": 1}
+                },
+                "additionalProperties": false
+              }
+            },
             "extension_version": {
               "const": 1
             },

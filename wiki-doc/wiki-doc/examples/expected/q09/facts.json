@@ -27,8 +27,7 @@
       ],
       "formulas": [
         "f.value_num * 1.5",
-        "f.value_num + 10",
-        "f.value_num"
+        "f.value_num + 10"
       ],
       "definitions": [
         {

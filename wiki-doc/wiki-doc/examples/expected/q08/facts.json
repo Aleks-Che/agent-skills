@@ -32,6 +32,33 @@
           "total"
         ]
       },
+      "columns": [
+        {
+          "object": "q_out.orders",
+          "name": "id",
+          "type_target": "bigint",
+          "expression": "s.id"
+        },
+        {
+          "object": "q_out.orders",
+          "name": "amount",
+          "type_target": "numeric",
+          "type_expression": "numeric",
+          "expression": "s.amount"
+        },
+        {
+          "object": "q_out.orders",
+          "name": "legacy",
+          "type_target": "text",
+          "expression": "s.legacy"
+        },
+        {
+          "object": "q_out.orders",
+          "name": "total",
+          "type_target": "integer",
+          "expression": "s.total"
+        }
+      ],
       "definitions": [
         {
           "object": "q_out.orders",

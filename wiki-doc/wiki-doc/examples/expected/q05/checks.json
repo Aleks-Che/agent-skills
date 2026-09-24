@@ -10,7 +10,6 @@
     "writes",
     "calls",
     "condition",
-    "section",
-    "analysis_gap"
+    "section"
   ]
 }

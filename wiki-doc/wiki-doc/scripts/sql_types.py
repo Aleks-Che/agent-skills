@@ -399,6 +399,23 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
     variables={p['name']:p['type'] for p in d.get('parameters',[]) if p.get('name')}
     for mapping in mappings:
         mapping['type_expression']=infer_expression(mapping['expression'],tables,variables,mapping.get('aliases'))
+    # Independent type limitations are plan inputs, not inferred from writer facts.
+    used = {r for item in inventory['items'] for field in ('reads', 'writes', 'calls')
+            for r in item.get(field, [])}
+    used.add(f"{d['schema']}.{d['name']}")
+    if d['object_kind'] == 'migration':
+        used.update(tables)
+    unknowns = {(m['table'], m['name']) for m in mappings
+                if m['table'] in used and m['type_expression'] is None}
+    unknowns.update((table, column['name']) for table in used
+                    for column in tables.get(table, {}).get('columns', [])
+                    if column.get('type') is None)
+    unknowns.update((m['table'], m['name']) for m in mappings
+                    if m['table'] in used and m['table'] not in tables)
+    if unknowns:
+        d['type_unknowns'] = [dict(table=table, name=name) for table, name in sorted(unknowns)]
+    else:
+        d.pop('type_unknowns', None)
     return dict(tables=tables,mappings=mappings,functions=context['functions'])
 
 

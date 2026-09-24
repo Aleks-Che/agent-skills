@@ -280,6 +280,20 @@ def _fact_checks(artifacts, rebuilt, required, draft):
         op_id = item_facts.get(key)
         results = [c for c in artifacts['validation']['checks'] if c.get('plan_check_id') == required_check['id']]
         rule = required_check['rule_id']
+        if required_check['id'].startswith('unknown:type:'):
+            unknown = next(u for item in rebuilt['items'] if item['kind'] == 'DECLARATION'
+                           for u in item['details'].get('type_unknowns', [])
+                           if required_check['id'] == 'unknown:type:' +
+                           sha256_bytes(json.dumps(u, sort_keys=True).encode())[:16])
+            table, name = unknown['table'], unknown['name']
+            objects = {o['id'] for o in facts['objects']
+                       if (o.get('canonical_key') if o['kind'] in ('cte', 'temp_table')
+                           else f"{o.get('schema')}.{o['name']}") == table}
+            columns = {c['id'] for c in facts['columns'] if c['object_id'] in objects and c['name'] == name}
+            ids = {u['id'] for u in facts['unknowns'] if columns & set(u.get('related_facts', []))}
+            if not ids or not any(ids & set(c.get('fact_ids', [])) for c in results):
+                errors.append(f'{required_check["id"]}: result lacks a matching type unknown fact')
+            continue
         group = {'formula': 'formulas', 'condition': 'conditions', 'unknown': 'unknowns'}.get(rule)
         ids = {op_id} if rule in ('operation', 'trigger', 'index', 'constraint', 'access_rule') else set()
         if group:
@@ -440,6 +454,10 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
             migration_manifest=resolve_reference(manifest['migration_manifest'], roots) if manifest.get('migration_manifest') else None)
         if rebuilt['coverage_notes']:
             return _gate_result('blocked', errors=['analysis gap: ' + n['reason'] for n in rebuilt['coverage_notes']])
+        from sql_types import column_catalog, check_types
+        catalogue=column_catalog(rebuilt,[resolve_reference(r,roots) for r in manifest['sql_files']],
+            [resolve_reference(r,roots) for r in manifest.get('context_files',[])],roots['project'],
+            resolve_reference(manifest['migration_manifest'],roots) if manifest.get('migration_manifest') else None)
         for key in ('items', 'coverage_notes', 'inputs', 'documented_subjects'):
             if inventory.get(key, []) != rebuilt[key]:
                 errors.append(f'inventory.{key} differs from independently rebuilt SQL inventory')
@@ -469,10 +487,6 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
         errors.extend(evaluation['errors'])
         errors.extend(_fact_checks(artifacts, rebuilt, expected_plan['required_checks'],
                                    draft_bytes.decode('utf-8-sig')))
-        from sql_types import column_catalog, check_types
-        catalogue=column_catalog(rebuilt,[resolve_reference(r,roots) for r in manifest['sql_files']],
-            [resolve_reference(r,roots) for r in manifest.get('context_files',[])],roots['project'],
-            resolve_reference(manifest['migration_manifest'],roots) if manifest.get('migration_manifest') else None)
         errors.extend(check_types(facts,catalogue))
         if facts.get('page_contract')=='claims-v1':
             from page_claims import check_page_claims

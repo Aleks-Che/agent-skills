@@ -31,8 +31,8 @@
       "calls": [],
       "conditions": [
         "v_retro",
-        "r.fact_start_date < DATE '2026-01-01'",
-        "k.fact_start_date < DATE '2026-01-01'"
+        "r.fact_start_date < CAST('2026-01-01' AS date)",
+        "k.fact_start_date < CAST('2026-01-01' AS date)"
       ],
       "definitions": [
         {

@@ -3,7 +3,7 @@
   "derived_from": "fixtures/q01_retro_param_local.sql",
   "authoring": "hand-derived from source SQL, independent of extractor and writer",
   "deparse_deltas": [
-    "pipeline deparse emits CAST('2026-01-01' AS date) for the DELETE/SELECT bounds; source form kept as oracle truth"
+    "DATE '2026-01-01' is represented as CAST('2026-01-01' AS date) in facts; boundary, comparison and column binding are unchanged"
   ],
   "assertions": [
     {

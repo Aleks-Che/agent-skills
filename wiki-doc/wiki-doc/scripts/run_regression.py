@@ -23,6 +23,9 @@ PACKAGE=Path(__file__).resolve().parents[1]
 def check_expected(facts,expected):
     """Check selected facts against a separately authored oracle, not generator IDs."""
     errors=[]; objects={o['id']:o for o in facts['objects']}
+    for field, value in expected.get('dialect', {}).items():
+        if facts.get('dialect', {}).get(field) != value:
+            errors.append('dialect.' + field)
     def name(oid):
         obj=objects[oid]
         return obj.get('canonical_key') if obj['kind'] in ('cte','temp_table') else f"{obj.get('schema')}.{obj['name']}"

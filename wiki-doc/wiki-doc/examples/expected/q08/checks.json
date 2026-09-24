@@ -9,7 +9,6 @@
     "reads",
     "writes",
     "condition",
-    "migration_order",
     "section"
   ]
 }

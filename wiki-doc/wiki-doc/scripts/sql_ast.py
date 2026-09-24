@@ -54,6 +54,15 @@ def names(values):
     return [v.sval for v in values or ()]
 
 
+def has_temporal_cast(expression):
+    """Recognise date/time syntax in a guard, excluding comments and text literals."""
+    node = parse_sql('SELECT ' + expression)[0].stmt
+    return any(isinstance(part, ast.TypeCast)
+               and names(part.typeName.names)[-1].lower() in
+               ('date', 'timestamp', 'timestamptz', 'time', 'timetz', 'interval')
+               for part in walk(node))
+
+
 def relation(node):
     return (node.schemaname + '.' if node.schemaname else '') + node.relname
 
@@ -662,6 +671,7 @@ class Analyzer:
         elif kind == 'PLpgSQL_stmt_if':
             condition = expr('cond')
             self.item('IF', line, conditions=[condition], formulas=[], has_condition=True,
+                      has_date_boundary=has_temporal_cast(condition),
                       branches=['then', 'else'], analysis='postgres_ast', **_guard_details(guard))
             prefix = branch + '/' if branch else ''
             for entry in value.get('then_body', []):
@@ -672,6 +682,7 @@ class Analyzer:
                 other = entry.get('PLpgSQL_stmt_elsif', entry.get('PLpgSQL_if_elsif', entry))
                 condition = other['cond']['PLpgSQL_expr']['query']
                 self.item('IF', body_line + other.get('lineno', 1) - 1,
+                          has_date_boundary=has_temporal_cast(condition),
                           conditions=[condition], has_condition=True, analysis='postgres_ast', **_guard_details(rejected))
                 for nested in other.get('stmts', []) or other.get('then_body', []):
                     self.plpgsql(nested, body_line, prefix + f'elsif:{index}', rejected + (condition,), datums)

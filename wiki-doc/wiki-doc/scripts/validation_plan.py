@@ -163,6 +163,16 @@ def generate_plan(inventory, policy, page_id=None, object_kind=None,
     )
 
     import hashlib
+    for declaration in declarations:
+        for unknown in declaration['details'].get('type_unknowns', []):
+            digest = hashlib.sha256(json.dumps(unknown, sort_keys=True).encode()).hexdigest()[:16]
+            rule = next(r for r in policy['rules'] if r['id'] == 'unknown')
+            inventory_checks.append({'id': 'unknown:type:' + digest, 'rule_id': 'unknown',
+                                     'subject': f"{object_key}/type/{unknown['table']}/{unknown['name']}",
+                                     'source': 'inventory',
+                                     'inventory_anchor': {'path': declaration['source_ref']['path'], **declaration['anchor']},
+                                     'applicable': True, 'blocking': rule['blocking_default'],
+                                     'category': rule['category']})
     for note in inventory.get('coverage_notes', []):
         ref = note['source_ref']
         owner = next((item for item in selected if item['source_ref']['path'] == ref['path']), selected[0])

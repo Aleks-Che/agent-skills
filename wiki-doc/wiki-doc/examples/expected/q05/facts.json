@@ -23,7 +23,11 @@
       "calls": [
         "q_meta.log_event"
       ],
-      "unknown_required": true
+      "unknown_required": false,
+      "dialect": {
+        "name": "greenplum",
+        "version": "unknown"
+      }
     }
   }
 }

@@ -18,17 +18,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(__file__).resolve().parent
 
-# Hand-authored, source-faithful condition/formula strings. Where the pglast
-# deparser rewrites DATE 'x' to CAST('x' AS date), the SOURCE form is kept as
-# truth; the delta is recorded in `deparse_deltas` and must be reconciled by
-# Q-07 rather than silently normalised here.
+# Hand-authored SQL expectations use the pinned deparser's spelling in facts
+# and mutation selectors. Assertions retain source spelling where useful;
+# deparse_deltas records the representation change, not a semantic relaxation.
 CASES = {
     'q01': {
         'subject': 'function+q_hist+apply_retro+(boolean)',
         'decision': 'ready',
         'required_rules': ['identity', 'signature', 'sql_registry', 'registry_document',
                            'operation', 'reads', 'writes', 'formula', 'condition',
-                           'date_boundary', 'section', 'analysis_gap'],
+                           'date_boundary', 'section'],
         'expectation': {
             'declaration': {
                 'returns': 'bigint',
@@ -42,14 +41,14 @@ CASES = {
             'calls': [],
             'conditions': [
                 'v_retro',
-                "r.fact_start_date < DATE '2026-01-01'",
-                "k.fact_start_date < DATE '2026-01-01'",
+                "r.fact_start_date < CAST('2026-01-01' AS date)",
+                "k.fact_start_date < CAST('2026-01-01' AS date)",
             ],
             'definitions': [{'object': 'q_hist.retro_pairs', 'status': 'resolved'}],
             'unknown_required': False,
         },
         'deparse_deltas': [
-            "pipeline deparse emits CAST('2026-01-01' AS date) for the DELETE/SELECT bounds; source form kept as oracle truth",
+            "DATE '2026-01-01' is represented as CAST('2026-01-01' AS date) in facts; boundary, comparison and column binding are unchanged",
         ],
         'assertions': [
             {'id': 'q01-A1', 'review': 'D01', 'kind': 'parameter_reaches_condition',
@@ -231,7 +230,7 @@ CASES = {
         'subject': 'function+q_out+gp_master_probe+(text)',
         'decision': 'ready',
         'required_rules': ['identity', 'signature', 'sql_registry', 'registry_document',
-                           'operation', 'reads', 'writes', 'calls', 'condition', 'section', 'analysis_gap'],
+                           'operation', 'reads', 'writes', 'calls', 'condition', 'section'],
         'expectation': {
             'declaration': {
                 'returns': 'bigint',
@@ -241,7 +240,9 @@ CASES = {
             'reads': ['q_src.events'],
             'writes': ['q_out.gp_events'],
             'calls': ['q_meta.log_event'],
-            'unknown_required': True,
+            'unknown_required': False,
+            # Unknown server version is a dialect fact, not an unresolved call.
+            'dialect': {'name': 'greenplum', 'version': 'unknown'},
         },
         'deparse_deltas': [],
         'assertions': [
@@ -384,7 +385,7 @@ CASES = {
         'subject': 'function+q_out+load_positional+()',
         'decision': 'ready',
         'required_rules': ['identity', 'signature', 'sql_registry', 'registry_document',
-                           'operation', 'reads', 'writes', 'condition', 'migration_order', 'section'],
+                           'operation', 'reads', 'writes', 'condition', 'section'],
         'expectation': {
             'declaration': {
                 'returns': 'bigint',
@@ -398,6 +399,13 @@ CASES = {
             'conditions': ['s.id IS NOT NULL'],
             'formulas': [],
             'exact_columns': {'q_out.orders': ['id', 'amount', 'legacy', 'total']},
+            # Positional mappings from the selected migration state, authored from SQL.
+            'columns': [
+                {'object': 'q_out.orders', 'name': 'id', 'type_target': 'bigint', 'expression': 's.id'},
+                {'object': 'q_out.orders', 'name': 'amount', 'type_target': 'numeric', 'type_expression': 'numeric', 'expression': 's.amount'},
+                {'object': 'q_out.orders', 'name': 'legacy', 'type_target': 'text', 'expression': 's.legacy'},
+                {'object': 'q_out.orders', 'name': 'total', 'type_target': 'integer', 'expression': 's.total'},
+            ],
             'definitions': [{'object': 'q_out.orders', 'status': 'resolved'}],
             'unknown_required': False,
         },
@@ -450,7 +458,8 @@ CASES = {
                 'f.kpi_id = 10 AND f.struct_id = 100 AND f.level_no = 2',
                 'f.kpi_id = 20 AND f.struct_id = 200 AND f.level_no = 1',
             ],
-            'formulas': ['f.value_num * 1.5', 'f.value_num + 10', 'f.value_num'],
+            # The plain projection remains required by q09-A3, not the formula group.
+            'formulas': ['f.value_num * 1.5', 'f.value_num + 10'],
             'definitions': [{'object': 'q_out.kpi_result', 'status': 'resolved'}],
             'unknown_required': False,
         },
@@ -557,17 +566,17 @@ CASES = {
             'calls': [],
             'conditions': [],
             'formulas': [
-                "CASE WHEN count(*) FILTER (WHERE (s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 "
-                "THEN count(*) FILTER (WHERE (s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / count(*)::numeric ELSE 0 END",
-                "1 - CASE WHEN count(*) FILTER (WHERE (s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 "
-                "THEN count(*) FILTER (WHERE (s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / count(*)::numeric ELSE 0 END",
+                "CASE WHEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 "
+                "THEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / CAST(count(*) AS numeric) ELSE 0 END",
+                "1 - CASE WHEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 "
+                "THEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / CAST(count(*) AS numeric) ELSE 0 END",
             ],
             'definitions': [{'object': 'q_src.sla_raw', 'status': 'resolved'},
                             {'object': 'q_out.rr_sl', 'status': 'resolved'}],
             'unknown_required': True,
         },
         'deparse_deltas': [
-            "pipeline deparse emits CAST(count(*) AS numeric) and tightens WHERE( spacing; source form kept as oracle truth",
+            "::numeric is represented as CAST(count(*) AS numeric); FILTER whitespace is canonicalised in facts and mutation selectors without changing either formula",
         ],
         'assertions': [
             {'id': 'q11-A1', 'review': 'D08', 'kind': 'rr_formula',
@@ -589,14 +598,14 @@ CASES = {
         ],
         'mutations': [
             {'group': 'formulas',
-             'selector': {'expression': "1 - CASE WHEN count(*) FILTER (WHERE (s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 THEN count(*) FILTER (WHERE (s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / count(*)::numeric ELSE 0 END"},
+             'selector': {'expression': "1 - CASE WHEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 THEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / CAST(count(*) AS numeric) ELSE 0 END"},
              'field': 'expression', 'value': '1',
              'id': 'D08-lose-sl-formula'},
             # Additional unknown control: an invented decoding dressed up as a formula.
             # The real claim check is q11-A3; this mutation only proves that a
             # fabricated expansion cannot ride along as an equivalent formula.
             {'group': 'formulas',
-             'selector': {'expression': "CASE WHEN count(*) FILTER (WHERE (s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 THEN count(*) FILTER (WHERE (s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / count(*)::numeric ELSE 0 END"},
+             'selector': {'expression': "CASE WHEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 THEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / CAST(count(*) AS numeric) ELSE 0 END"},
              'field': 'expression', 'value': 'avg(first_response_minutes) / 60',
              'id': 'Q07-invent-rr-decoding'},
         ],

@@ -325,6 +325,12 @@ CASES = {
             {'group': 'conditions', 'selector': {'expression': 'o.amount IS NOT NULL'},
              'field': 'expression', 'value': 'o.amount IS NULL',
              'id': 'D11-lose-cte-filter'},
+            {'group': 'operations', 'selector': {'kind': 'INSERT', 'order': 1},
+             'field': 'writes', 'value': [],
+             'id': 'D11-exclude-first-target'},
+            {'group': 'operations', 'selector': {'kind': 'INSERT', 'order': 5},
+             'field': 'writes', 'value': [],
+             'id': 'D11-exclude-second-target'},
         ],
     },
     'q07': {

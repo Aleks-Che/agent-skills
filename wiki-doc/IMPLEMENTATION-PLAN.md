@@ -5,7 +5,9 @@
 Продолжение после проверки реального SQL — [Q-план](IMPROVEMENT-PLAN-2026-09-23.md).
 Текущий статус после повторного аудита 2026-09-24: Q-02/Q-03 `done`, Q-01/Q-04/Q-05/Q-06/Q-07 `in_progress`, Q-08/Q-09 `planned`;
 см. [журнал Q-этапа](IMPROVEMENT-STATUS-2026-09-23.md), [аудит reference-ожиданий Q-01](REVIEW-Q01-REFERENCE.md)
-и [аудит мутаций Q-07](REVIEW-Q07-MUTATIONS.md). Предыдущие этапы —
+и [повторный аудит D12/Q-07](REVIEW-Q07-D12.md). Заявленное закрытие D12
+не подтвердилось; исправлены аннотации и ослабленные тесты.
+Предыдущие этапы — [аудит мутаций Q-07](REVIEW-Q07-MUTATIONS.md),
 [writer Q-06](REVIEW-Q06-WRITER.md),
 [resume Q-05](REVIEW-Q05-RESUME.md),
 [finalize/provenance Q-05](REVIEW-Q05-FINALIZE.md),

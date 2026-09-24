@@ -32,10 +32,13 @@ class MutationMatrixTests(unittest.TestCase):
             with self.subTest(case=case):
                 self.assertTrue(annotations(case))  # Missing file must fail, not be skipped.
 
-    def test_d01_through_d11_are_annotated_d12_remains_open(self):
+    def test_implemented_review_labels_and_explicit_d12_gap(self):
         covered = {a['id'].split('-')[0] for c in Q_IDS for a in annotations(c)
                    if a['id'].startswith('D')}
         self.assertEqual(covered, {f'D{i:02d}' for i in range(1, 12)})
+        # D12 needs compatibility/window/example prose probes and positive equivalents.
+        # Relabeling a dependency mutation cannot satisfy that missing acceptance.
+        self.assertEqual({f'D{i:02d}' for i in range(1, 13)} - covered, {'D12'})
         # These are annotation labels, not proof that all review subcases were detected.
 
     def test_annotation_fields_and_unique_ids(self):
@@ -57,6 +60,16 @@ class MutationMatrixTests(unittest.TestCase):
         spec.loader.exec_module(module)
         for case in Q_IDS:
             self.assertEqual(annotations(case), module.CASES[case]['mutations'], case)
+
+    def test_mutation_review_label_has_a_corresponding_case_assertion(self):
+        for case in Q_IDS:
+            assertions = read_json(EXPECTED / case / 'assertions.json')['assertions']
+            reviews = {a['review'] for a in assertions}
+            for annotation in annotations(case):
+                if not annotation['id'].startswith('D'):
+                    continue
+                with self.subTest(case=case, mutation=annotation['id']):
+                    self.assertIn(annotation['id'].split('-')[0], reviews)
 
 
 class MutationTargetTests(unittest.TestCase):
@@ -146,7 +159,8 @@ class MutationDetectionTests(unittest.TestCase):
         expected = {(c, a['id'], m) for c in Q_IDS if c != 'q09'
                     for a in annotations(c) for m in ('text-only', 'coherent')}
         tested = [r for r in self.result['results'] if r['status'] == 'detected']
-        self.assertEqual({(r['case'], r['mutation'], r['mode']) for r in tested}, expected)
+        tested_set = {(r['case'], r['mutation'], r['mode']) for r in tested}
+        self.assertEqual(tested_set, expected)
         self.assertEqual(len(tested), len(expected))
         for row in tested:
             with self.subTest(case=row['case'], mutation=row['mutation'], mode=row['mode']):
@@ -172,6 +186,52 @@ class MutationDetectionTests(unittest.TestCase):
                             for e in cases['D05-deny-execute-on-master']['errors']))
         self.assertTrue(any('reads' in e
                             for e in cases['D09-remove-metadata-read']['errors']))
+
+    def test_each_insert_target_is_removed_and_detected_separately(self):
+        original = read_json(self.root / 'q06/facts.json')
+        for mutation, removed, kept in (
+                ('D11-exclude-first-target', 'q_out.out_a', 'q_out.out_b'),
+                ('D11-exclude-second-target', 'q_out.out_b', 'q_out.out_a')):
+            with self.subTest(mutation=mutation):
+                row = next(r for r in self.result['results']
+                           if r['mutation'] == mutation and r['mode'] == 'coherent')
+                self.assertEqual(row['status'], 'detected', row)
+                self.assertEqual(row['detection_layer'], 'sql', row)
+                self.assertTrue(any('writes' in e for e in row['errors']), row)
+                changed = read_json(Path(row['run_dir']) / 'facts.json')
+                objects = {o['id']: o['schema'] + '.' + o['name']
+                           for o in original['objects'] if o.get('schema')}
+                before = {objects[w] for op in original['operations'] for w in op['writes']}
+                after = {objects[w] for op in changed['operations'] for w in op['writes']}
+                self.assertEqual(before, {removed, kept})
+                self.assertEqual(after, {kept})
+
+    def test_invisible_source_ref_edit_is_not_a_page_mutation(self):
+        expected = self.root / 'invisible-expectations'
+        shutil.copytree(EXPECTED / 'q06', expected / 'q06')
+        annotation = {'id': 'invisible-source-ref', 'group': 'objects',
+                      'selector': {'kind': 'table', 'name': 'orders'},
+                      'field': 'source_refs.0.path', 'value': 'wrong/path.sql'}
+        original = read_json(self.root / 'q06/facts.json')
+        self.assertNotEqual(mutate(copy.deepcopy(original), annotation), original)
+        path = expected / 'q06/page_assertions.json'
+        assertions = read_json(path)
+        assertions['mutations'] = [annotation]
+        path.write_text(json.dumps(assertions), encoding='utf-8')
+        report = self.root / 'invisible-report.json'
+        report.write_text(json.dumps({'results': [r for r in self.records if r['case'] == 'q06']}),
+                          encoding='utf-8')
+        with patch('regression_mutations.finish') as finalizer:
+            result = run_mutations(report, expected, self.root / 'invisible-mutations')
+        self.assertTrue(result['controls'][0]['valid'], result)
+        self.assertFalse(result['valid'])
+        self.assertEqual(result['tested_mutations'], 0)
+        self.assertEqual(result['untested'], 2)
+        self.assertEqual(result['detected'], 0)
+        self.assertEqual({r['status'] for r in result['results']}, {'invalid_mutation'})
+        self.assertTrue(all(r['errors'] == ['Mutation does not change visible claims']
+                            for r in result['results']))
+        finalizer.assert_not_called()
 
     def test_equivalent_markdown_presentation_is_accepted(self):
         case = next(c for c in self.cases if c['id'] == 'q02')

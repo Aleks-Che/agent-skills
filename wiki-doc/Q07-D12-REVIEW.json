@@ -1,0 +1,2588 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-24",
+  "review": "Q-07 alleged D12 mutation coverage",
+  "outcome": "Fixed invalid annotations and weakened tests; D12 and Q-07 acceptance remain open.",
+  "python": {
+    "executable": "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "version": "3.12.7"
+  },
+  "dependencies": {
+    "pglast": "7.14",
+    "jsonschema": "4.26.0",
+    "markdown-it-py": "3.0.0",
+    "rfc3339-validator": "0.1.4"
+  },
+  "tool_versions": {
+    "scripts_sha256": "8e60060d8ea5ed1a4e6b6b3cb4f07ae1fdd942444a411ac4389bd0439a46b49f",
+    "skill_md_sha256": "aa0bf5c3ba391bc11ab8e08baad214a9a323b79bd8f6cf6fddfce26775ddb317",
+    "template_sha256": "183f467eff3f538c848251fa6198a9f2d711c7f1e29ab05c09f6ed2fdeff387b",
+    "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+  },
+  "runtime_unchanged_from_previous_audit": true,
+  "source_sha256": {
+    "tests/test_q07_mutations.py": "25166290d98833ac95973c57830e82e616a38dea9be1ead36a050c6770248cb7",
+    "scripts/regression_mutations.py": "7526f040025d0e1838b4e8b2a75f4c4aac68fa2d4eb0ea032ce8ca125722353d",
+    "scripts/page_claims.py": "77af6b36bc0b646da70d885d37dc4e124b6dba58aec56d6561f9a12ad009e0c9",
+    "examples/expected/_authoring.py": "31daebe742bac12acd694ac9ce64ffd87cb88f3448452ac32eab4a994d013c9c",
+    "examples/expected/q06/page_assertions.json": "929669fbb86c0a42d2f1340d9cb9ec5070b69362935245f29a82e060c41ae8ec",
+    "examples/expected/q06/assertions.json": "7c371739237d6282fbdf5bee53cfd04442c43ea5766de29b1f0cb1f30f239f56"
+  },
+  "before": {
+    "tests": {
+      "command": [
+        "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-X",
+        "utf8",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_q07_mutations.py",
+        "-v"
+      ],
+      "cwd": "C:\\work\\git\\my-repos\\agent-skills.agents-ide-worktrees\\28e110ba73c447c39fa260701cff993f\\wiki-doc\\wiki-doc",
+      "returncode": 0,
+      "tests": 21,
+      "seconds": 39.625,
+      "log": {
+        "path": ".runtime/q07-d12-audit/before/test_q07_mutations.log",
+        "sha256": "4c3d9d79d1a30c1409caffc4a1cee360c6c5818be74649fd2a0b03c45eff36f7"
+      }
+    },
+    "source_artifacts": [
+      {
+        "path": ".runtime/q07-d12-audit/before/test_q07_mutations.py",
+        "sha256": "a25bae0f6dae3ec75931cebd3c861cbeeccdef81d353170e44087f9d20451813"
+      },
+      {
+        "path": ".runtime/q07-d12-audit/before/page_assertions.json",
+        "sha256": "0d2ec3a764b6c559d5f932a6e0e419af62692de952ec65013bf865f434be2b30"
+      }
+    ],
+    "mutation_command": [
+      "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "-X",
+      "utf8",
+      "-B",
+      "scripts/regression_mutations.py",
+      "../.runtime/q07-mutation-final-audit/reference-q/regression-report.json",
+      "--expected-root",
+      "examples/expected",
+      "--output",
+      "../.runtime/q07-d12-audit/before/mutations-q"
+    ],
+    "mutation_returncode": 1,
+    "mutations": {
+      "detected": 32,
+      "false_ready": 0,
+      "false_ready_rate": 0.0,
+      "input_errors": [],
+      "limitation": "Controlled claims/schema/SQL/profile checks only; annotation IDs do not establish full D01-D12 prose or graph coverage.",
+      "mutations": 42,
+      "schema_version": 1,
+      "tested_mutations": 32,
+      "untested": 10,
+      "valid": false,
+      "statuses": {
+        "detected": 32,
+        "invalid_mutation": 6,
+        "baseline_invalid": 4
+      },
+      "detection_layers": {
+        "visible_claims": 16,
+        "sql": 15,
+        "schema": 1
+      },
+      "controls": [
+        {
+          "case": "q01",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q02",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q03",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q04",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q05",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q06",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q07",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q08",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q09",
+          "valid": false,
+          "errors": [
+            "facts column col_3: expression differs from SQL mapping",
+            "facts column col_5: expression differs from SQL mapping",
+            "facts column col_5: expression type differs from independently supported inference",
+            "facts column col_5: expression differs from SQL mapping"
+          ]
+        },
+        {
+          "case": "q10",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q11",
+          "valid": true,
+          "errors": []
+        }
+      ],
+      "results": [
+        {
+          "case": "q01",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: cond_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D01-drop-retro-gate",
+          "oracle_errors": [
+            "conditions: v_retro"
+          ],
+          "status": "detected",
+          "subject": "function+q_hist+apply_retro+(boolean)"
+        },
+        {
+          "case": "q01",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts cond_1: expression has no independent SQL occurrence",
+            "condition:IF:3de659d0dc696514: result lacks a matching condition fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D01-drop-retro-gate",
+          "oracle_errors": [
+            "conditions: v_retro"
+          ],
+          "status": "detected",
+          "subject": "function+q_hist+apply_retro+(boolean)"
+        },
+        {
+          "case": "q02",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: cond_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D02-flip-phone-null",
+          "oracle_errors": [
+            "conditions: c.phone IS NOT NULL AND c.is_phoned IS NOT TRUE"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+count_phoned_clients+()"
+        },
+        {
+          "case": "q02",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts cond_1: expression has no independent SQL occurrence",
+            "condition:SELECT:4a7b50146f038fb0: result lacks a matching condition fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D02-flip-phone-null",
+          "oracle_errors": [
+            "conditions: c.phone IS NOT NULL AND c.is_phoned IS NOT TRUE"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+count_phoned_clients+()"
+        },
+        {
+          "case": "q02",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: cond_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D02-flip-is-phoned",
+          "oracle_errors": [
+            "conditions: c.phone IS NOT NULL AND c.is_phoned IS NOT TRUE"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+count_phoned_clients+()"
+        },
+        {
+          "case": "q02",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts cond_1: expression has no independent SQL occurrence",
+            "condition:SELECT:4a7b50146f038fb0: result lacks a matching condition fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D02-flip-is-phoned",
+          "oracle_errors": [
+            "conditions: c.phone IS NOT NULL AND c.is_phoned IS NOT TRUE"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+count_phoned_clients+()"
+        },
+        {
+          "case": "q03",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: formula_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D03-swap-status-sets",
+          "oracle_errors": [
+            "formulas: t.status IN ('new', 'ready', 'assigned', 'in_progress', 'waiting')"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+pick_next_task+(bigint)"
+        },
+        {
+          "case": "q03",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "formula:SELECT:afce85bc04ad8475: result lacks a matching formula fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D03-swap-status-sets",
+          "oracle_errors": [
+            "formulas: t.status IN ('new', 'ready', 'assigned', 'in_progress', 'waiting')"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+pick_next_task+(bigint)"
+        },
+        {
+          "case": "q04",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: cond_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D04-rebind-to-create-date",
+          "oracle_errors": [
+            "conditions: p_date >= DATE '2026-01-01'"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+calc_norm+(bigint,date)"
+        },
+        {
+          "case": "q04",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts cond_1: expression has no independent SQL occurrence",
+            "condition:IF:f24a8be81cc8de87: result lacks a matching condition fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D04-rebind-to-create-date",
+          "oracle_errors": [
+            "conditions: p_date >= DATE '2026-01-01'"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+calc_norm+(bigint,date)"
+        },
+        {
+          "case": "q04",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: formula_2.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D04-collapse-legacy-divisor",
+          "oracle_errors": [
+            "formulas: h.hours / 7.2"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+calc_norm+(bigint,date)"
+        },
+        {
+          "case": "q04",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts formula_2: expression has no independent SQL occurrence",
+            "formula:SELECT:53b6e14b88ba145f: result lacks a matching formula fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D04-collapse-legacy-divisor",
+          "oracle_errors": [
+            "formulas: h.hours / 7.2"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+calc_norm+(bigint,date)"
+        },
+        {
+          "case": "q05",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: obj_1.execute_on"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D05-deny-execute-on-master",
+          "oracle_errors": [],
+          "status": "detected",
+          "subject": "function+q_out+gp_master_probe+(text)"
+        },
+        {
+          "case": "q05",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts execute_on differs from SQL declaration"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D05-deny-execute-on-master",
+          "oracle_errors": [],
+          "status": "detected",
+          "subject": "function+q_out+gp_master_probe+(text)"
+        },
+        {
+          "case": "q06",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: obj_2.physical"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D11-mark-cte-physical",
+          "oracle_errors": [
+            "local objects cte"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q06",
+          "decision": "blocked",
+          "detection_layer": "schema",
+          "errors": [
+            "facts: objects.1.physical: False was expected"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D11-mark-cte-physical",
+          "oracle_errors": [
+            "local objects cte"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q06",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: cond_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D11-lose-cte-filter",
+          "oracle_errors": [
+            "conditions: o.amount IS NOT NULL"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q06",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts cond_1: expression has no independent SQL occurrence",
+            "condition:SELECT:bab5614bc1aeba4a: result lacks a matching condition fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D11-lose-cte-filter",
+          "oracle_errors": [
+            "conditions: o.amount IS NOT NULL"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q06",
+          "decision": null,
+          "detection_layer": null,
+          "errors": [
+            "Mutation must change the selected value"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D12-mark-derived-as-cte",
+          "oracle_errors": [],
+          "status": "invalid_mutation",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q06",
+          "decision": null,
+          "detection_layer": null,
+          "errors": [
+            "Mutation must change the selected value"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D12-mark-derived-as-cte",
+          "oracle_errors": [],
+          "status": "invalid_mutation",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q06",
+          "decision": null,
+          "detection_layer": null,
+          "errors": [
+            "Mutation selector must match exactly one fact; matched 2"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D12-exclude-target",
+          "oracle_errors": [],
+          "status": "invalid_mutation",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q06",
+          "decision": null,
+          "detection_layer": null,
+          "errors": [
+            "Mutation selector must match exactly one fact; matched 2"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D12-exclude-target",
+          "oracle_errors": [],
+          "status": "invalid_mutation",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q06",
+          "decision": null,
+          "detection_layer": null,
+          "errors": [
+            "Mutation does not change visible claims"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D12-damage-source-ref",
+          "oracle_errors": [],
+          "status": "invalid_mutation",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q06",
+          "decision": null,
+          "detection_layer": null,
+          "errors": [
+            "Mutation does not change visible claims"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D12-damage-source-ref",
+          "oracle_errors": [],
+          "status": "invalid_mutation",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q07",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: formula_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D06-drop-xmlagg",
+          "oracle_errors": [
+            "formulas: xmlelement(name filters, xmlagg(xmlelement(name filter, f.value) ORDER BY f.ord))"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+xml_filter_blob+(bigint)"
+        },
+        {
+          "case": "q07",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts formula_1: expression has no independent SQL occurrence",
+            "formula:SELECT:e9b0714153dbf569: result lacks a matching formula fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D06-drop-xmlagg",
+          "oracle_errors": [
+            "formulas: xmlelement(name filters, xmlagg(xmlelement(name filter, f.value) ORDER BY f.ord))"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+xml_filter_blob+(bigint)"
+        },
+        {
+          "case": "q07",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: op_1.reads"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D09-remove-metadata-read",
+          "oracle_errors": [],
+          "status": "detected",
+          "subject": "function+q_out+xml_filter_blob+(bigint)"
+        },
+        {
+          "case": "q07",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts op_1.reads differs from independent SQL inventory"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D09-remove-metadata-read",
+          "oracle_errors": [],
+          "status": "detected",
+          "subject": "function+q_out+xml_filter_blob+(bigint)"
+        },
+        {
+          "case": "q08",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: col_2.type_target"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D10-wrong-amount-type",
+          "oracle_errors": [
+            "column q_out.orders.amount"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_positional+()"
+        },
+        {
+          "case": "q08",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts column col_2: target type is not established by SQL/ordered DDL"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D10-wrong-amount-type",
+          "oracle_errors": [
+            "column q_out.orders.amount"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_positional+()"
+        },
+        {
+          "case": "q09",
+          "decision": null,
+          "detection_layer": null,
+          "errors": [
+            "facts column col_3: expression differs from SQL mapping",
+            "facts column col_5: expression differs from SQL mapping",
+            "facts column col_5: expression type differs from independently supported inference",
+            "facts column col_5: expression differs from SQL mapping"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D07-collapse-pair",
+          "oracle_errors": [],
+          "status": "baseline_invalid",
+          "subject": "function+q_out+load_kpi_levels+()"
+        },
+        {
+          "case": "q09",
+          "decision": null,
+          "detection_layer": null,
+          "errors": [
+            "facts column col_3: expression differs from SQL mapping",
+            "facts column col_5: expression differs from SQL mapping",
+            "facts column col_5: expression type differs from independently supported inference",
+            "facts column col_5: expression differs from SQL mapping"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D07-collapse-pair",
+          "oracle_errors": [],
+          "status": "baseline_invalid",
+          "subject": "function+q_out+load_kpi_levels+()"
+        },
+        {
+          "case": "q09",
+          "decision": null,
+          "detection_layer": null,
+          "errors": [
+            "facts column col_3: expression differs from SQL mapping",
+            "facts column col_5: expression differs from SQL mapping",
+            "facts column col_5: expression type differs from independently supported inference",
+            "facts column col_5: expression differs from SQL mapping"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D08-lose-struct-100-level2-formula",
+          "oracle_errors": [],
+          "status": "baseline_invalid",
+          "subject": "function+q_out+load_kpi_levels+()"
+        },
+        {
+          "case": "q09",
+          "decision": null,
+          "detection_layer": null,
+          "errors": [
+            "facts column col_3: expression differs from SQL mapping",
+            "facts column col_5: expression differs from SQL mapping",
+            "facts column col_5: expression type differs from independently supported inference",
+            "facts column col_5: expression differs from SQL mapping"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D08-lose-struct-100-level2-formula",
+          "oracle_errors": [],
+          "status": "baseline_invalid",
+          "subject": "function+q_out+load_kpi_levels+()"
+        },
+        {
+          "case": "q10",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: formula_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D08-lose-hour-normalization",
+          "oracle_errors": [
+            "formulas: h.hours / 8.0"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_norm_plan+(bigint,date)"
+        },
+        {
+          "case": "q10",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts formula_1: expression has no independent SQL occurrence",
+            "formula:SELECT:8e14e64f8fe6b38f: result lacks a matching formula fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D08-lose-hour-normalization",
+          "oracle_errors": [
+            "formulas: h.hours / 8.0"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_norm_plan+(bigint,date)"
+        },
+        {
+          "case": "q10",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: cond_2.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D09-remove-essential-where",
+          "oracle_errors": [
+            "conditions: h.user_id = p_uid AND h.on_date = p_date"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_norm_plan+(bigint,date)"
+        },
+        {
+          "case": "q10",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts cond_2: expression has no independent SQL occurrence",
+            "condition:SELECT:15efed5e5061aa40: result lacks a matching condition fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D09-remove-essential-where",
+          "oracle_errors": [
+            "conditions: h.user_id = p_uid AND h.on_date = p_date"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_norm_plan+(bigint,date)"
+        },
+        {
+          "case": "q11",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: formula_2.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D08-lose-sl-formula",
+          "oracle_errors": [
+            "formulas: 1 - CASE WHEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 THEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / CAST(count(*) AS numeric) ELSE 0 END"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_rr_sl+()"
+        },
+        {
+          "case": "q11",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts formula_2: expression has no independent SQL occurrence",
+            "formula:SELECT:b2761cbfc7407224: result lacks a matching formula fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D08-lose-sl-formula",
+          "oracle_errors": [
+            "formulas: 1 - CASE WHEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 THEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / CAST(count(*) AS numeric) ELSE 0 END"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_rr_sl+()"
+        },
+        {
+          "case": "q11",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: formula_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "Q07-invent-rr-decoding",
+          "oracle_errors": [
+            "formulas: CASE WHEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 THEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / CAST(count(*) AS numeric) ELSE 0 END"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_rr_sl+()"
+        },
+        {
+          "case": "q11",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts formula_1: expression has no independent SQL occurrence",
+            "formula:SELECT:bb8000368cd274d2: result lacks a matching formula fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "Q07-invent-rr-decoding",
+          "oracle_errors": [
+            "formulas: CASE WHEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 THEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / CAST(count(*) AS numeric) ELSE 0 END"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_rr_sl+()"
+        }
+      ]
+    },
+    "mutation_report": {
+      "path": ".runtime/q07-d12-audit/before/mutations-q/mutation-report.json",
+      "sha256": "df88848efb29ca181faa41006097be77117ed9cc058fb87819b56d45f4bc56dc"
+    }
+  },
+  "after": {
+    "unit": {
+      "tests": 1076,
+      "skipped": 1,
+      "failed_modules": [],
+      "seconds": 326.485,
+      "results": [
+        {
+          "module": "test_artifact_regressions.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_artifact_regressions.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 49,
+          "skipped": 0,
+          "seconds": 19.719,
+          "log": ".runtime/q07-d12-audit/test_artifact_regressions.log",
+          "log_sha256": "6e8eb9cfc3e6d465ae8423483a5caa522263ec77d766574dabd5f667d6736f2d"
+        },
+        {
+          "module": "test_artifacts.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_artifacts.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 30,
+          "skipped": 0,
+          "seconds": 2.578,
+          "log": ".runtime/q07-d12-audit/test_artifacts.log",
+          "log_sha256": "306d996923356d8a285fe5dcc0e4be1cf4edd25762dbb760c2bae7e2529ea729"
+        },
+        {
+          "module": "test_check_policy.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_check_policy.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 37,
+          "skipped": 0,
+          "seconds": 1.203,
+          "log": ".runtime/q07-d12-audit/test_check_policy.log",
+          "log_sha256": "0bdf4128b31d1f648460e76fcbde402ea40816d6fde981e3e29d589a59d936e8"
+        },
+        {
+          "module": "test_coverage_gate.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_coverage_gate.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 87,
+          "skipped": 0,
+          "seconds": 90.828,
+          "log": ".runtime/q07-d12-audit/test_coverage_gate.log",
+          "log_sha256": "5bfff5a94091f5c34f5e2955e32e6af81b3666ceeabd886f07c45180285b0eeb"
+        },
+        {
+          "module": "test_dialect_matrix.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_dialect_matrix.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 41,
+          "skipped": 0,
+          "seconds": 14.016,
+          "log": ".runtime/q07-d12-audit/test_dialect_matrix.log",
+          "log_sha256": "5b0e8c633ee4415a4ab3e4a73997ea47258078d36095c0048554d1fce5c92c48"
+        },
+        {
+          "module": "test_evidence_bundle.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_evidence_bundle.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 55,
+          "skipped": 0,
+          "seconds": 9.36,
+          "log": ".runtime/q07-d12-audit/test_evidence_bundle.log",
+          "log_sha256": "64837c36dc5879abd1aafe0a68bc4250b8d90cd3f0deda2b841b468145d20211"
+        },
+        {
+          "module": "test_identity.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_identity.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 103,
+          "skipped": 0,
+          "seconds": 1.015,
+          "log": ".runtime/q07-d12-audit/test_identity.log",
+          "log_sha256": "228269c9f1e54d64b302abb7579b2904303f89fa0bb1f3a7216fd3845c5180a9"
+        },
+        {
+          "module": "test_index_query.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_index_query.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 29,
+          "skipped": 0,
+          "seconds": 130.579,
+          "log": ".runtime/q07-d12-audit/test_index_query.log",
+          "log_sha256": "2cef6d5289b56e4455ab6c9847b132e75f2c924401532cd482bb8bb330b2b39c"
+        },
+        {
+          "module": "test_inventory_plan.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_inventory_plan.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 22,
+          "skipped": 0,
+          "seconds": 2.969,
+          "log": ".runtime/q07-d12-audit/test_inventory_plan.log",
+          "log_sha256": "8bfdcfbfa61602fc20e56abd7fce9360b65e58cf9503f577464e8cf3928b25d9"
+        },
+        {
+          "module": "test_metrics.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_metrics.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 40,
+          "skipped": 0,
+          "seconds": 167.265,
+          "log": ".runtime/q07-d12-audit/test_metrics.log",
+          "log_sha256": "2d344a6eec030a368770654337ed6a090c60b14281c587845113d7dbf78eeb20"
+        },
+        {
+          "module": "test_p0_gate_regressions.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_p0_gate_regressions.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 36,
+          "skipped": 1,
+          "seconds": 74.047,
+          "log": ".runtime/q07-d12-audit/test_p0_gate_regressions.log",
+          "log_sha256": "0c280a17d695a59620071e35bff036b52bb4077e949acb69864b8f04f1d33b2e"
+        },
+        {
+          "module": "test_p1_acceptance.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_p1_acceptance.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 12,
+          "skipped": 0,
+          "seconds": 35.844,
+          "log": ".runtime/q07-d12-audit/test_p1_acceptance.log",
+          "log_sha256": "020bd00d0066020c5e5cafa6d7f9f2deda9ef558e4dafc25ef77c82ea515bc0a"
+        },
+        {
+          "module": "test_p2_03_acceptance.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_p2_03_acceptance.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 16,
+          "skipped": 0,
+          "seconds": 25.656,
+          "log": ".runtime/q07-d12-audit/test_p2_03_acceptance.log",
+          "log_sha256": "e27a3709b0d06270110b96fe4aea9566296a10de887033081bff50bdd48a3d64"
+        },
+        {
+          "module": "test_p2_03_model_extensions.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_p2_03_model_extensions.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 28,
+          "skipped": 0,
+          "seconds": 1.735,
+          "log": ".runtime/q07-d12-audit/test_p2_03_model_extensions.log",
+          "log_sha256": "1793f675d068305b2c36ca7f2fe9befdd63c591bc424e73416e79aeb3b14e14d"
+        },
+        {
+          "module": "test_p2_05_acceptance.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_p2_05_acceptance.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 17,
+          "skipped": 0,
+          "seconds": 51.218,
+          "log": ".runtime/q07-d12-audit/test_p2_05_acceptance.log",
+          "log_sha256": "be74a3c25899a9db3e8e0942edad2aaa2feed25e98119310ab0e572464dbfd13"
+        },
+        {
+          "module": "test_p2_05_operations.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_p2_05_operations.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 27,
+          "skipped": 0,
+          "seconds": 12.828,
+          "log": ".runtime/q07-d12-audit/test_p2_05_operations.log",
+          "log_sha256": "636d83cd77003e7202a310296aa30a089741271db3216581b18d662daf8de515"
+        },
+        {
+          "module": "test_publish.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_publish.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 11,
+          "skipped": 0,
+          "seconds": 53.047,
+          "log": ".runtime/q07-d12-audit/test_publish.log",
+          "log_sha256": "5bc732376e134acaa4e327780d329198f0c33a7e11e8a90b10b3358967e3fa0c"
+        },
+        {
+          "module": "test_q01_expectations.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q01_expectations.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 30,
+          "skipped": 0,
+          "seconds": 4.796,
+          "log": ".runtime/q07-d12-audit/test_q01_expectations.log",
+          "log_sha256": "06aee421eefa9c8e46faa0e4cd8704d22a2ab12c9fb25d2cb733aab7e5ae8cf2"
+        },
+        {
+          "module": "test_q01_reference_review.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q01_reference_review.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 11,
+          "skipped": 0,
+          "seconds": 11.907,
+          "log": ".runtime/q07-d12-audit/test_q01_reference_review.log",
+          "log_sha256": "bd82e66b18e86808338c43aa025edd1688b872880378f1a8702018d2366ecd00"
+        },
+        {
+          "module": "test_q02_fallback_diagnostics.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q02_fallback_diagnostics.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 30,
+          "skipped": 0,
+          "seconds": 12.703,
+          "log": ".runtime/q07-d12-audit/test_q02_fallback_diagnostics.log",
+          "log_sha256": "8cc81e8fc0fe1f3dfca65e9ceb6009b87d01f2e605683f1d0901e044771a0b27"
+        },
+        {
+          "module": "test_q03_greenplum.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q03_greenplum.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 30,
+          "skipped": 0,
+          "seconds": 10.75,
+          "log": ".runtime/q07-d12-audit/test_q03_greenplum.log",
+          "log_sha256": "47fbaf94776c88e8d9afe3b7481f357ee9b5c106b1115f5ae595c92663444e55"
+        },
+        {
+          "module": "test_q03_review.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q03_review.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 35,
+          "skipped": 0,
+          "seconds": 12.469,
+          "log": ".runtime/q07-d12-audit/test_q03_review.log",
+          "log_sha256": "60454f2f6e92e241e3732a10dc62c69eb3a5425dd59e702cc215c0c30269bf4f"
+        },
+        {
+          "module": "test_q04_body_analysis.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q04_body_analysis.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 17,
+          "skipped": 0,
+          "seconds": 16.86,
+          "log": ".runtime/q07-d12-audit/test_q04_body_analysis.log",
+          "log_sha256": "736ed77e1cd151433dc3b349a00b053cd358106ea457f18132a08008a30d55c5"
+        },
+        {
+          "module": "test_q04_completion_review.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q04_completion_review.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 12,
+          "skipped": 0,
+          "seconds": 1.703,
+          "log": ".runtime/q07-d12-audit/test_q04_completion_review.log",
+          "log_sha256": "a71c8edee009949955364b7aba80396e69dfc5ace025185a5640cad715570599"
+        },
+        {
+          "module": "test_q04_ddl_star.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q04_ddl_star.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 30,
+          "skipped": 0,
+          "seconds": 18.782,
+          "log": ".runtime/q07-d12-audit/test_q04_ddl_star.log",
+          "log_sha256": "c2e48287162d5925715c9b7ef757d797de3b35ab545331d3cd0acfa6ae4bacc7"
+        },
+        {
+          "module": "test_q04_review.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q04_review.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 19,
+          "skipped": 0,
+          "seconds": 5.047,
+          "log": ".runtime/q07-d12-audit/test_q04_review.log",
+          "log_sha256": "576bc0e6a3debf5f0c6017cbedeba912ef03ce769923dd278d8863005ba5caf1"
+        },
+        {
+          "module": "test_q04_setops_review.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q04_setops_review.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 15,
+          "skipped": 0,
+          "seconds": 4.89,
+          "log": ".runtime/q07-d12-audit/test_q04_setops_review.log",
+          "log_sha256": "24bb8839bb327fdb2d2a67b7094de756978838be6b2d5231a1b5d4070b80dbdf"
+        },
+        {
+          "module": "test_q04_wildcard_review.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q04_wildcard_review.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 15,
+          "skipped": 0,
+          "seconds": 3.219,
+          "log": ".runtime/q07-d12-audit/test_q04_wildcard_review.log",
+          "log_sha256": "2ce9055138c2b28fae4e7b2ae97a742cc127e26225b6873bd547fba35d5ef690"
+        },
+        {
+          "module": "test_q05_finalize.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q05_finalize.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 6,
+          "skipped": 0,
+          "seconds": 1.016,
+          "log": ".runtime/q07-d12-audit/test_q05_finalize.log",
+          "log_sha256": "fbfda13aef831e9171b7a80583842b86d4d0ce6c15a45baed898e9bf82797335"
+        },
+        {
+          "module": "test_q05_finalize_review.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q05_finalize_review.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 31,
+          "skipped": 0,
+          "seconds": 129.703,
+          "log": ".runtime/q07-d12-audit/test_q05_finalize_review.log",
+          "log_sha256": "c909584b1451ac43d9e1df7c6a6500e1d82c86934b04c44c4accfb6a35b20dce"
+        },
+        {
+          "module": "test_q05_prepare_review.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q05_prepare_review.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 23,
+          "skipped": 0,
+          "seconds": 16.703,
+          "log": ".runtime/q07-d12-audit/test_q05_prepare_review.log",
+          "log_sha256": "82e8b0d7b6db9a3185d5f305abe1903f6e44e48746b05a67a0ca8a6048bb43d1"
+        },
+        {
+          "module": "test_q05_resume.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q05_resume.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 4,
+          "skipped": 0,
+          "seconds": 11.515,
+          "log": ".runtime/q07-d12-audit/test_q05_resume.log",
+          "log_sha256": "a450038d5a4c9de48910148e6c6a6c8e002d793cd381de12b07cb464219d9d7c"
+        },
+        {
+          "module": "test_q05_resume_review.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q05_resume_review.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 24,
+          "skipped": 0,
+          "seconds": 104.437,
+          "log": ".runtime/q07-d12-audit/test_q05_resume_review.log",
+          "log_sha256": "ae3e7922b8881620d7c4c6b4105727b66fca97c8abb09df1aa7c252e260a5743"
+        },
+        {
+          "module": "test_q05_run_prepare.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q05_run_prepare.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 10,
+          "skipped": 0,
+          "seconds": 15.438,
+          "log": ".runtime/q07-d12-audit/test_q05_run_prepare.log",
+          "log_sha256": "e9c01357bba6e3b397306e537f4c9e881630c98a3c20f97be2005db50bdb32b1"
+        },
+        {
+          "module": "test_q07_mutations.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_q07_mutations.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 24,
+          "skipped": 0,
+          "seconds": 47.485,
+          "log": ".runtime/q07-d12-audit/test_q07_mutations.log",
+          "log_sha256": "264df726f10c851a7b007a564ea57682372818ca436c5fe68f31aadf6823aa4b"
+        },
+        {
+          "module": "test_review_fixes.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_review_fixes.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 41,
+          "skipped": 0,
+          "seconds": 19.89,
+          "log": ".runtime/q07-d12-audit/test_review_fixes.log",
+          "log_sha256": "579dc4755618bc282be35b194cddeef65d6f814b07bac9d9f49436fc3674d349"
+        },
+        {
+          "module": "test_sql_ast.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_sql_ast.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 20,
+          "skipped": 0,
+          "seconds": 1.563,
+          "log": ".runtime/q07-d12-audit/test_sql_ast.log",
+          "log_sha256": "6a82a0fa4c84ce0c3b78349d39e76c39b93ac32da662d5c2864174973a38aae7"
+        },
+        {
+          "module": "test_validation_gate.py",
+          "command": [
+            "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+            "-X",
+            "utf8",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_validation_gate.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "tests": 9,
+          "skipped": 0,
+          "seconds": 1.203,
+          "log": ".runtime/q07-d12-audit/test_validation_gate.log",
+          "log_sha256": "c04c8b977b52e4cdcff93670acf9b3ce81a892c8a4d9b36fad0c505c9eadbb4f"
+        }
+      ],
+      "q_tests": 366,
+      "q07_tests": 24,
+      "passed": 1075
+    },
+    "unit_environment": {
+      "WIKI_DOC_ACCEPTANCE_PROJECT": "C:/work/git/my-repos/test-sql-wiki",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONUTF8": "1"
+    },
+    "focused_tests": {
+      "tests": 24,
+      "returncode": 0,
+      "seconds": 43.287,
+      "log": {
+        "path": ".runtime/q07-d12-audit/focused-test_q07_mutations.log",
+        "sha256": "c52c15c3235ac3e5ffb8ff2de85ff75af08a3e4cbbc91f9af34610c173c609d7"
+      }
+    },
+    "reference": {
+      "command": [
+        "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-X",
+        "utf8",
+        "-B",
+        "scripts/run_regression.py",
+        "--manifest",
+        "examples/cases-q.json",
+        "--output",
+        "../.runtime/q07-d12-audit/reference-q",
+        "--mode",
+        "reference",
+        "--repeats",
+        "1"
+      ],
+      "returncode": 1,
+      "mode": "reference",
+      "repeats": 1,
+      "full_agent_cycle_completed": false,
+      "valid": false,
+      "total": 11,
+      "passed": 10,
+      "cases": [
+        {
+          "case": "q01",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q02",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q03",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q04",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q05",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q06",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q07",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q08",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q09",
+          "valid": false,
+          "errors": [
+            "facts column col_3: expression differs from SQL mapping",
+            "facts column col_5: expression differs from SQL mapping",
+            "facts column col_5: expression type differs from independently supported inference",
+            "facts column col_5: expression differs from SQL mapping"
+          ]
+        },
+        {
+          "case": "q10",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q11",
+          "valid": true,
+          "errors": []
+        }
+      ],
+      "report": {
+        "path": ".runtime/q07-d12-audit/reference-q/regression-report.json",
+        "sha256": "0ab1f37c2584628d9d21724c7034f8097668b66f2b11a05fef0521e2b41bd33f"
+      }
+    },
+    "mutations": {
+      "detected": 36,
+      "false_ready": 0,
+      "false_ready_rate": 0.0,
+      "input_errors": [],
+      "limitation": "Controlled claims/schema/SQL/profile checks only; annotation IDs do not establish full D01-D12 prose or graph coverage.",
+      "mutations": 40,
+      "schema_version": 1,
+      "tested_mutations": 36,
+      "untested": 4,
+      "valid": false,
+      "statuses": {
+        "detected": 36,
+        "baseline_invalid": 4
+      },
+      "detection_layers": {
+        "visible_claims": 18,
+        "sql": 17,
+        "schema": 1
+      },
+      "controls": [
+        {
+          "case": "q01",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q02",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q03",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q04",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q05",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q06",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q07",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q08",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q09",
+          "valid": false,
+          "errors": [
+            "facts column col_3: expression differs from SQL mapping",
+            "facts column col_5: expression differs from SQL mapping",
+            "facts column col_5: expression type differs from independently supported inference",
+            "facts column col_5: expression differs from SQL mapping"
+          ]
+        },
+        {
+          "case": "q10",
+          "valid": true,
+          "errors": []
+        },
+        {
+          "case": "q11",
+          "valid": true,
+          "errors": []
+        }
+      ],
+      "results": [
+        {
+          "case": "q01",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: cond_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D01-drop-retro-gate",
+          "oracle_errors": [
+            "conditions: v_retro"
+          ],
+          "status": "detected",
+          "subject": "function+q_hist+apply_retro+(boolean)"
+        },
+        {
+          "case": "q01",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts cond_1: expression has no independent SQL occurrence",
+            "condition:IF:3de659d0dc696514: result lacks a matching condition fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D01-drop-retro-gate",
+          "oracle_errors": [
+            "conditions: v_retro"
+          ],
+          "status": "detected",
+          "subject": "function+q_hist+apply_retro+(boolean)"
+        },
+        {
+          "case": "q02",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: cond_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D02-flip-phone-null",
+          "oracle_errors": [
+            "conditions: c.phone IS NOT NULL AND c.is_phoned IS NOT TRUE"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+count_phoned_clients+()"
+        },
+        {
+          "case": "q02",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts cond_1: expression has no independent SQL occurrence",
+            "condition:SELECT:4a7b50146f038fb0: result lacks a matching condition fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D02-flip-phone-null",
+          "oracle_errors": [
+            "conditions: c.phone IS NOT NULL AND c.is_phoned IS NOT TRUE"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+count_phoned_clients+()"
+        },
+        {
+          "case": "q02",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: cond_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D02-flip-is-phoned",
+          "oracle_errors": [
+            "conditions: c.phone IS NOT NULL AND c.is_phoned IS NOT TRUE"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+count_phoned_clients+()"
+        },
+        {
+          "case": "q02",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts cond_1: expression has no independent SQL occurrence",
+            "condition:SELECT:4a7b50146f038fb0: result lacks a matching condition fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D02-flip-is-phoned",
+          "oracle_errors": [
+            "conditions: c.phone IS NOT NULL AND c.is_phoned IS NOT TRUE"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+count_phoned_clients+()"
+        },
+        {
+          "case": "q03",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: formula_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D03-swap-status-sets",
+          "oracle_errors": [
+            "formulas: t.status IN ('new', 'ready', 'assigned', 'in_progress', 'waiting')"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+pick_next_task+(bigint)"
+        },
+        {
+          "case": "q03",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "formula:SELECT:afce85bc04ad8475: result lacks a matching formula fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D03-swap-status-sets",
+          "oracle_errors": [
+            "formulas: t.status IN ('new', 'ready', 'assigned', 'in_progress', 'waiting')"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+pick_next_task+(bigint)"
+        },
+        {
+          "case": "q04",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: cond_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D04-rebind-to-create-date",
+          "oracle_errors": [
+            "conditions: p_date >= DATE '2026-01-01'"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+calc_norm+(bigint,date)"
+        },
+        {
+          "case": "q04",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts cond_1: expression has no independent SQL occurrence",
+            "condition:IF:f24a8be81cc8de87: result lacks a matching condition fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D04-rebind-to-create-date",
+          "oracle_errors": [
+            "conditions: p_date >= DATE '2026-01-01'"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+calc_norm+(bigint,date)"
+        },
+        {
+          "case": "q04",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: formula_2.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D04-collapse-legacy-divisor",
+          "oracle_errors": [
+            "formulas: h.hours / 7.2"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+calc_norm+(bigint,date)"
+        },
+        {
+          "case": "q04",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts formula_2: expression has no independent SQL occurrence",
+            "formula:SELECT:53b6e14b88ba145f: result lacks a matching formula fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D04-collapse-legacy-divisor",
+          "oracle_errors": [
+            "formulas: h.hours / 7.2"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+calc_norm+(bigint,date)"
+        },
+        {
+          "case": "q05",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: obj_1.execute_on"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D05-deny-execute-on-master",
+          "oracle_errors": [],
+          "status": "detected",
+          "subject": "function+q_out+gp_master_probe+(text)"
+        },
+        {
+          "case": "q05",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts execute_on differs from SQL declaration"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D05-deny-execute-on-master",
+          "oracle_errors": [],
+          "status": "detected",
+          "subject": "function+q_out+gp_master_probe+(text)"
+        },
+        {
+          "case": "q06",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: obj_2.physical"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D11-mark-cte-physical",
+          "oracle_errors": [
+            "local objects cte"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q06",
+          "decision": "blocked",
+          "detection_layer": "schema",
+          "errors": [
+            "facts: objects.1.physical: False was expected"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D11-mark-cte-physical",
+          "oracle_errors": [
+            "local objects cte"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q06",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: cond_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D11-lose-cte-filter",
+          "oracle_errors": [
+            "conditions: o.amount IS NOT NULL"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q06",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts cond_1: expression has no independent SQL occurrence",
+            "condition:SELECT:bab5614bc1aeba4a: result lacks a matching condition fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D11-lose-cte-filter",
+          "oracle_errors": [
+            "conditions: o.amount IS NOT NULL"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q06",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: op_1.writes"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D11-exclude-first-target",
+          "oracle_errors": [
+            "writes physical dependencies"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q06",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts op_1.writes differs from independent SQL inventory"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D11-exclude-first-target",
+          "oracle_errors": [
+            "writes physical dependencies"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q06",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: op_5.writes"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D11-exclude-second-target",
+          "oracle_errors": [
+            "writes physical dependencies"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q06",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts op_5.writes differs from independent SQL inventory"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D11-exclude-second-target",
+          "oracle_errors": [
+            "writes physical dependencies"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+two_inserts+()"
+        },
+        {
+          "case": "q07",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: formula_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D06-drop-xmlagg",
+          "oracle_errors": [
+            "formulas: xmlelement(name filters, xmlagg(xmlelement(name filter, f.value) ORDER BY f.ord))"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+xml_filter_blob+(bigint)"
+        },
+        {
+          "case": "q07",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts formula_1: expression has no independent SQL occurrence",
+            "formula:SELECT:e9b0714153dbf569: result lacks a matching formula fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D06-drop-xmlagg",
+          "oracle_errors": [
+            "formulas: xmlelement(name filters, xmlagg(xmlelement(name filter, f.value) ORDER BY f.ord))"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+xml_filter_blob+(bigint)"
+        },
+        {
+          "case": "q07",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: op_1.reads"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D09-remove-metadata-read",
+          "oracle_errors": [],
+          "status": "detected",
+          "subject": "function+q_out+xml_filter_blob+(bigint)"
+        },
+        {
+          "case": "q07",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts op_1.reads differs from independent SQL inventory"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D09-remove-metadata-read",
+          "oracle_errors": [],
+          "status": "detected",
+          "subject": "function+q_out+xml_filter_blob+(bigint)"
+        },
+        {
+          "case": "q08",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: col_2.type_target"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D10-wrong-amount-type",
+          "oracle_errors": [
+            "column q_out.orders.amount"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_positional+()"
+        },
+        {
+          "case": "q08",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts column col_2: target type is not established by SQL/ordered DDL"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D10-wrong-amount-type",
+          "oracle_errors": [
+            "column q_out.orders.amount"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_positional+()"
+        },
+        {
+          "case": "q09",
+          "decision": null,
+          "detection_layer": null,
+          "errors": [
+            "facts column col_3: expression differs from SQL mapping",
+            "facts column col_5: expression differs from SQL mapping",
+            "facts column col_5: expression type differs from independently supported inference",
+            "facts column col_5: expression differs from SQL mapping"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D07-collapse-pair",
+          "oracle_errors": [],
+          "status": "baseline_invalid",
+          "subject": "function+q_out+load_kpi_levels+()"
+        },
+        {
+          "case": "q09",
+          "decision": null,
+          "detection_layer": null,
+          "errors": [
+            "facts column col_3: expression differs from SQL mapping",
+            "facts column col_5: expression differs from SQL mapping",
+            "facts column col_5: expression type differs from independently supported inference",
+            "facts column col_5: expression differs from SQL mapping"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D07-collapse-pair",
+          "oracle_errors": [],
+          "status": "baseline_invalid",
+          "subject": "function+q_out+load_kpi_levels+()"
+        },
+        {
+          "case": "q09",
+          "decision": null,
+          "detection_layer": null,
+          "errors": [
+            "facts column col_3: expression differs from SQL mapping",
+            "facts column col_5: expression differs from SQL mapping",
+            "facts column col_5: expression type differs from independently supported inference",
+            "facts column col_5: expression differs from SQL mapping"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D08-lose-struct-100-level2-formula",
+          "oracle_errors": [],
+          "status": "baseline_invalid",
+          "subject": "function+q_out+load_kpi_levels+()"
+        },
+        {
+          "case": "q09",
+          "decision": null,
+          "detection_layer": null,
+          "errors": [
+            "facts column col_3: expression differs from SQL mapping",
+            "facts column col_5: expression differs from SQL mapping",
+            "facts column col_5: expression type differs from independently supported inference",
+            "facts column col_5: expression differs from SQL mapping"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D08-lose-struct-100-level2-formula",
+          "oracle_errors": [],
+          "status": "baseline_invalid",
+          "subject": "function+q_out+load_kpi_levels+()"
+        },
+        {
+          "case": "q10",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: formula_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D08-lose-hour-normalization",
+          "oracle_errors": [
+            "formulas: h.hours / 8.0"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_norm_plan+(bigint,date)"
+        },
+        {
+          "case": "q10",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts formula_1: expression has no independent SQL occurrence",
+            "formula:SELECT:8e14e64f8fe6b38f: result lacks a matching formula fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D08-lose-hour-normalization",
+          "oracle_errors": [
+            "formulas: h.hours / 8.0"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_norm_plan+(bigint,date)"
+        },
+        {
+          "case": "q10",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: cond_2.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D09-remove-essential-where",
+          "oracle_errors": [
+            "conditions: h.user_id = p_uid AND h.on_date = p_date"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_norm_plan+(bigint,date)"
+        },
+        {
+          "case": "q10",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts cond_2: expression has no independent SQL occurrence",
+            "condition:SELECT:15efed5e5061aa40: result lacks a matching condition fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D09-remove-essential-where",
+          "oracle_errors": [
+            "conditions: h.user_id = p_uid AND h.on_date = p_date"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_norm_plan+(bigint,date)"
+        },
+        {
+          "case": "q11",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: formula_2.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "D08-lose-sl-formula",
+          "oracle_errors": [
+            "formulas: 1 - CASE WHEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 THEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / CAST(count(*) AS numeric) ELSE 0 END"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_rr_sl+()"
+        },
+        {
+          "case": "q11",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts formula_2: expression has no independent SQL occurrence",
+            "formula:SELECT:b2761cbfc7407224: result lacks a matching formula fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "D08-lose-sl-formula",
+          "oracle_errors": [
+            "formulas: 1 - CASE WHEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 THEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / CAST(count(*) AS numeric) ELSE 0 END"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_rr_sl+()"
+        },
+        {
+          "case": "q11",
+          "decision": "revise",
+          "detection_layer": "visible_claims",
+          "errors": [
+            "Page claim differs/missing: formula_1.expression"
+          ],
+          "false_ready": false,
+          "mode": "text-only",
+          "mutation": "Q07-invent-rr-decoding",
+          "oracle_errors": [
+            "formulas: CASE WHEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 THEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / CAST(count(*) AS numeric) ELSE 0 END"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_rr_sl+()"
+        },
+        {
+          "case": "q11",
+          "decision": "revise",
+          "detection_layer": "sql",
+          "errors": [
+            "facts formula_1: expression has no independent SQL occurrence",
+            "formula:SELECT:bb8000368cd274d2: result lacks a matching formula fact"
+          ],
+          "false_ready": false,
+          "mode": "coherent",
+          "mutation": "Q07-invent-rr-decoding",
+          "oracle_errors": [
+            "formulas: CASE WHEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) > 0 THEN count(*) FILTER (WHERE(s.closed_at - s.opened_at) <= make_interval(mins => s.target_min)) / CAST(count(*) AS numeric) ELSE 0 END"
+          ],
+          "status": "detected",
+          "subject": "function+q_out+load_rr_sl+()"
+        }
+      ]
+    },
+    "mutation_command": {
+      "command": [
+        "C:\\Users\\Aleks\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-X",
+        "utf8",
+        "-B",
+        "scripts/regression_mutations.py",
+        "C:\\work\\git\\my-repos\\agent-skills.agents-ide-worktrees\\28e110ba73c447c39fa260701cff993f\\wiki-doc\\.runtime\\q07-d12-audit\\reference-q\\regression-report.json",
+        "--expected-root",
+        "examples/expected",
+        "--output",
+        "C:\\work\\git\\my-repos\\agent-skills.agents-ide-worktrees\\28e110ba73c447c39fa260701cff993f\\wiki-doc\\.runtime\\q07-d12-audit\\mutations-q"
+      ],
+      "cwd": "C:\\work\\git\\my-repos\\agent-skills.agents-ide-worktrees\\28e110ba73c447c39fa260701cff993f\\wiki-doc\\wiki-doc",
+      "returncode": 1,
+      "seconds": 34.687,
+      "log_sha256": "d14bd7927ddaba4653bf0b9f5c1c33371867aa40e2eef48a418231e1059d6332"
+    },
+    "mutation_report": {
+      "path": ".runtime/q07-d12-audit/mutations-q/mutation-report.json",
+      "sha256": "a6a4a135901da104ac22c2c33cdc8e1bbd47f7a6e610ffd6308de0f2c0d2a5f0"
+    }
+  },
+  "limitations": [
+    "D12 prose mutations and corrected semantic equivalents are not implemented.",
+    "Four q09 mutation checks are untested because the positive control fails.",
+    "D01-D11 annotation labels do not establish complete semantic coverage.",
+    "No new LLM cycle or arbitrary prose/graph acceptance was performed."
+  ]
+}

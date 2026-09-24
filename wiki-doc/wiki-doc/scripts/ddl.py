@@ -7,7 +7,9 @@ from pathlib import Path
 
 from artifact_schema import read_json, validate_schema, load_schemas, ArtifactInputError
 from sql_ast import quote, require_parser, columns_of, relation, type_name, sql
-from sql_gp import identifier_name, statement_byte_span, distributed_in_bytes, is_greenplum, prepare as gp_prepare, storage_parameters_of
+from sql_gp import (identifier_name, statement_byte_span, distributed_in_bytes,
+                    is_greenplum, prepare as gp_prepare, storage_parameters_of,
+                    storage_options_in_bytes)
 
 
 def parse(text, dialect='postgres'):
@@ -17,6 +19,255 @@ def parse(text, dialect='postgres'):
     if notes:
         raise ValueError('; '.join(f'line {line}: {reason}' for line, reason in notes))
     return parse_sql(parse_text)
+
+
+def _and_terms(node):
+    from pglast import ast
+    if isinstance(node, ast.BoolExpr) and node.boolop.name == 'AND_EXPR':
+        terms = []
+        for arg in node.args:
+            terms.extend(_and_terms(arg))
+        return terms
+    return [node]
+
+
+def _string_const(node):
+    from pglast import ast
+    if isinstance(node, ast.A_Const) and isinstance(node.val, ast.String):
+        return node.val.sval
+    return None
+
+
+def _catalog_drop_spec(query_text):
+    """Parse the guarded pg_attribute lookup of the DROP COLUMN template.
+
+    Returns (schema, table, columns) only when the query provably selects
+    exactly the named columns of one literal schema.table with the standard
+    system-catalog guards.
+    """
+    from pglast import ast, parse_sql
+    text = query_text.strip()
+    if text.startswith('(') and text.endswith(')'):
+        text = text[1:-1]
+    try:
+        statements = parse_sql(text)
+        if len(statements) != 1:
+            raise ValueError('expected one SELECT')
+        node = statements[0].stmt
+    except Exception as exc:
+        raise ValueError(f'Catalog-guarded DO query does not parse: {exc}')
+    if not isinstance(node, ast.SelectStmt) or node.valuesLists:
+        raise ValueError('Catalog-guarded DO query must be a SELECT over pg_attribute')
+    if node.op.name != 'SETOP_NONE' or any(getattr(node, field, None) for field in (
+            'groupClause', 'havingClause', 'withClause', 'distinctClause',
+            'limitCount', 'limitOffset', 'windowClause', 'lockingClause', 'intoClause', 'sortClause')):
+        raise ValueError('Catalog-guarded DO query must not filter, combine or aggregate the selected rows')
+    aliases, predicates = {}, []
+
+    def visit(item):
+        if isinstance(item, ast.RangeVar):
+            name = relation(item)
+            alias = item.alias.aliasname if item.alias else item.relname
+            if alias in aliases or name in aliases.values() or (item.alias and item.alias.colnames):
+                raise ValueError('Catalog-guarded DO query requires distinct pg_attribute, pg_class and pg_namespace aliases')
+            aliases[alias] = name
+        elif isinstance(item, ast.JoinExpr):
+            if item.jointype.name != 'JOIN_INNER' or item.isNatural or item.usingClause or item.alias:
+                raise ValueError('Catalog-guarded DO query requires plain INNER joins')
+            visit(item.larg)
+            visit(item.rarg)
+            if item.quals is not None:
+                predicates.extend(_and_terms(item.quals))
+        else:
+            raise ValueError('Catalog-guarded DO query must not use subqueries or function sources')
+    for item in node.fromClause or ():
+        visit(item)
+    if set(aliases.values()) != {'pg_catalog.pg_attribute', 'pg_catalog.pg_class', 'pg_catalog.pg_namespace'}:
+        raise ValueError('Catalog-guarded DO query must join pg_attribute, pg_class and pg_namespace')
+
+    def field(node):
+        if isinstance(node, ast.ColumnRef) and len(node.fields) == 2 and all(
+                isinstance(p, ast.String) for p in node.fields):
+            owner, column = (p.sval for p in node.fields)
+            if owner in aliases:
+                return aliases[owner].removeprefix('pg_catalog.') + '.' + column
+        return None
+
+    projected = {}
+    for target in node.targetList or ():
+        source = field(target.val)
+        label = target.name or (source.rsplit('.', 1)[-1] if source else None)
+        if not label or label in projected:
+            raise ValueError('Catalog-guarded DO query has ambiguous projected names')
+        projected[label] = source
+    if projected != {'nspname': 'pg_namespace.nspname', 'relname': 'pg_class.relname',
+                     'attname': 'pg_attribute.attname'}:
+        raise ValueError('Catalog-guarded DO query must select the original nspname, relname and attname')
+    required_pairs = {frozenset(('pg_class.oid', 'pg_attribute.attrelid')),
+                      frozenset(('pg_namespace.oid', 'pg_class.relnamespace'))}
+    pairs = set()
+    schema = table = None
+    columns = None
+    guards = set()
+    predicates.extend(_and_terms(node.whereClause))
+    for term in predicates:
+        if isinstance(term, ast.BoolExpr) and term.boolop.name == 'NOT_EXPR':
+            if len(term.args) == 1 and field(term.args[0]) == 'pg_attribute.attisdropped':
+                guards.add('attisdropped')
+                continue
+        if isinstance(term, ast.A_Expr):
+            operator = [p.sval for p in term.name or ()]
+            left = field(term.lexpr)
+            if term.kind.name == 'AEXPR_OP' and operator == ['=']:
+                pair = frozenset((left, field(term.rexpr)))
+                if pair in required_pairs:
+                    pairs.add(pair)
+                    continue
+            if term.kind.name == 'AEXPR_OP' and operator == ['='] and left == 'pg_namespace.nspname' and schema is None:
+                schema = _string_const(term.rexpr)
+                if schema is not None:
+                    continue
+            if term.kind.name == 'AEXPR_OP' and operator == ['='] and left == 'pg_class.relname' and table is None:
+                table = _string_const(term.rexpr)
+                if table is not None:
+                    continue
+            if left == 'pg_attribute.attname' and term.kind.name == 'AEXPR_IN' and operator == ['='] and columns is None:
+                columns = [_string_const(v) for v in term.rexpr or ()]
+                continue
+            if term.kind.name == 'AEXPR_OP' and operator == ['='] and left == 'pg_attribute.attname' and columns is None:
+                columns = [_string_const(term.rexpr)]
+                continue
+            if (term.kind.name == 'AEXPR_OP' and operator == ['>'] and left == 'pg_attribute.attnum'
+                    and isinstance(term.rexpr, ast.A_Const) and isinstance(term.rexpr.val, ast.Integer)
+                    and term.rexpr.val.ival == 0):
+                guards.add('attnum')
+                continue
+        raise ValueError('Catalog-guarded DO query has an unrecognized constraint')
+    if pairs != required_pairs:
+        raise ValueError('Catalog-guarded DO query must join class/namespace by qualified oid')
+    if not schema or not table or not columns or any(c is None for c in columns):
+        raise ValueError('Catalog-guarded DO query must pin literal schema, table and column names')
+    if guards != {'attnum', 'attisdropped'}:
+        raise ValueError('Catalog-guarded DO query must keep the attnum>0 and NOT attisdropped guards')
+    # This template concatenates identifiers without quote_ident. Prove that
+    # PostgreSQL reparses every literal as the very same identifier.
+    for name in [schema, table, *columns]:
+        try:
+            parsed = parse_sql('SELECT ' + name)
+            target = parsed[0].stmt.targetList[0]
+            safe = (len(parsed) == 1 and len(parsed[0].stmt.targetList) == 1
+                    and isinstance(target.val, ast.ColumnRef) and len(target.val.fields) == 1
+                    and isinstance(target.val.fields[0], ast.String)
+                    and target.val.fields[0].sval == name and target.name is None
+                    and not parsed[0].stmt.fromClause)
+        except Exception:
+            safe = False
+        if not safe:
+            raise ValueError('Catalog-guarded DO template requires safe unquoted identifiers')
+    return schema, table, columns
+
+
+def _drop_column_template(expression_text, varname):
+    from pglast import ast, parse_sql
+    try:
+        node = parse_sql('SELECT ' + expression_text.strip())[0].stmt.targetList[0].val
+    except Exception:
+        return False
+    leaves = []
+
+    def flatten(part):
+        if isinstance(part, ast.A_Expr) and [s.sval for s in part.name or ()] == ['||']:
+            flatten(part.lexpr)
+            flatten(part.rexpr)
+        else:
+            leaves.append(part)
+    flatten(node)
+    if len(leaves) != 6:
+        return False
+
+    def const(part):
+        return _string_const(part)
+
+    def field(part):
+        from pglast import ast as ast_mod
+        if isinstance(part, ast_mod.ColumnRef) and len(part.fields) == 2 and \
+                all(isinstance(p, ast_mod.String) for p in part.fields) and \
+                part.fields[0].sval == varname:
+            return part.fields[1].sval
+        return None
+    prefix, sep1, sep2 = const(leaves[0]), const(leaves[2]), const(leaves[4])
+    return (prefix is not None and prefix.upper() == 'ALTER TABLE '
+            and sep1 is not None and sep1.strip() == '.'
+            and sep2 is not None and sep2.upper() == ' DROP COLUMN '
+            and field(leaves[1]) == 'nspname'
+            and field(leaves[3]) == 'relname'
+            and field(leaves[5]) == 'attname')
+
+
+def do_drop_columns(node):
+    """Recognize the provable catalog-guarded DROP COLUMN migration template.
+
+    The template conditionally drops a literal column list of one literal
+    table, querying pg_attribute with the standard guards and executing only
+    `ALTER TABLE <nspname>.<relname> DROP COLUMN <attname>` per found column.
+    Returns (schema, table, columns). Any other DO program raises ValueError.
+    """
+    from pglast import ast
+    require_parser()
+    body = None
+    for arg in node.args or ():
+        if arg.defname == 'as':
+            body = getattr(arg.arg, 'sval', None)
+        elif arg.defname == 'language':
+            language = getattr(arg.arg, 'sval', None)
+            if language and language.lower() != 'plpgsql':
+                raise ValueError(f'Unsupported DO language: {language}')
+    if not body:
+        raise ValueError('Unsupported DO migration node: missing body')
+    tag = 'wiki_doc_do_probe'
+    if f'${tag}$' in body:
+        raise ValueError('Unsupported DO migration node: reserved dollar tag in body')
+    require_parser()
+    from pglast import parse_plpgsql
+    wrapped = f'CREATE FUNCTION wiki_doc.do_probe() RETURNS void LANGUAGE plpgsql AS ${tag}${body}${tag}$;'
+    try:
+        program = parse_plpgsql(wrapped)[0]['PLpgSQL_function']
+    except Exception as exc:
+        raise ValueError(f'Unsupported DO migration node: body does not parse ({exc})')
+    action = program.get('action') if isinstance(program, dict) else None
+    if any(d.get('PLpgSQL_var', {}).get('default_val') or
+           d.get('PLpgSQL_var', {}).get('defaultval') for d in program.get('datums', [])):
+        raise ValueError('Unsupported DO migration node: declaration initializer')
+    if isinstance(action, dict) and 'PLpgSQL_stmt_block' in action:
+        block = action['PLpgSQL_stmt_block']
+        if block.get('exceptions'):
+            raise ValueError('Unsupported DO migration node: exception handler')
+        statements = list(block.get('body') or [])
+    elif isinstance(action, dict) and 'PLpgSQL_stmt_fors' in action:
+        statements = [action]
+    else:
+        statements = []
+    # Only the parser's empty trailing RETURN is implicit; a source RETURN
+    # can stop the migration before the loop.
+    if statements and statements[-1] == {'PLpgSQL_stmt_return': {}}:
+        statements.pop()
+    if len(statements) != 1 or 'PLpgSQL_stmt_fors' not in statements[0]:
+        raise ValueError('Unsupported DO migration node: expected one catalog FOR loop')
+    loop = statements[0]['PLpgSQL_stmt_fors']
+    var = (loop.get('var') or {}).get('PLpgSQL_rec', {}).get('refname')
+    if not var:
+        raise ValueError('Unsupported DO migration node: FOR loop must iterate a record')
+    body_stmts = loop.get('body') or []
+    if len(body_stmts) != 1 or 'PLpgSQL_stmt_dynexecute' not in body_stmts[0]:
+        raise ValueError('Unsupported DO migration node: loop must execute exactly one dynamic statement')
+    dynamic = body_stmts[0]['PLpgSQL_stmt_dynexecute']
+    if dynamic.get('into') or dynamic.get('params'):
+        raise ValueError('Unsupported DO migration node: EXECUTE INTO/USING')
+    execute = dynamic.get('query', {}).get('PLpgSQL_expr', {}).get('query', '')
+    if not _drop_column_template(execute, var):
+        raise ValueError('Unsupported DO migration node: dynamic statement is not the DROP COLUMN template')
+    catalog_query = loop.get('query', {}).get('PLpgSQL_expr', {}).get('query', '')
+    return _catalog_drop_spec(catalog_query)
 
 
 def apply_statement(state, node, gp_attributes=None):
@@ -88,12 +339,28 @@ def apply_statement(state, node, gp_attributes=None):
         else:
             raise ValueError(f'Unsupported RENAME: {node.renameType.name}')
     elif isinstance(node, ast.DropStmt):
+        if node.removeType.name == 'OBJECT_VIEW':
+            return  # View lifecycle is outside the reconstructed table state.
         if node.removeType.name != 'OBJECT_TABLE':
             raise ValueError(f'Unsupported DROP: {node.removeType.name}')
         for parts in node.objects:
             key = '.'.join(p.sval for p in parts)
             if key not in state and not node.missing_ok: raise ValueError(f'Unknown DROP target: {key}')
             state.pop(key, None)
+    elif isinstance(node, ast.DoStmt):
+        schema, table, dropped = do_drop_columns(node)
+        key = f'{schema}.{table}'
+        if key not in state:
+            raise ValueError(f'Catalog-guarded DROP COLUMN without established baseline: {key}')
+        for name in dropped:
+            if name in [identifier_name(c) for c in state[key].get('distributed', {}).get('columns', [])]:
+                raise ValueError('Dropping a Greenplum distribution column requires unsupported redistribution analysis')
+            # The runtime DO drops the column only when it exists; absent names
+            # are an idempotent no-op, not a reconstruction error.
+            for column in [c for c in state[key]['columns'] if c['name'] == name]:
+                state[key]['columns'].remove(column)
+    elif isinstance(node, (ast.TruncateStmt, ast.UpdateStmt)):
+        pass  # Data-only statement: no effect on the reconstructed column state.
     elif isinstance(node, ast.CommentStmt):
         if node.objtype.name=='OBJECT_COLUMN':
             parts=[p.sval for p in node.object]
@@ -115,6 +382,11 @@ def gp_table_attributes(raw, constructs, parse_text):
     if distributed:
         value['distributed'] = distributed
     storage = storage_parameters_of(raw.stmt)
+    lexical = storage_options_in_bytes(constructs, start, stop)
+    if lexical:
+        # GP-only bare values (masked in the parse view) win over the flag/None
+        # left for the PostgreSQL option list.
+        storage = {**(storage or {}), **lexical}
     if storage:
         value['storage_parameters'] = storage
     if value:
@@ -188,7 +460,21 @@ def catalog(files, root, dialect='postgres'):
             # instead of an uncaught crash of the whole extraction run.
             note(f'{ref["path"]}: DDL parse failed: {exc}')
             continue
-        for raw in statements:
+        def _created_key(statement):
+            node = statement.stmt
+            if isinstance(node, ast.CreateStmt):
+                return relation(node.relation)
+            if isinstance(node, ast.ViewStmt):
+                return relation(node.view)
+            if isinstance(node, ast.CreateTableAsStmt):
+                return relation(node.into.rel)
+            return None
+        recreated = {}
+        for index, statement in enumerate(statements):
+            key = _created_key(statement)
+            if key:
+                recreated.setdefault(key, []).append(index)
+        for statement_index, raw in enumerate(statements):
             node = raw.stmt
             if isinstance(node, ast.CreateStmt):
                 key = relation(node.relation)
@@ -220,7 +506,15 @@ def catalog(files, root, dialect='postgres'):
                     apply_statement(result, node)
                 except ValueError as exc:
                     note(str(exc))
-            elif isinstance(node, (ast.AlterTableStmt,ast.RenameStmt,ast.DropStmt)):
+            elif isinstance(node, ast.DropStmt):
+                # Idempotent recreate template: DROP IF EXISTS is accepted only
+                # when the same file re-creates every dropped relation later.
+                targets = ['.'.join(p.sval for p in parts) for parts in node.objects or ()]
+                if node.missing_ok and targets and all(
+                        any(i > statement_index for i in recreated.get(t, ())) for t in targets):
+                    continue
+                note(f'Unordered migration DDL in {ref["path"]}; provide migration manifest')
+            elif isinstance(node, (ast.AlterTableStmt,ast.RenameStmt,ast.DoStmt)):
                 note(f'Unordered migration DDL in {ref["path"]}; provide migration manifest')
     return dict(tables=result, functions=functions, inputs=inputs, errors=errors, coverage_notes=notes)
 
@@ -266,6 +560,17 @@ def enrich_inventory(inventory, *, context_files=(), project_root=None, migratio
         if effects: item['details']['confirmed_call_effects'] = effects
     for ref in context['inputs'] + (migrations['inputs'] if migrations else []):
         if ref not in inventory['inputs']: inventory['inputs'].append(ref)
+    known = dict(context['tables'])
+    if migrations and migrations['status'] == 'resolved':
+        known.update(migrations.get('tables') or {})
+    for item in inventory['items']:
+        details = item.get('details', {})
+        if item['kind'] == 'CREATE' and details.get('columns'):
+            key = details.get('reference') or details.get('table_name')
+            if key:
+                known[key] = dict(columns=details['columns'])
+    from sql_types import expand_wildcard_outputs
+    expand_wildcard_outputs(inventory, known)
     return inventory
 
 

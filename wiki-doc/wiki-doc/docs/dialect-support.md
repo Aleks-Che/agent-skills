@@ -1,6 +1,6 @@
 # Матрица поддержки диалектов
 
-Дата проверки: 2026-09-23 (Q-03 и повторное ревью). Матрица описывает статический анализ закреплённым
+Дата проверки: 2026-09-24 (повторное ревью Q-04; DDL-приёмка Q-04 не завершена). Матрица описывает статический анализ закреплённым
 `pglast==7.14` (libpg_query) и подтверждённые тестами границы пакета.
 SQL в СУБД не выполнялся. Прохождение разбора не подтверждает совместимость
 с любой версией PostgreSQL или полноту семантического анализа.
@@ -27,7 +27,7 @@ SQL в СУБД не выполнялся. Прохождение разбора
 
 ### 2.1 PostgreSQL: проверенный поднабор
 
-В таблице 25 групп конструкций. «Поднабор» означает только перечисленный результат
+«Поднабор» означает только перечисленный результат
 на указанных сценариях. Во всех строках, кроме MERGE, проверки выполнены с
 метаданными `version='15'`; пример 11 использует `unknown`. Это не матрица запусков
 на серверах разных версий.
@@ -35,7 +35,8 @@ SQL в СУБД не выполнялся. Прохождение разбора
 Обозначения тестов: **D** — [test_dialect_matrix.py](../tests/test_dialect_matrix.py),
 **A** — [test_sql_ast.py](../tests/test_sql_ast.py),
 **E** — [test_p2_03_acceptance.py](../tests/test_p2_03_acceptance.py),
-**M** — [test_p2_03_model_extensions.py](../tests/test_p2_03_model_extensions.py).
+**M** — [test_p2_03_model_extensions.py](../tests/test_p2_03_model_extensions.py),
+**Q4** — [test_q04_review.py](../tests/test_q04_review.py).
 Номера примеров соответствуют [cases.json](../examples/cases.json).
 
 | Конструкция | Поддержка | Автоматический сценарий | Проверенный результат / граница |
@@ -53,7 +54,9 @@ SQL в СУБД не выполнялся. Прохождение разбора
 | VIEW | Поднабор | 09; A `test_temp_ctas_and_view_cte_output` | Выходные имена/выражения и источники |
 | MATERIALIZED VIEW | Поднабор | D `test_materialized_view_outputs_and_dependencies` | Отдельный kind, выходные колонки, источник; REFRESH не заявлен |
 | CTAS | Поднабор | 10; A `test_ctas_select_result_reaches_created_table` | Создание цели и связь результата SELECT |
-| PL/pgSQL IF/ELSE | Поднабор | 05; A `test_if_and_assignment_not_lost` | Условие и ветви |
+| PL/pgSQL IF/ELSIF/ELSE | Поднабор | 05; Q4 `BranchReviewTests` | Guards с TRUE/FALSE/NULL, порядок ELSIF, вложенные ветки, DDL/CALL/EXECUTE |
+| GET [STACKED] DIAGNOSTICS | Поднабор | Q4 `DiagnosticsReviewTests` | ASSIGN на каждую цель, вид значения и stacked |
+| RAISE | Поднабор | Q4 `RaiseReviewTests`, `GateReviewTests` | Шесть уровней, SQLSTATE/USING/rethrow, зависимости, формулы; мутации отклоняются полным gate |
 | PL/pgSQL ASSIGN/INTO | Поднабор | 05; A `test_cte_result_and_into_assignment_lineage` | Цели присваивания и выражения |
 | PL/pgSQL RETURN | Поднабор | 01, 04, 11; D `test_all_examples_parse_cleanly` | Видимые RETURN; произвольные варианты PL/pgSQL не заявлены |
 | EXECUTE constant | Поднабор | D `test_constant_execute_retains_template_and_source` | Шаблон, тип команды, статический источник; полный анализ writes/выражений команды не заявлен |
@@ -65,6 +68,8 @@ SQL в СУБД не выполнялся. Прохождение разбора
 | GRANT / REVOKE | Явные relations | 12; M `GrantRevokeExtractionTests`; E `test_public_and_grant_option_are_not_roles` | Привилегии, колонки, роли, grant option; schema/routines/ALL IN SCHEMA блокируются |
 | COMMENT ON | Каталог миграций | D `test_column_comment_in_ordered_migration` | Комментарий колонки в восстановленном состоянии; отдельное обязательство COMMENT для выбранной таблицы не гарантируется |
 | CREATE/ALTER/DROP/RENAME | Каталог таблиц, поднабор | 08; A `MigrationTests` | Состояние по явному manifest, типы/DEFAULT/порядок; остальные действия могут дать `unsupported` |
+| DO (каталог-guarded DROP COLUMN) | Каталог миграций, доказуемый шаблон | Q `CatalogGuardedDoTests`, `DoMigrationTests`; `test_q04_completion_review.py::CatalogProofTests` | Точные квалифицированные связи каталогов, литералы и стражи; изменения выборки/управления, небезопасные имена и удаление GP-колонки распределения — `unsupported` |
+| `SELECT *` / `alias.*` | Раскрытие по установленному DDL | Q `WildcardExpansionTests`; `test_q04_completion_review.py::WildcardProofTests` | Простые источники и JOIN ON/CROSS; USING/NATURAL, JOIN-алиасы, переименования в FROM и неизвестные CTE/derived-проекции сохраняют gap; quoted/output-имена сохраняются |
 
 ### 2.2 Greenplum и профиль CKR_GP
 
@@ -73,7 +78,7 @@ SQL в СУБД не выполнялся. Прохождение разбора
 | `dialect='greenplum'`, общий SQL-поднабор | Статический анализ общим AST; имя диалекта сохраняется | D `test_greenplum_adapter_accepts_bounded_subset` |
 | `EXECUTE ON MASTER / ANY / ALL SEGMENTS` | Атрибут CREATE FUNCTION в позиции опции; не dynamic EXECUTE | [test_q03_greenplum.py](../tests/test_q03_greenplum.py), [test_q03_review.py](../tests/test_q03_review.py) |
 | `CREATE TABLE` / CTAS, `DISTRIBUTED BY (колонки) / RANDOMLY / REPLICATED` | Распределение в inventory, facts, каталоге и claims; BY ограничен простыми идентификаторами без opclass | Те же тесты; q05 с GP-контекстом проходит полный gate |
-| `WITH (...)` перед `DISTRIBUTED` | Имена и значения storage parameters сохраняются; повтор имени блокируется | Те же тесты, включая CTAS и реконструкцию миграций |
+| `WITH (...)` перед `DISTRIBUTED` | Имена и значения storage parameters сохраняются, включая GP-only литерал `orientation = ROW`; повтор имени блокируется | Те же тесты, включая CTAS и реконструкцию миграций; Q `GreenplumStorageValueTests` |
 | GP-синтаксис при `dialect='postgres'` | Прежняя блокировка разбора | D `test_greenplum_specific_syntax_blocks_postgres_analysis` |
 | GP MERGE, неизвестные расширения и неподдержанные позиции клауз | Пробел анализа; неизвестный текст не удаляется | `test_q03_review.py`, `test_unknown_gp_extension_stays_blocked_with_localized_reason` |
 | Профиль CKR_GP, SQL примера 11, `postgres/unknown` | Разбирается; профиль проверяет правила доступа | 11; D `test_case_11_unknown_version` |
@@ -146,11 +151,12 @@ D `test_all_examples_parse_cleanly` проверяет наличие объяв
 | Версии PostgreSQL кроме условия MERGE >= 15 | Нет общей таблицы минимальных версий; серверные испытания не проводились |
 | Новые варианты MERGE | Принимаемый pglast синтаксис не означает поддержку всех вариантов в объявленной версии |
 | Рекурсивный CTE lineage | Блокирующая диагностика; A `test_recursive_cte_keeps_gap` |
-| Циклы/exception handlers PL/pgSQL | Неподдержанный control flow оставляет coverage_note; цикл проверен A `test_unknown_plpgsql_keeps_gap` |
+| Циклы/exception handlers PL/pgSQL | Циклы остаются неподдержанными; тела обработчиков обходятся, но момент перехода в EXCEPTION остаётся blocking gap; Q4 `test_exception_context_reaches_ddl_and_calls` |
 | ADD CONSTRAINT USING INDEX | Блокируется до разрешения колонок индекса; E `test_using_index_does_not_invent_primary_key_column_properties` |
 | GRANT на schema/routines/ALL IN SCHEMA | Блокируется; E `test_unsupported_access_targets_remain_analysis_gaps` |
 | Неоднозначные имена/search_path | Не разрешаются по догадке; неизвестный unqualified call проверен A `test_unresolved_call_not_assumed_builtin` |
-| Wildcard-выходы без развёртки | Пробел анализа; полная DDL-развёртка не заявлена |
+| Oracle-совместимые `last_day`/`add_months` | Именованные контракты (семантика Oracle SQL Reference); доступность на целевом сервере — явный unknown, не готовность страницы | Q `ExternalFunctionContractTests` |
+| Wildcard-выходы без установленной структуры источника | Пробел анализа; развёртка заявлена только по подтверждённым колонкам DDL/manifest, без угадывания |
 | EXECUTE | Поддержаны константа/format с одним разбираемым шаблоном; полный анализ команды и произвольных выражений не заявлен |
 | Runtime-имена и параметры | Обоснованный unknown может пройти; A `test_dynamic_static_source_but_unknown_target` |
 | Произвольные перегрузки, системные каталоги и runtime-эффекты | Полная семантика и проверка типов без БД не подтверждены |

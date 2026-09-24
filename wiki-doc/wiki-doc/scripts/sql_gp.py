@@ -32,6 +32,11 @@ EXECUTE_TARGETS = ('MASTER', 'ANY', 'ALL SEGMENTS')
 
 _DISTRIBUTED_RE = re.compile(r'(?<![\w$])DISTRIBUTED(?![\w$])', re.I)
 _EXECUTE_ON_RE = re.compile(r'(?<![\w$])EXECUTE\s+ON\s+([^\W\d][\w$]*)(?![\w$])', re.I)
+# GP storage values that the PostgreSQL def_arg grammar rejects as bare tokens
+# (ROW is a reserved keyword). Recognized so the parse view stays valid while
+# the original spelling is preserved in the recorded option value.
+_GP_STORAGE_VALUE_RE = re.compile(r'(\borientation)(\s*=\s*)(ROW)(?![\w$])', re.I)
+_WITH_LIST_RE = re.compile(r'(?<![\w$])WITH\s*\(', re.I)
 
 
 def is_greenplum(dialect):
@@ -69,6 +74,14 @@ def identifier_name(part):
     return part[1:-1].replace('""', '"') if part.startswith('"') else part.lower()
 
 
+def _pg_parseable(fragment):
+    """Quote GP-only bare storage values so PostgreSQL can parse a proof fragment.
+
+    Length may change: fragments are syntax proofs, never evidence bytes.
+    """
+    return _GP_STORAGE_VALUE_RE.sub(lambda m: f"{m.group(1)}{m.group(2)}'{m.group(3).lower()}'", fragment)
+
+
 def mask_greenplum(text):
     """Normalize only complete, owned GP clauses; keep every rejected byte.
 
@@ -89,6 +102,17 @@ def mask_greenplum(text):
                                byte_end=_byte_offset(text, end),
                                start_line=_line_of(text, position),
                                end_line=_line_of(text, end - 1), **attributes))
+
+    for with_match in _WITH_LIST_RE.finditer(code):
+        open_paren = with_match.end() - 1
+        try:
+            close_paren = matching_paren(code, open_paren)
+        except ValueError:
+            continue
+        for match in _GP_STORAGE_VALUE_RE.finditer(code, open_paren + 1, close_paren):
+            start, end = match.start(2), match.end(3)
+            accept('STORAGE_OPTION', start, end,
+                   name=match.group(1).lower(), value=match.group(3).lower())
 
     for match in _EXECUTE_ON_RE.finditer(code):
         position = match.start()
@@ -147,7 +171,7 @@ def mask_greenplum(text):
             if code[end:stop].strip():
                 raise ValueError('distribution must follow storage/options and end the declaration')
             from pglast import ast, parse_sql
-            parsed = parse_sql(text[start:position])
+            parsed = parse_sql(_pg_parseable(text[start:position]))
             if len(parsed) != 1 or not isinstance(parsed[0].stmt, (ast.CreateStmt, ast.CreateTableAsStmt)):
                 raise ValueError('requires CREATE TABLE or CTAS')
             node = parsed[0].stmt
@@ -206,6 +230,17 @@ def distributed_in_bytes(constructs, byte_start, byte_end):
     values = [c for c in attributes_in_bytes(constructs, byte_start, byte_end)
               if c['kind'] == 'DISTRIBUTED']
     return _distributed_record(values[0]) if values else None
+
+
+def storage_options_in_bytes(constructs, byte_start, byte_end):
+    """Storage options recorded lexically (GP-only bare values)."""
+    values = {}
+    for c in attributes_in_bytes(constructs, byte_start, byte_end):
+        if c['kind'] == 'STORAGE_OPTION':
+            if c['name'] in values:
+                raise ValueError(f'Duplicate Greenplum storage parameter: {c["name"]}')
+            values[c['name']] = c['value']
+    return values or None
 
 
 def _option_value(arg):

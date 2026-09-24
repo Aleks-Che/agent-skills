@@ -260,7 +260,7 @@ def derive_inventory_checks(policy, inventory_items, object_key=''):
     import hashlib
     checks = []
     operation_kinds = {'SELECT','INSERT','UPDATE','DELETE','MERGE','DDL','PERFORM','CALL','EXECUTE','RETURN','OTHER','CTE','TEMP_TABLE',
-                       'CREATE','CTAS','ALTER','DROP','COMMENT','TRUNCATE','IF','ASSIGN'}
+                       'CREATE','CTAS','ALTER','DROP','COMMENT','TRUNCATE','IF','ASSIGN','RAISE'}
     # Constructs that carry their own obligation rule instead of the generic operation rule.
     kind_rules = {'TRIGGER': 'trigger', 'INDEX': 'index',
                   'GRANT': 'access_rule', 'REVOKE': 'access_rule'}

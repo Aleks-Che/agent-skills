@@ -68,6 +68,9 @@ CTE и алиас не являются самостоятельными физ�
 
 Передай найденный DDL через `--context`, порядок миграций через `--migration-manifest`
 в экстрактор и bundle. Матрица AST-разбора и типов: [sql-support.md](references/sql-support.md).
+Сохраняй guards веток, присваивания GET DIAGNOSTICS и детали RAISE из inventory;
+контракт полей — [facts.md](references/facts.md). Приёмочные счётчики большого SQL
+не заменяют проверку DDL, выражений и оставшихся analysis_gap.
 Поддержка диалектов и версионные ограничения: [dialect-support.md](docs/dialect-support.md).
 Для GP передавай `--dialect greenplum` и подтверждённую версию либо `unknown`.
 Адаптер сохраняет EXECUTE ON, DISTRIBUTED и storage parameters;

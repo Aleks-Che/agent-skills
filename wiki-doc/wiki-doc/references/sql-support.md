@@ -22,7 +22,10 @@
 | MERGE, PostgreSQL ≥15 | USING как источник; условие сопоставления и отдельные ветви с назначениями; проверка версии действует и для MERGE в разбираемом EXECUTE |
 | CTE / TEMP | Идентификатор с областью, локальная зависимость, определение, порядок, ON COMMIT |
 | VIEW / MATERIALIZED VIEW / CTAS | Выходные имена и выражения; CTAS создаёт и заполняет цель |
-| PL/pgSQL IF / ELSE / ASSIGN / INTO / RETURN | Условие, ветка, цель присваивания, переменные INTO, возвращаемое выражение |
+| PL/pgSQL IF / ELSIF / ELSE / ASSIGN / INTO / RETURN | Цепочка guards и путь ветки; ELSIF/ELSE учитывают FALSE и NULL предыдущих условий; цели присваивания, INTO, RETURN |
+| GET [STACKED] DIAGNOSTICS | Отдельный ASSIGN на каждую цель с видом диагностического значения и признаком stacked |
+| RAISE | Уровень, сообщение, аргументы, условие/SQLSTATE, USING, повторное возбуждение; reads/calls и обязательства выражений |
+| EXCEPTION | Операции всех обработчиков и их условия; неизвестный момент перехода в обработчик остаётся blocking gap |
 | EXECUTE constant / format | Шаблон, аргументы, тип команды и статически видимые источники; runtime-имена неизвестны |
 | TRIGGER | Имя, таблица, timing (BEFORE/AFTER/INSTEAD OF), события, FOR EACH ROW, вызываемая функция |
 | INDEX | Имя, таблица, UNIQUE/PRIMARY, access method, колонки/выражения, частичный WHERE |
@@ -50,15 +53,46 @@ GRANT/REVOKE и ALTER ADD CONSTRAINT не сворачиваются в одну
 порядок операторов этого файла. ALTER из другого файла по-прежнему требует manifest.
 
 `sql_types.py` разделяет тип назначения и выражения. Доказательства — CREATE/упорядоченный
-DDL, явный cast, узкий каталог встроенных выражений (`now`, `count`, `to_date`) и
-однозначные ссылки на колонки/параметры. `expression_status` различает `known`, `unknown`
+DDL, явный cast, каталог выражений (`now`, `count`, `to_date`), документированные
+контракты Oracle-совместимых функций (`last_day`, `add_months` — семантика по
+Oracle SQL Reference, доступность на сервере не подтверждается и фиксируется
+как unknown) и однозначные ссылки на колонки/параметры. Именованные контракты
+[LAST_DAY](https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/LAST_DAY.html)
+и [ADD_MONTHS](https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/ADD_MONTHS.html)
+возвращают `DATE` независимо от типа аргумента; проверяется число аргументов
+(1 и 2 соответственно). Это контракт Oracle, не проверка конкретной перегрузки
+на PostgreSQL/Greenplum. `expression_status` различает `known`, `unknown`
 и `not_applicable`. Нельзя заменить доступный тип назначения на null или тип выражения.
 Произвольные перегрузки операторов/функций и полная проверка типов требуют БД и не заявлены.
+Позиционный INSERT с явным списком выражений SELECT сопоставляется с колонками
+цели по установленному DDL/manifest. При неизвестной схеме порядок не угадывается.
+`SELECT *` и `alias.*` раскрываются по установленным колонкам DDL/manifest для
+простых источников и JOIN ON/CROSS. Сохраняются quoted identifiers и имена выходов,
+заданные объявлением VIEW/CTAS. JOIN USING/NATURAL, алиас JOIN, переименование
+колонок в FROM и неустановленная структура CTE/подзапроса сохраняют блокирующий
+wildcard-gap; их нельзя считать конкатенацией колонок таблиц. Каталог-зависимый
+DROP/ADD поддержан только доказуемым шаблоном DO по pg_attribute (литеральные
+schema/table/columns, стражи `attnum > 0` и `NOT attisdropped`, единственная
+динамическая команда `ALTER TABLE … DROP COLUMN …`) в порядке manifest. Проверяются
+квалифицированные связи каталогов, исходные имена проекций, положительное IN и
+точный нулевой порог attnum. LIMIT/OFFSET, дополнительные фильтры/выражения,
+ранний RETURN, инициализаторы и небезопасная конкатенация имён не поддержаны.
+Удаление GP-колонки распределения блокируется так же, как прямой ALTER DROP.
+Иные DO-программы остаются unsupported с локальной причиной. Шаблон `DROP TABLE IF EXISTS`
+с последующим CREATE той же таблицы в одном файле принимается статическим контекстом;
+прочий DROP/ALTER без manifest блокируется.
 
-Циклы/exception handlers PL/pgSQL, рекурсивный lineage CTE, wildcard-выходы без развёртки,
+Циклы и анализ перехода в exception handlers PL/pgSQL, рекурсивный lineage CTE, wildcard-выходы объявлений без развёртки,
 неподдержанные AST-узлы, неизвестный search_path и неразобранная динамика создают
 `coverage_notes` и блокируют gate. Полная поддержка PostgreSQL/Greenplum не заявлена.
 Префикс CKR_GP не устанавливает версию Greenplum. Матрица расширяется только с тестами.
+
+Q-04: guards распространяются на DML, DDL, CALL, EXECUTE, CTE и RETURN.
+Положительный guard означает вход при TRUE; `(условие) IS NOT TRUE` — переход
+к следующей ветке при FALSE или NULL. Сохраняются ORDER BY/LIMIT/OFFSET и
+производные алиасы. Новые поля сверяются полным gate; старый комплект нужно
+пересобрать, если изменился инвентарь или хеш runtime. Совпадение чисел DML
+не подтверждает полноту DDL и не снимает analysis_gap.
 
 Q-03: при явном `greenplum` внешний CREATE FUNCTION поддерживает атрибут
 `EXECUTE ON MASTER / ANY / ALL SEGMENTS`; CREATE TABLE/CTAS — `DISTRIBUTED

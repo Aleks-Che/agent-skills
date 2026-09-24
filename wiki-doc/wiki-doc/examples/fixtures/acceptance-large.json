@@ -57,5 +57,59 @@
   "expected_gate": {
     "publication_authorized": false,
     "reason": "lint returns legacy_unverified and publication_authorized=false until the full cycle is proven"
+  },
+  "acceptance_identities": {
+    "provenance": "Independent review wiki-doc-onboarding-2026-09-23-evidence.json; not derived from the extractor.",
+    "evidence_sha256": "50bb3781dc276fe7c10af5187ab9c2e0b2c6e138ff69701ac45b4815a87cc6fa",
+    "normalization": "SHA-256 of UTF-8 json.dumps(sorted(rows), ensure_ascii=True, separators=(comma, colon)). Operations: [kind, fully qualified target, start_line]; sources: names; KPI: [name, structure as string].",
+    "operations_sha256": "0462de9dc7f7a3dbb0a4ae2aa34cd7aa5312b816633f0c61c81d84b5973cc472",
+    "physical_sources_sha256": "c26936d9582d7f416fbe96d03787f10ff47bee5d30422a21ae8be82772d402bb",
+    "kpi_pairs_sha256": "678aa48b136f7b184aea92fcf3b46e7c734ebd90589279cdc58a57366f817bfe"
+  },
+  "ddl_acceptance": {
+    "scope": "Explicit acceptance sequence for the reviewed final column state; not evidence of production deployment order.",
+    "provenance": "Q-04 completion review 2026-09-24; preserves the previous acceptance sequence, pins all bytes and removes runtime filename sorting. Four baseline files create ten tables; six ALTER files follow.",
+    "ordered_inputs": [
+      {
+        "path": "gp/gp/all/u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader/04s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core/02table/001create_table/ckr_uup_db_onboarding_main.sql",
+        "sha256": "a19f2d1236c90870d4c7ce511ef175ccb51206ed795301845dc789a4ac0feafd"
+      },
+      {
+        "path": "gp/gp/all/u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader/04s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core/02table/001create_table/ckr_uup_db_onboarding_meet_tasks.sql",
+        "sha256": "5bcf3af45c1497f64e16e315d5aa7a1eda0d3df9f37fadf57632b4393c65e79b"
+      },
+      {
+        "path": "gp/gp/all/u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader/04s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core/02table/001create_table/ckr_uup_db_onboarding_new_clients.sql",
+        "sha256": "eed5dfcbbcf3a2668560b012d29300da035bbfaaecf1396ad6ad802214dde215"
+      },
+      {
+        "path": "gp/gp/all/u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader/04s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core/02table/001create_table/ckr_uup_db_onboarding_new_clients_tmp.sql",
+        "sha256": "1505de3432c1116075e684efacdd92d3d697fdbc4e27186897dfd65f638a5f0b"
+      },
+      {
+        "path": "gp/gp/all/u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader/04s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core/02table/002alter_table/ckr_uup_db_onboarding_main_product.sql",
+        "sha256": "a27685a04e9e3ee202b46adad2142cf9e15ae00d87c11ab6b5c0acbc34a73c72"
+      },
+      {
+        "path": "gp/gp/all/u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader/04s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core/02table/002alter_table/ckr_uup_db_onboarding_meet_tasks_fact_start_date.sql",
+        "sha256": "15308269cf37d8a147fe68244a7c79e0e3fd69a4f79370991b64422ff3254271"
+      },
+      {
+        "path": "gp/gp/all/u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader/04s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core/02table/002alter_table/ckr_uup_db_onboarding_meet_tasks_product.sql",
+        "sha256": "12535d16d46cf3e4f3b3148c6c82a00a114c1c3c946beb7db8aa660a59c3a983"
+      },
+      {
+        "path": "gp/gp/all/u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader/04s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core/02table/002alter_table/ckr_uup_db_onboarding_meet_tasks_was_in_progress.sql",
+        "sha256": "9145da04671356daf600ddb8037c28ac908c47484014f7a8a980323c24dd569d"
+      },
+      {
+        "path": "gp/gp/all/u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader/04s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core/02table/002alter_table/ckr_uup_db_onboarding_new_clients_active_products_90.sql",
+        "sha256": "2de9afacf0a1c1dd10ee3477592376c7b360c26bdc1350aecc53e8ce31ba0e83"
+      },
+      {
+        "path": "gp/gp/all/u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader/04s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core/02table/002alter_table/ckr_uup_db_onboarding_new_clients_active_rko_zp_eqv.sql",
+        "sha256": "ba86d0e0b12916701e873d0caf0d1ae44db74bab72ac7832613a9eff40017e0a"
+      }
+    ]
   }
 }

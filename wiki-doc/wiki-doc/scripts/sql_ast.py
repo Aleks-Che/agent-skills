@@ -10,7 +10,7 @@ from pathlib import PurePosixPath
 from artifact_schema import ArtifactInputError
 from identity import ObjectDescriptor, canonical_key, _parse_arg_types
 from sql_gp import (distributed_in_bytes, execute_on_in_bytes, is_greenplum, prepare as gp_prepare,
-                    storage_parameters_of, statement_byte_span)
+storage_parameters_of, storage_options_in_bytes, statement_byte_span)
 from sql_syntax import mask_sql, SubjectSelectionError
 
 try:
@@ -58,6 +58,46 @@ def relation(node):
     return (node.schemaname + '.' if node.schemaname else '') + node.relname
 
 
+def from_relations(node):
+    """Return (alias, relation) star-expansion sources of a query, or None if any
+    FROM item is not a plain relation (subquery, function, VALUES, nested join of
+    those). Only plain ON/CROSS joins preserve a simple concatenation of
+    columns; USING/NATURAL joins and aliases that rename columns need their
+    own projection model and remain unresolved."""
+    if getattr(node, 'withClause', None):
+        return None
+    result = []
+    def visit(item):
+        if isinstance(item, ast.RangeVar):
+            if item.alias and item.alias.colnames:
+                result.append(None)
+            else:
+                result.append([item.alias.aliasname if item.alias else None, relation(item)])
+        elif isinstance(item, ast.JoinExpr):
+            if item.isNatural or item.usingClause or item.alias:
+                result.append(None)
+            else:
+                visit(item.larg)
+                visit(item.rarg)
+        else:
+            result.append(None)
+    for item in getattr(node, 'fromClause', None) or ():
+        visit(item)
+    if not result or any(entry is None for entry in result):
+        return None
+    return result
+
+
+def star_targets(target_list):
+    """Return indexes of SELECT-list entries that are * or alias.* wildcards."""
+    indexes = []
+    for index, target in enumerate(target_list or ()):
+        value = getattr(target, 'val', None)
+        if isinstance(value, ast.ColumnRef) and isinstance(value.fields[-1], ast.A_Star):
+            indexes.append(index)
+    return indexes
+
+
 def type_name(node):
     return sql(node) if node else None
 
@@ -71,8 +111,56 @@ def source_statement(raw, text):
     return snippet[leading:], data[:start].decode('utf-8').count('\n') + 1 + snippet[:leading].count('\n')
 
 
-BUILTINS = frozenset('sum avg count min max now coalesce nullif greatest least round abs lower upper trim substring extract date_trunc to_char to_date row_number rank dense_rank lag lead format concat concat_ws length current_date timezone generate_series'.split())
+BUILTINS = frozenset('sum avg count min max now coalesce nullif greatest least round abs lower upper trim substring extract date_trunc to_char to_date row_number rank dense_rank lag lead format concat concat_ws length current_date timezone generate_series trunc to_number xmlagg make_interval'.split())
 QUERY_TYPES = ('SelectStmt', 'InsertStmt', 'UpdateStmt', 'DeleteStmt', 'MergeStmt')
+WILDCARD_NOTE = 'Wildcard output columns require DDL expansion'
+# Oracle-compatibility date functions used by the control projects (orafce on
+# Greenplum, Oracle SQL semantics). Contracts are cited, not invented:
+# LAST_DAY(d) -> DATE, last calendar day of the month containing d;
+# ADD_MONTHS(d, n) -> DATE, d plus n months with month-end
+# adjustment. Availability of the extension on the target server is NOT
+# established here; callers record that as an explicit unknown.
+EXTERNAL_FUNCTION_CONTRACTS = {
+    'last_day': dict(return_type='date', arity=1,
+                     summary='Last calendar day of the month containing the argument',
+                     semantics_source='oracle_sql_reference'),
+    'add_months': dict(return_type='date', arity=2,
+                       summary='Argument date plus n months with month-end adjustment; Oracle contract returns DATE',
+                       semantics_source='oracle_sql_reference'),
+}
+EXTERNAL_FUNCTION_NOTE = ('Oracle-compatibility function {name}: semantics per {source}; '
+                          'availability on the target server is not verified')
+# Values emitted by the pinned pglast/libpg_query parser (not server severity codes).
+RAISE_LEVELS = {14: 'DEBUG', 15: 'LOG', 17: 'INFO', 18: 'NOTICE', 19: 'WARNING', 21: 'EXCEPTION'}
+RAISE_OPTIONS = ('ERRCODE', 'MESSAGE', 'DETAIL', 'HINT', 'COLUMN', 'CONSTRAINT', 'DATATYPE', 'TABLE', 'SCHEMA')
+
+
+def _assignment_parts(query):
+    masked = mask_sql(query)[0]
+    depth = 0
+    for index, char in enumerate(masked):
+        if char in '([':
+            depth += 1
+        elif char in ')]':
+            depth -= 1
+        elif char == '=' and depth == 0:
+            end = index - 1 if index and masked[index - 1] == ':' else index
+            return query[:end].strip(), query[index + 1:].strip()
+    raise ValueError('Unresolved PL/pgSQL assignment boundary')
+
+
+def _datum_name(datums, index):
+    if not datums or index is None or not isinstance(index, int):
+        return None
+    if index < 0 or index >= len(datums):
+        return None
+    for value in datums[index].values():
+        return value.get('refname')
+    return None
+
+
+def _guard_details(guards):
+    return {'guards': list(guards)} if guards else {}
 
 
 def columns_of(node):
@@ -129,6 +217,7 @@ class Analyzer:
         self.scope = path
         self.query_number = 0
         self.cte_nodes = {}
+        self.external_calls = set()
 
     def cte_reference(self, node):
         if id(node) not in self.cte_nodes:
@@ -181,6 +270,11 @@ class Analyzer:
                 parts = names(n.funcname)
                 if len(parts) > 1:
                     calls.append('.'.join(parts))
+                elif parts and parts[0] in EXTERNAL_FUNCTION_CONTRACTS:
+                    if len(n.args or ()) == EXTERNAL_FUNCTION_CONTRACTS[parts[0]]['arity']:
+                        self.external_calls.add(parts[0])
+                    else:
+                        self.note(line, f'Unsupported arity for Oracle-compatibility function: {parts[0]}')
                 elif parts and parts[0] not in BUILTINS:
                     self.note(line, f'Unresolved unqualified call: {parts[0]}')
             for child in children(n):
@@ -189,7 +283,7 @@ class Analyzer:
         visit(node, env)
         return list(dict.fromkeys(reads)), list(dict.fromkeys(calls))
 
-    def analyze_query(self, node, raw, line, forced_kind=None, env=None, branch=None):
+    def analyze_query(self, node, raw, line, forced_kind=None, env=None, branch=None, guard=()):
         env = dict(env or {})
         self.query_number += 1
         statement_no = self.query_number
@@ -200,20 +294,21 @@ class Analyzer:
             for cte in with_.ctes:
                 local = self.cte_reference(cte)
                 self.item('CTE', line, name=cte.ctename, reference=local, physical=False,
-                          lifetime='statement', columns=[n.sval for n in cte.aliascolnames or ()],query=sql(cte.ctequery))
-                result=self.analyze_query(cte.ctequery, sql(cte.ctequery), line, env=env, branch=branch)
+                          lifetime='statement', columns=[n.sval for n in cte.aliascolnames or ()],query=sql(cte.ctequery),
+                          **_guard_details(guard))
+                result=self.analyze_query(cte.ctequery, sql(cte.ctequery), line, env=env, branch=branch, guard=guard)
                 if result: result['details']['result_for']=local
                 env[cte.ctename] = local
         cls = type(node).__name__
         kind = forced_kind or cls.removesuffix('Stmt').upper()
-        if kind not in ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'PERFORM', 'CALL', 'RETURN', 'ASSIGN', 'IF'):
+        if kind not in ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'PERFORM', 'CALL', 'RETURN', 'ASSIGN', 'IF', 'RAISE'):
             self.note(line, f'Unsupported query AST: {cls}')
             return
         if kind == 'MERGE':
             self.check_merge_version(line)
         target = getattr(node, 'relation', None)
         reads, calls = self.dependencies(node, env, line, exclude=(id(target),) if target else ())
-        formulas, conditions, outputs = [], [], []
+        formulas, conditions, outputs, derived = [], [], [], []
         def direct_walk(n):
             yield n
             for child in children(n):
@@ -221,13 +316,21 @@ class Analyzer:
                     continue
                 yield from direct_walk(child)
         for n in direct_walk(node):
+            if isinstance(n, ast.RangeSubselect) and n.alias and n.alias.aliasname:
+                derived.append(n.alias.aliasname)
             if isinstance(n, ast.ResTarget) and n.val is not None:
                 expression = sql(n.val)
                 if cls == 'SelectStmt' and n in (node.targetList or ()):
                     name = n.name
                     if not name and isinstance(n.val, ast.ColumnRef) and isinstance(n.val.fields[-1], ast.String):
                         name = n.val.fields[-1].sval
-                    outputs.append(dict(name=name, expression=expression))
+                    entry = dict(name=name, expression=expression)
+                    if isinstance(n.val, ast.ColumnRef) and isinstance(n.val.fields[-1], ast.A_Star):
+                        sources = from_relations(node)
+                        if sources is not None:
+                            entry['star_sources'] = [
+                                [alias, env.get(rel, self.temps.get(rel, rel))] for alias, rel in sources]
+                    outputs.append(entry)
                 if not isinstance(n.val, (ast.ColumnRef, ast.A_Const)) or kind in ('UPDATE', 'ASSIGN'):
                     formulas.append(expression)
             for field in ('whereClause', 'havingClause', 'quals', 'joinCondition', 'condition'):
@@ -239,9 +342,16 @@ class Analyzer:
                        has_date_boundary=bool(re.search(r'\b(?:DATE|TIMESTAMP|INTERVAL)\b', raw, re.I)))
         if outputs:
             details['columns'] = outputs
+        if derived:
+            details['derived_aliases'] = list(dict.fromkeys(derived))
         if branch:
             details['branch'] = branch
+        if guard:
+            details['guards'] = list(guard)
         if getattr(node,'groupClause',None): details['group_by']=[sql(n) for n in node.groupClause]
+        if getattr(node,'sortClause',None): details['order_by']=[sql(s) for s in node.sortClause]
+        if getattr(node,'limitCount',None) is not None: details['limit']=sql(node.limitCount)
+        if getattr(node,'limitOffset',None) is not None: details['offset']=sql(node.limitOffset)
         if isinstance(node,ast.UpdateStmt): details['assignments']=[dict(target=t.name,expression=sql(t.val)) for t in node.targetList or ()]
         if isinstance(node,ast.InsertStmt) and node.cols: details['target_columns']=[t.name for t in node.cols]
         if kind=='RETURN': details['return_expression']=raw
@@ -271,13 +381,13 @@ class Analyzer:
         for child in subqueries(node):
             if isinstance(child, ast.SelectStmt) and child.valuesLists and not child.targetList:
                 continue  # VALUES is not a SELECT occurrence in source SQL.
-            self.analyze_query(child, sql(child), line, env=env, branch=branch)
+            self.analyze_query(child, sql(child), line, env=env, branch=branch, guard=guard)
         return item
 
-    def statement(self, node, raw, line, forced_kind=None, branch=None, gp_span=None):
+    def statement(self, node, raw, line, forced_kind=None, branch=None, gp_span=None, guard=()):
         cls = type(node).__name__
         if cls in QUERY_TYPES:
-            return self.analyze_query(node, raw, line, forced_kind, branch=branch)
+            return self.analyze_query(node, raw, line, forced_kind, branch=branch, guard=guard)
         elif isinstance(node, ast.CreateStmt):
             name = relation(node.relation)
             temporary = node.relation.relpersistence == 't'
@@ -294,6 +404,9 @@ class Analyzer:
                     extension['distributed'] = distributed
                 try:
                     storage = storage_parameters_of(node)
+                    lexical = storage_options_in_bytes(self.gp_constructs, *gp_span) if gp_span else None
+                    if lexical:
+                        storage = {**(storage or {}), **lexical}
                     if storage:
                         extension['storage_parameters'] = storage
                 except ValueError as exc:
@@ -315,6 +428,9 @@ class Analyzer:
                     extension['distributed'] = distributed
                 try:
                     storage = storage_parameters_of(node.into)
+                    lexical = storage_options_in_bytes(self.gp_constructs, *gp_span) if gp_span else None
+                    if lexical:
+                        storage = {**(storage or {}), **lexical}
                     if storage:
                         extension['storage_parameters'] = storage
                 except ValueError as exc:
@@ -406,19 +522,43 @@ class Analyzer:
         else:
             self.note(line, f'Unsupported executable AST node: {cls}')
 
-    def plpgsql(self, data, body_line, branch=None):
+    def plpgsql(self, data, body_line, branch=None, guard=(), datums=None):
+        # Apply the enclosing control flow to every emitted operation, including
+        # utility statements, CTE records and dynamic commands. Nested branches
+        # already carry a more specific context and must keep it.
+        start = len(self.items)
+        self._plpgsql(data, body_line, branch, guard, datums)
+        for item in self.items[start:]:
+            if branch:
+                item['details'].setdefault('branch', branch)
+            if guard:
+                item['details'].setdefault('guards', list(guard))
+
+    def _plpgsql(self, data, body_line, branch=None, guard=(), datums=None):
         kind, value = next(iter(data.items()))
         line = body_line + value.get('lineno', 1) - 1
         expr = lambda field: value.get(field, {}).get('PLpgSQL_expr', {}).get('query', '')
         if kind == 'PLpgSQL_stmt_block':
-            if value.get('exceptions'):
-                self.note(line, 'PL/pgSQL exception handlers require control-flow analysis')
+            exceptions = value.get('exceptions') or {}
+            block = exceptions.get('PLpgSQL_exception_block', exceptions)
+            if block.get('exc_list'):
+                self.note(line, 'Exception handlers are inventoried as branch ops; runtime failure point is not analysed')
             for entry in value.get('body', []):
-                self.plpgsql(entry, body_line, branch)
+                self.plpgsql(entry, body_line, branch, guard, datums)
+            for handler in (block.get('exc_list') or []):
+                entry = handler.get('PLpgSQL_exception', handler)
+                conditions = []
+                for condition in entry.get('conditions') or []:
+                    condition = condition.get('PLpgSQL_condition', condition)
+                    conditions.append(condition.get('condname') or str(condition.get('sqlerrcode', 'unknown')))
+                label = ('exception:' + ','.join(conditions)) if conditions else 'exception:others'
+                handler_branch = (branch + '/' if branch else '') + label
+                for action in entry.get('action') or []:
+                    self.plpgsql(action, body_line, handler_branch, guard, datums)
         elif kind in ('PLpgSQL_stmt_execsql', 'PLpgSQL_stmt_perform', 'PLpgSQL_stmt_call'):
             query = expr('sqlstmt' if kind.endswith('execsql') else 'expr')
             for raw in parse_sql(query):
-                item=self.statement(raw.stmt, query, line, 'PERFORM' if kind.endswith('perform') else None, branch)
+                item=self.statement(raw.stmt, query, line, 'PERFORM' if kind.endswith('perform') else None, branch, guard=guard)
                 if item and value.get('into'):
                     target=value.get('target',{})
                     row=target.get('PLpgSQL_row',{})
@@ -427,32 +567,83 @@ class Analyzer:
                     else:
                         item['details']['into']=destinations
                         item['details']['assignments']=[dict(target=name,expression=sql(t.val)) for name,t in zip(destinations,getattr(raw.stmt,'targetList',()) or ())]
+        elif kind == 'PLpgSQL_stmt_getdiag':
+            for diagnostic in value.get('diag_items') or []:
+                diagnostic = diagnostic.get('PLpgSQL_diag_item', diagnostic)
+                target = _datum_name(datums, diagnostic.get('target'))
+                if not target:
+                    self.note(line, 'Unresolved PL/pgSQL GET DIAGNOSTICS target')
+                    continue
+                self.item('ASSIGN', line, assignment_target=target,
+                          assignments=[dict(target=target, expression=diagnostic['kind'])],
+                          diagnostic=dict(kind=diagnostic['kind'], stacked=bool(value.get('is_stacked'))),
+                          analysis='postgres_ast')
+        elif kind == 'PLpgSQL_stmt_raise':
+            params = [p.get('PLpgSQL_expr', {}).get('query', '')
+                      for p in value.get('params') or []]
+            options = []
+            for option in value.get('options') or []:
+                option = option.get('PLpgSQL_raise_option', option)
+                index = option.get('opt_type', -1)
+                if not 0 <= index < len(RAISE_OPTIONS):
+                    self.note(line, 'Unsupported PL/pgSQL RAISE option')
+                    continue
+                options.append(dict(name=RAISE_OPTIONS[index],
+                                    expression=option.get('expr', {}).get('PLpgSQL_expr', {}).get('query', '')))
+            expressions = [p for p in params if p] + [o['expression'] for o in options if o['expression']]
+            if expressions:
+                query = 'SELECT ' + ', '.join(expressions)
+                item = self.analyze_query(parse_sql(query)[0].stmt, query, line, 'RAISE', branch=branch, guard=guard)
+                item['details'].pop('columns', None)
+            else:
+                item = self.item('RAISE', line)
+            details = dict(raise_level=RAISE_LEVELS.get(value.get('elog_level'), 'UNKNOWN'),
+                           message=value.get('message'), arguments=[p for p in params if p],
+                           raise_condition=value.get('condname'), raise_options=options,
+                           rethrow=not any(k in value for k in ('message', 'condname', 'params', 'options')),
+                           formulas=list(dict.fromkeys(expressions)), has_formula=bool(expressions),
+                           analysis='postgres_ast', **_guard_details(guard))
+            if details['raise_level'] == 'UNKNOWN':
+                self.note(line, 'Unsupported PL/pgSQL RAISE level')
+            if branch:
+                details['branch'] = branch
+            item['details'].update(details)
         elif kind == 'PLpgSQL_stmt_if':
             condition = expr('cond')
             self.item('IF', line, conditions=[condition], formulas=[], has_condition=True,
-                      branches=['then', 'else'], analysis='postgres_ast')
-            for label in ('then_body', 'else_body'):
-                for entry in value.get(label, []):
-                    self.plpgsql(entry, body_line, (branch + '/' if branch else '') + label)
+                      branches=['then', 'else'], analysis='postgres_ast', **_guard_details(guard))
+            prefix = branch + '/' if branch else ''
+            for entry in value.get('then_body', []):
+                self.plpgsql(entry, body_line, prefix + 'then_body', tuple(guard) + (condition,), datums)
+            # FALSE and NULL both skip a PL/pgSQL condition; NOT alone loses NULL.
+            rejected = tuple(guard) + (f'({condition}) IS NOT TRUE',)
             for index, entry in enumerate(value.get('elsif_list', [])):
-                other = entry.get('PLpgSQL_if_elsif', entry)
+                other = entry.get('PLpgSQL_stmt_elsif', entry.get('PLpgSQL_if_elsif', entry))
+                condition = other['cond']['PLpgSQL_expr']['query']
                 self.item('IF', body_line + other.get('lineno', 1) - 1,
-                          conditions=[other['cond']['PLpgSQL_expr']['query']], has_condition=True)
-                for nested in other.get('stmts', []):
-                    self.plpgsql(nested, body_line, f'elsif:{index}')
+                          conditions=[condition], has_condition=True, analysis='postgres_ast', **_guard_details(rejected))
+                for nested in other.get('stmts', []) or other.get('then_body', []):
+                    self.plpgsql(nested, body_line, prefix + f'elsif:{index}', rejected + (condition,), datums)
+                rejected += (f'({condition}) IS NOT TRUE',)
+            for entry in value.get('else_body', []):
+                self.plpgsql(entry, body_line, prefix + 'else_body', rejected, datums)
         elif kind in ('PLpgSQL_stmt_assign', 'PLpgSQL_stmt_return'):
             query = expr('expr')
             if not query and not value.get('lineno'):
                 return  # Implicit end-of-function return, not a source occurrence.
-            expression = query.split(':=', 1)[-1].strip()
+            if kind.endswith('assign'):
+                assignment_target, expression = _assignment_parts(query)
+            else:
+                expression = query.strip()
             if expression:
                 parsed = parse_sql('SELECT ' + expression)[0].stmt
-                item=self.analyze_query(parsed, query, line, 'ASSIGN' if kind.endswith('assign') else 'RETURN', branch=branch)
+                item=self.analyze_query(parsed, query, line, 'ASSIGN' if kind.endswith('assign') else 'RETURN', branch=branch, guard=guard)
                 if kind.endswith('assign'):
-                    item['details']['assignment_target']=query.split(':=',1)[0].strip()
+                    target = _datum_name(datums, value.get('varno'))
+                    item['details']['assignment_target']=target or assignment_target
                     item['details']['assignments']=[dict(target=item['details']['assignment_target'],expression=expression)]
             else:
-                self.item('RETURN', line, formulas=[], conditions=[])
+                self.item('RETURN', line, formulas=[], conditions=[], **_guard_details(guard))
         elif kind == 'PLpgSQL_stmt_dynexecute':
             query = expr('query')
             parsed = parse_sql('SELECT ' + query)[0].stmt.targetList[0].val
@@ -586,7 +777,7 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
             try:
                 if language == 'plpgsql':
                     function = parse_plpgsql(masked_snippet)[0]['PLpgSQL_function']
-                    engine.plpgsql(function['action'], body_line)
+                    engine.plpgsql(function['action'], body_line, datums=function.get('datums'))
                 elif language == 'sql':
                     for statement in parse_sql(body):
                         statement_text, statement_line = source_statement(statement, body)
@@ -598,6 +789,8 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
         elif isinstance(node, ast.ViewStmt):
             query=engine.analyze_query(node.query, snippet, line)
             outputs = query['details'].get('columns',[]) if query else []
+            if node.aliases and star_targets(node.query.targetList):
+                declaration['details']['output_column_aliases'] = [a.sval for a in node.aliases]
             for index, alias in enumerate(node.aliases or ()):
                 if index < len(outputs): outputs[index]['name'] = alias.sval
             declaration['details']['output_columns'] = outputs
@@ -605,6 +798,8 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
             query=engine.statement(node, snippet, line, gp_span=statement_byte_span(raw, parse_text))
             if isinstance(node, ast.CreateTableAsStmt):
                 declaration['details']['output_columns'] = query['details'].get('columns',[]) if query else []
+                if node.into.colNames and star_targets(node.query.targetList):
+                    declaration['details']['output_column_aliases'] = [a.sval for a in node.into.colNames]
                 for index, alias in enumerate(node.into.colNames or ()):
                     if index < len(declaration['details']['output_columns']): declaration['details']['output_columns'][index]['name'] = alias.sval
         if details['object_kind'] in ('table', 'view', 'materialized_view', 'ctas'):
@@ -645,8 +840,13 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
     if dialect.lower() not in ('postgres', 'postgresql', 'greenplum'):
         engine.note(1, f'Unsupported dialect: {dialect}')
     for item in engine.items:
+        if item['kind'] == 'DECLARATION' and engine.external_calls:
+            item['details']['external_functions'] = sorted(engine.external_calls)
         if any(o.get('expression') == '*' or o.get('expression','').endswith('.*') for o in item['details'].get('output_columns',[])):
-            engine.note(item['source_ref']['start_line'], 'Wildcard output columns require DDL expansion')
+            engine.note(item['source_ref']['start_line'], WILDCARD_NOTE)
+        if any(c.get('expression') == '*' or c.get('expression','').endswith('.*')
+               for c in item['details'].get('columns',[]) if isinstance(c, dict)):
+            engine.note(item['source_ref']['start_line'], WILDCARD_NOTE)
     return dict(schema_version=2, run_id='00000000-0000-0000-0000-000000000000',
                 dialect=dict(name=dialect,version=version), items=engine.items, coverage_notes=engine.notes,
                 inputs=[dict(path=path,sha256=sha)], documented_subjects=[o[4]['canonical_key'] for o in selected])

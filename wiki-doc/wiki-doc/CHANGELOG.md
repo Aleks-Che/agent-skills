@@ -4,6 +4,58 @@ All notable changes to the wiki-doc package are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased] — 2026-09-24
+
+### Added
+
+- **Q-04 partial DDL support**: catalog-guarded DROP COLUMN migration template,
+  `SELECT *` / `alias.*` expansion against established DDL state,
+  positional INSERT with omitted target list resolved against
+  migration manifest, and named contracts for Oracle-compatibility
+  functions (`last_day` / `add_months` → date under the Oracle contract)
+  with honest `unknown` for server availability.
+- **Greenplum storage option masking**: `orientation = ROW` parsed via
+  lexical adapter without forcing pglast to accept a reserved keyword.
+- New tests `tests/test_q04_ddl_star.py` (24 cases) and updated
+  `tests/test_q03_greenplum.py` to cover GP-only bare storage values.
+- Unknown facts for Oracle-compatibility functions emitted from
+  `scripts/build_bundle.py`; availability is not implied.
+
+### Changed
+
+- `scripts/sql_ast.py`: PL/pgSQL guards propagated through DDL/CTAS/CALL/
+  EXECUTE/CTE/RETURN; GET [STACKED] DIAGNOSTICS represented as ASSIGN
+  with diagnostic kind and stacked flag; RAISE fields include level,
+  message, arguments, condition, USING options and rethrow; ELSIF/ELSE
+  guard captures NULL/FALSE via `(prev) IS NOT TRUE`.
+- `scripts/ddl.py`: dynamic DO migration only accepted on the
+  pg_attribute-guarded DROP COLUMN template; conditional DROP resolved
+  against manifest baseline; `DROP VIEW IF EXISTS`, `TRUNCATE`, `UPDATE`
+  accepted as data-only companions.
+- `scripts/sql_types.py`: wildcard outputs expanded in inventory and
+  rewritten in derived targets; positional INSERT mappings use the
+  DDL/manifest column order after DROP/ADD.
+- `references/facts.md`, `references/sql-support.md`,
+  `docs/dialect-support.md` updated with the new fields and the
+  catalog-guarded DO template.
+
+### Fixed
+
+- Completion audit: reject unsound catalog DROP proofs (changed join/guards,
+  NOT IN, LIMIT/OFFSET, early RETURN, initializers and unsafe identifiers),
+  including the bypass of Greenplum distribution-column protection.
+- Preserve wildcard gaps for USING/NATURAL joins and unresolved projections;
+  retain quoted identifiers and apply declared VIEW/CTAS names after expansion.
+- Check Oracle contract arity and correct ADD_MONTHS return type; pin acceptance
+  DDL order and hashes. Add 12 regression tests in `test_q04_completion_review.py`.
+- Reopen Q-04: the large control still has 72 wildcard gaps plus EXCEPTION,
+  including with target DDL. The external acceptance test now verifies those
+  blockers; passing it does not claim complete analysis.
+- `scripts/sql_gp.py` masks `WITH (orientation = ROW)` lexically so
+  PostgreSQL def_arg grammar does not reject the parse view.
+- Wildcard-gap coverage notes are recomputed on expansion; an
+  unexpanded wildcard is the only reason the gap stays open.
+
 ## [1.0.0] — 2026-09-19
 
 ### Added

@@ -1,7 +1,9 @@
 """Conservative column type evidence from declarations, casts and ordered DDL."""
 from pathlib import Path
 from ddl import catalog, reconstruct
-from sql_ast import sql, type_name, relation, walk, require_parser
+from sql_ast import (sql, type_name, relation, walk, require_parser, quote,
+                     from_relations, star_targets, WILDCARD_NOTE,
+                     EXTERNAL_FUNCTION_CONTRACTS)
 from sql_gp import prepare as gp_prepare
 
 
@@ -13,6 +15,9 @@ def infer_expression(expression,tables,variables=None,aliases=None):
     if isinstance(node,ast.TypeCast): return type_name(node.typeName)
     if isinstance(node,ast.FuncCall):
         name='.'.join(p.sval for p in node.funcname)
+        if name in EXTERNAL_FUNCTION_CONTRACTS:
+            contract=EXTERNAL_FUNCTION_CONTRACTS[name]
+            return contract['return_type'] if len(node.args or ()) == contract['arity'] else None
         return {'now':'timestamp with time zone','count':'bigint','to_date':'date'}.get(name)
     if isinstance(node,ast.ColumnRef) and isinstance(node.fields[-1],ast.String):
         name=node.fields[-1].sval
@@ -27,6 +32,151 @@ def infer_expression(expression,tables,variables=None,aliases=None):
         candidates={c['type'] for t in visible.values() for c in t['columns'] if c['name']==name}
         return next(iter(candidates)) if len(candidates)==1 else None
     return None
+
+
+def _identifier(name):
+    from pglast import ast
+    return sql(ast.ColumnRef(fields=(ast.String(sval=name),)))
+
+
+def _column_ref(owner, name):
+    return f'{owner}.{_identifier(name)}' if owner else _identifier(name)
+
+
+def _source_owner(alias, relation_name):
+    if relation_name.startswith('@'):
+        relation_name = relation_name.rsplit(':', 1)[-1]
+    return _identifier(alias) if alias else '.'.join(_identifier(part) for part in relation_name.split('.'))
+
+
+def _star_prefix(expression):
+    """Return the qualifier of `qual.*`, or '' for bare `*`."""
+    return expression[:-2] if expression.endswith('.*') else ''
+
+
+def _match_star_sources(prefix, sources):
+    """Sources covered by a wildcard: all of them for `*`, one for `qual.*`."""
+    if not prefix:
+        return list(sources)
+    matched = []
+    for alias, rel in sources:
+        # An alias hides the physical name. More than one matching relation
+        # is ambiguous, so never choose the first match by iteration order.
+        visible = rel.rsplit(':', 1)[-1] if rel.startswith('@') else rel
+        candidates = ({_identifier(alias)} if alias else
+                      {_source_owner(None, rel), _identifier(visible.rsplit('.', 1)[-1])})
+        if prefix in candidates:
+            matched.append((alias, rel))
+    return matched if len(matched) == 1 else []
+
+
+def expand_wildcard_outputs(inventory, tables):
+    """Expand SELECT * / qual.* outputs against established table columns.
+
+    `tables` maps relation names to {'columns': [{'name':..., 'type':...}, ...]}.
+    Entries whose sources are not fully established stay wildcards. Coverage
+    notes for the wildcard gap are recomputed: only unexpanded items keep them.
+    """
+    unresolved_items = []
+    for item in inventory.get('items', []):
+        details = item.get('details', {})
+        still_wildcard = False
+        for key in ('columns', 'output_columns'):
+            outputs = details.get(key)
+            if not outputs or not any(isinstance(o, dict) and
+                                     (o.get('expression') == '*' or str(o.get('expression', '')).endswith('.*'))
+                                     for o in outputs):
+                continue
+            rebuilt = []
+            for entry in outputs:
+                expression = entry.get('expression') if isinstance(entry, dict) else None
+                if not (expression == '*' or str(expression).endswith('.*')):
+                    rebuilt.append(entry)
+                    continue
+                sources = entry.get('star_sources')
+                if not sources:
+                    rebuilt.append(entry)
+                    still_wildcard = True
+                    continue
+                covered = _match_star_sources(_star_prefix(expression), [tuple(s) for s in sources])
+                expanded = []
+                ok = bool(covered)
+                for alias, rel in covered:
+                    columns = (tables.get(rel) or {}).get('columns')
+                    if not columns:
+                        ok = False
+                        break
+                    owner = _source_owner(alias, rel)
+                    for column in columns:
+                        expanded.append(dict(name=column['name'],
+                                             expression=_column_ref(owner, column['name']),
+                                             expanded_from=expression))
+                if not ok:
+                    rebuilt.append(entry)
+                    still_wildcard = True
+                else:
+                    rebuilt.extend(expanded)
+            details[key] = rebuilt
+            if key == 'output_columns' and not still_wildcard:
+                for output, alias in zip(rebuilt, details.get('output_column_aliases', [])):
+                    output['name'] = alias
+        if still_wildcard:
+            unresolved_items.append(item)
+    if any(note.get('reason') == WILDCARD_NOTE for note in inventory.get('coverage_notes', [])) \
+            or unresolved_items:
+        kept = [n for n in inventory.get('coverage_notes', []) if n.get('reason') != WILDCARD_NOTE]
+        for item in unresolved_items:
+            note = dict(source_ref=item['source_ref'], reason=WILDCARD_NOTE)
+            if note not in kept:
+                kept.append(note)
+        inventory['coverage_notes'] = kept
+    return unresolved_items
+
+
+def expand_star_outputs(select_node, tables):
+    """Expand wildcards in a SELECT target list using established columns.
+
+    Returns a flat [(name, expression)] list, or None when any wildcard source
+    is not established. Target lists without wildcards are returned unchanged.
+    """
+    from pglast import ast
+    outputs = select_node.targetList or ()
+    if not star_targets(outputs):
+        result = []
+        for target in outputs:
+            name = target.name
+            if not name and isinstance(target.val, ast.ColumnRef) and isinstance(target.val.fields[-1], ast.String):
+                name = target.val.fields[-1].sval
+            result.append((name, sql(target.val)))
+        return result
+    sources = from_relations(select_node)
+    if sources is None:
+        return None
+    result = []
+    for target in outputs:
+        value = target.val
+        if isinstance(value, ast.ColumnRef) and isinstance(value.fields[-1], ast.A_Star):
+            expression = sql(value)
+            prefix = ''
+            if len(value.fields) > 1:
+                prefix = '.'.join(_identifier(p.sval) for p in value.fields[:-1]
+                                  if isinstance(p, ast.String))
+            covered = _match_star_sources(prefix, [tuple(s) for s in sources])
+            if not covered:
+                return None
+            for alias, rel in covered:
+                columns = (tables.get(rel) or {}).get('columns')
+                if not columns:
+                    return None
+                owner = _source_owner(alias, rel)
+                for column in columns:
+                    result.append((column['name'], _column_ref(owner, column['name'])))
+        else:
+            name = target.name
+            if not name and isinstance(value, ast.ColumnRef) and isinstance(value.fields[-1], ast.String):
+                name = value.fields[-1].sval
+            result.append((name, sql(value)))
+    return result
 
 
 def column_catalog(inventory,sql_files,context_files,root,migration_manifest=None):
@@ -68,12 +218,20 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
         if isinstance(node,ast.UpdateStmt):
             for target in node.targetList or ():
                 mappings.append(dict(table=relation(node.relation),name=target.name,expression=sql(target.val),source_ref=ref))
-        if isinstance(node,ast.InsertStmt) and node.cols and isinstance(node.selectStmt,ast.SelectStmt):
+        if isinstance(node,ast.InsertStmt) and isinstance(node.selectStmt,ast.SelectStmt):
             target=relation(node.relation)
             if not node.relation.schemaname:
                 target=next((k for k in tables if k.startswith('@temp:'+scope+':') and k.endswith(':'+target)),target)
-            for col,value in zip(node.cols,node.selectStmt.targetList or ()):
-                mappings.append(dict(table=target,name=col.name,expression=sql(value.val),source_ref=ref))
+            # An omitted target list uses the established DDL order, including
+            # DROP/ADD changes in the supplied migration manifest.
+            column_names = ([col.name for col in node.cols] if node.cols else
+                            [col['name'] for col in tables.get(target, {}).get('columns', [])])
+            outputs = node.selectStmt.targetList or ()
+            expanded = expand_star_outputs(node.selectStmt, tables)
+            has_star = bool(star_targets(outputs))
+            if expanded is not None and (not has_star or len(expanded) == len(column_names)):
+                for name,(_source_name,value) in zip(column_names,expanded):
+                    mappings.append(dict(table=target,name=name,expression=value,source_ref=ref))
         for child in walk(node):
             if child is not node and isinstance(child,ast.InsertStmt): inspect(child,ref)
         aliases={r.alias.aliasname if r.alias else r.relname:relation(r) for r in walk(node) if isinstance(r,ast.RangeVar)}
@@ -103,6 +261,9 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
                 if getattr(options.get('language'),'sval','')=='plpgsql':
                     pl(parse_plpgsql(sql(node)),ref)
             else: inspect(node,ref)
+    # Resolve recorded SELECT * / qual.* outputs against the established DDL
+    # state before derived targets (view/CTAS columns) consume them.
+    expand_wildcard_outputs(inventory, tables)
     d=declaration['details']
     if d['object_kind'] in ('view','materialized_view','ctas'):
         target=f"{d['schema']}.{d['name']}"

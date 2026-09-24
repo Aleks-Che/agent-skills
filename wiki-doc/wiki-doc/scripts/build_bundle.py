@@ -48,6 +48,11 @@ def build(sql_path,run_dir,*,project_root,subject,context=(),migration_manifest=
     for field in ('parameters','returns','volatility','execute_on','gp_extension_version'):
         if field in d: main[field]=d[field]
     facts['objects'].append(main)
+    for name in d.get('external_functions') or ():
+        facts['unknowns'].append(dict(id=f'unknown_{len(facts["unknowns"])+1}',
+            what=f'Availability of Oracle-compatibility function {name}',
+            reason='Semantics follow the documented Oracle SQL contract recorded in inventory; presence and behaviour on the target server are not verified.',
+            related_facts=['obj_1']))
     objects={f"{d['schema']}.{d['name']}":'obj_1'}
     kinds={r:('function' if field=='calls' else 'table') for i in inv['items'] for field in ('reads','writes','calls') for r in i.get(field,[])}
     def obj(name,ref,kind=None):
@@ -70,7 +75,7 @@ def build(sql_path,run_dir,*,project_root,subject,context=(),migration_manifest=
         structural={k:v for k,v in details.items() if k in ('branches','branch','ddl','temporary','lifetime','reference','confirmed_call_effects','group_by','arguments','command_kind','query','assignments','target_columns','into','assignment_target','return_expression','result_for',
                     'extension_version','constraints','trigger_name','table','timing','events','for_each_row','function','is_constraint','when','update_columns',
                     'index_name','unique','primary','access_method','columns','where','privileges','privilege_columns','object_type','grantees','targets','grant_option',
-                    'distributed','storage_parameters','gp_extension_version')
+                    'distributed','storage_parameters','gp_extension_version','guards','derived_aliases','order_by','limit','offset','raise_level','message','diagnostic','raise_condition','raise_options','rethrow')
                     and (k != 'columns' or item['kind'] == 'INDEX')}
         if structural: entry['structure']=structural
         if item['kind']=='EXECUTE':

@@ -203,7 +203,7 @@ def _fact_checks(artifacts, rebuilt, required, draft):
         errors.append('facts canonical_key differs from independently resolved identity')
     operations = [o for o in facts['operations'] if o.get('scope') in documented]
     operation_kinds = ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'CALL', 'PERFORM', 'EXECUTE',
-                       'RETURN', 'CREATE', 'CTAS', 'CTE', 'ALTER', 'DROP', 'COMMENT', 'TRUNCATE', 'IF', 'ASSIGN',
+                       'RETURN', 'CREATE', 'CTAS', 'CTE', 'ALTER', 'DROP', 'COMMENT', 'TRUNCATE', 'IF', 'ASSIGN', 'RAISE',
                        'TRIGGER', 'INDEX', 'GRANT', 'REVOKE')
     items = [i for i in rebuilt['items'] if i['kind'] in operation_kinds]
     matched, item_facts = set(), {}
@@ -229,7 +229,7 @@ def _fact_checks(artifacts, rebuilt, required, draft):
                       ('branches','branch','ddl','temporary','lifetime','reference','confirmed_call_effects','group_by','arguments','command_kind','query','assignments','target_columns','into','assignment_target','return_expression','result_for',
                        'extension_version','constraints','trigger_name','table','timing','events','for_each_row','function','is_constraint','when','update_columns',
                        'index_name','unique','primary','access_method','columns','where','privileges','privilege_columns','object_type','grantees','targets','grant_option',
-                       'distributed','storage_parameters','gp_extension_version')
+                       'distributed','storage_parameters','gp_extension_version','guards','derived_aliases','order_by','limit','offset','raise_level','message','diagnostic','raise_condition','raise_options','rethrow')
                       and (k not in ('columns',) or item['kind'] == 'INDEX')}
         if structural and op.get('structure') != structural:
             errors.append(f"facts {op['id']}: structure differs from independent SQL inventory")

@@ -10,6 +10,7 @@
       "operations": {
         "INSERT": 1,
         "SELECT": 1,
+        "ASSIGN": 1,
         "RETURN": 1
       },
       "reads": [

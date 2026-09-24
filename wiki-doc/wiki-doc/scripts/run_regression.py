@@ -66,6 +66,8 @@ def check_run(run,project,expected_dir,subject,profile=None):
     facts=read_json(run/'facts.json'); page=(run/'page.draft.md').read_text(encoding='utf-8-sig')
     expectation=read_json(expected_dir/'facts.json')['subjects'][subject]
     errors=check_expected(facts,expectation)
+    from content_claims import check_content_claims
+    errors+=check_content_claims(facts,page)
     checks=read_json(expected_dir/'checks.json'); plan=read_json(run/'validation_plan.json')
     rules={c['rule_id'] for c in plan['required_checks']}
     for rule in checks['required_rules']:

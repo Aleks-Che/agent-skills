@@ -415,5 +415,116 @@ class ClaimTableMutationTests(unittest.TestCase):
         self._mutate_and_restore('q05', self._corrupt_object_field)
 
 
+class D12ProseMutationTests(unittest.TestCase):
+    """Bounded prose checks; date comparisons do not establish a window's cause.
+
+    Each refusal has a positive control. These six cases do not establish
+    arbitrary-prose or meaning-preserving paraphrase acceptance for D12.
+    """
+    CASES = ('q01', 'q05')
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temp = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(cls.temp.cleanup)
+        cls.root = Path(cls.temp.name)
+        cls.cases = read_json(EXAMPLES / 'cases-q.json')['cases']
+        cls.runs = {}
+        for case_id in cls.CASES:
+            case = next(c for c in cls.cases if c['id'] == case_id)
+            run = cls.root / case_id
+            result = build(EXAMPLES / case['sql'], run, project_root=EXAMPLES,
+                           subject=case['subjects'][0],
+                           context=[EXAMPLES / p for p in case['context']],
+                           dialect=case['dialect'], version=case['version'])
+            assert result['publication_authorized'], result
+            cls.runs[case_id] = run
+
+    def _finish(self, case_id):
+        case = next(c for c in self.cases if c['id'] == case_id)
+        return finish(self.runs[case_id],
+                      sql_files=[EXAMPLES / case['sql']],
+                      context=[EXAMPLES / p for p in case['context']],
+                      project_root=EXAMPLES)
+
+    def _with_prose(self, case_id, prose):
+        path = self.runs[case_id] / 'page.draft.md'
+        original = path.read_text(encoding='utf-8')
+        changed = original.replace('<!-- wiki-doc:managed end -->',
+                                   prose + '\n<!-- wiki-doc:managed end -->')
+        self.assertNotEqual(changed, original, 'prose was not inserted')
+        path.write_text(changed, encoding='utf-8')
+        return path, original
+
+    # --- D12a: unverified compatibility ---
+
+    def test_d12a_false_compatibility_is_rejected(self):
+        path, original = self._with_prose(
+            'q05', 'This system is compatible with PostgreSQL >=9.4.')
+        try:
+            result = self._finish('q05')
+            self.assertFalse(result['publication_authorized'], result)
+            self.assertTrue(
+                any('Unverified compatibility' in e for e in result.get('errors', [])),
+                result.get('errors'))
+        finally:
+            path.write_text(original, encoding='utf-8')
+
+    def test_d12a_corrected_compatibility_is_accepted(self):
+        path, original = self._with_prose(
+            'q05', 'Server version is unknown; compatibility is not established.')
+        try:
+            result = self._finish('q05')
+            self.assertTrue(result['publication_authorized'], result)
+        finally:
+            path.write_text(original, encoding='utf-8')
+
+    # --- Date boundary checks (not the D12b business rationale) ---
+
+    def test_false_window_boundary_is_rejected(self):
+        path, original = self._with_prose(
+            'q01', 'History is limited to the year 2025.')
+        try:
+            result = self._finish('q01')
+            self.assertFalse(result['publication_authorized'], result)
+            self.assertTrue(
+                any('Window boundary' in e for e in result.get('errors', [])),
+                result.get('errors'))
+        finally:
+            path.write_text(original, encoding='utf-8')
+
+    def test_d12b_corrected_window_is_accepted(self):
+        path, original = self._with_prose(
+            'q01', 'History covers records before 2026-01-01.')
+        try:
+            result = self._finish('q01')
+            self.assertTrue(result['publication_authorized'], result)
+        finally:
+            path.write_text(original, encoding='utf-8')
+
+    # --- D12c: wrong call example ---
+
+    def test_d12c_false_call_example_is_rejected(self):
+        path, original = self._with_prose(
+            'q05', 'Example: `unknown_helper(42)`')
+        try:
+            result = self._finish('q05')
+            self.assertFalse(result['publication_authorized'], result)
+            self.assertTrue(
+                any('Wrong call example' in e for e in result.get('errors', [])),
+                result.get('errors'))
+        finally:
+            path.write_text(original, encoding='utf-8')
+
+    def test_d12c_corrected_example_is_accepted(self):
+        path, original = self._with_prose(
+            'q05', 'Example: `q_out.gp_master_probe(\'x\')`')
+        try:
+            result = self._finish('q05')
+            self.assertTrue(result['publication_authorized'], result)
+        finally:
+            path.write_text(original, encoding='utf-8')
+
+
 if __name__ == '__main__':
     unittest.main()

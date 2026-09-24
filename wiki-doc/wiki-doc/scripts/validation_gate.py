@@ -491,6 +491,8 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
         if facts.get('page_contract')=='claims-v1':
             from page_claims import check_page_claims
             errors.extend(check_page_claims(facts,draft_bytes.decode('utf-8-sig')))
+        from content_claims import check_content_claims
+        errors.extend(check_content_claims(facts,draft_bytes.decode('utf-8-sig')))
         if profile_path:
             from profiles import access_findings
             obj=next(o for o in facts['objects'] if o['id'] in facts['documented_object_ids'])

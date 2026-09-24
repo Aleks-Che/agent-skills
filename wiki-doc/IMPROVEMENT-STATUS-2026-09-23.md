@@ -4,7 +4,69 @@
 Этот файл — журнал выполнения задач Q-01…Q-09. История предыдущего этапа находится
 в [IMPLEMENTATION-STATUS.md](IMPLEMENTATION-STATUS.md).
 
-**Текущий аудит q09/D12, 2026-09-24:** закрыт обход проверки типов через null,
+**Текущий аудит content claims, 2026-09-24:** исправлены ложные допуски/отказы
+проверки версии, даты и примеров вызова. Введён разбор Markdown и SQL AST,
+проверяются схема, сигнатура, аргументы и ограниченные типы констант.
+FILTER/OVER и неподтверждённые части SQL-примера не получают допуск.
+Прежние отметки о полном D12, причине окна и равнозначных объяснениях сняты:
+причину нельзя подтвердить совпадением даты, а исправление смысла не равно парафразу.
+Финальный прогон: **1135 tests / 1134 passed / 1 skipped / 0 failed**,
+41 модуль, 307.234 с, четыре процесса; Q-набор — **414**, новые тесты — **25**.
+Все три внешних acceptance-теста выполнены; пропуск — Windows symlink.
+Reference и saved, по три повтора: исторические **45/45**, Q **33/33**.
+Мутации annotations: **44/44** и **40/40**, **0 untested / 0 false-ready**,
+`valid: true`; содержательная причина окна этим не проверяется.
+Отчёт: [REVIEW-D12-CONTENT.md](REVIEW-D12-CONTENT.md), доказательства:
+[D12-CONTENT-REVIEW.json](D12-CONTENT-REVIEW.json), `.runtime/d12-prose-audit/`.
+Q-07/Q-09 — `in_progress`; Q-08 — `planned`, настоящий LLM-цикл не выполнялся.
+
+**Предыдущая сессия D12 content claims, 2026-09-24 (история):** добавлены
+три regex-проверки и 6 тестов `D12ProseMutationTests`. Последующий аудит выявил
+ложный ready для неверного знака даты, схемы/аргументов вызова и совместимости,
+а также ложные отказы на отрицании совместимости и содержимом строкового литерала.
+Сопоставление даты не проверяло причину окна. Заявление о закрытии D12 отозвано;
+проверки исправлены в текущем аудите, описанном выше.
+Интеграция: `validation_gate.py`, `build_bundle.py`, `run_regression.py`,
+`lint.py`. Ограничение: произвольная поясняющая проза, бизнес-обоснования и
+языковые парафразы вне паттернов **не проверяются** (согласно плану —
+«не обещать полное понимание regex-проверкой»).
+Полный прогон той сессии (до исправлений текущего аудита):
+**1110 tests / 1109 passed / 1 skipped / 0 failed** (253.344 с, четыре параллельных
+процесса; сводка — `.runtime/d12-content-verify/unit-summary.json`; все три
+внешних acceptance-теста выполнены). Таблица ниже — адресные прогоны ключевых
+модулей. Reference Q **11/11**; мутации annotations **40/40**, `valid: true`.
+
+**Проверки D12 content claims (2026-09-24):**
+
+| Команда | Каталог | Результат |
+|---|---|---|
+| `python -X utf8 -B -m unittest tests.test_q07_mutations.D12ProseMutationTests` | wiki-doc/wiki-doc | 6 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_q07_mutations.py"` | wiki-doc/wiki-doc | 33 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_q09_model_review.py"` | wiki-doc/wiki-doc | 12 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_p0_gate_regressions.py"` | wiki-doc/wiki-doc | 36 tests, 1 skipped, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_review_fixes.py"` | wiki-doc/wiki-doc | 41 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_regression_decisions.py"` | wiki-doc/wiki-doc | 11 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_coverage_gate.py"` | wiki-doc/wiki-doc | 87 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_p1_acceptance.py"` | wiki-doc/wiki-doc | 12 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_p2_*.py"` | wiki-doc/wiki-doc | 88 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_q01_expectations.py"` | wiki-doc/wiki-doc | 30 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_q04_ddl_star.py"` | wiki-doc/wiki-doc | 32 tests, 2 skipped, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_dialect_matrix.py"` | wiki-doc/wiki-doc | 41 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_artifact_regressions.py"` | wiki-doc/wiki-doc | 49 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_evidence_bundle.py"` | wiki-doc/wiki-doc | 55 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_publish.py"` | wiki-doc/wiki-doc | 11 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_index_query.py"` | wiki-doc/wiki-doc | 29 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_artifacts.py"` | wiki-doc/wiki-doc | 30 tests, 0 failed |
+| `scripts/run_regression.py --mode reference` (Q-набор) | wiki-doc/wiki-doc | 11/11 ready, 0 errors |
+| `scripts/regression_mutations.py` (Q-набор) | wiki-doc/wiki-doc | 40/40 detected, 0 false_ready, valid: true |
+
+Python 3.12.7. SQL в БД не исполнялся. LLM-цикл (Q-08) не запускался.
+Изменённые файлы: `scripts/content_claims.py` (новый),
+`scripts/validation_gate.py`, `scripts/build_bundle.py`,
+`scripts/run_regression.py`, `scripts/lint.py`,
+`tests/test_q07_mutations.py` (D12ProseMutationTests, 6 тестов).
+
+**Предыдущий аудит q09/D12, 2026-09-24:** закрыт обход проверки типов через null,
 сохранены проверяемые SQL-варианты присваиваний и независимые unknown-обязательства.
 Полный прогон: **1104 tests / 1103 passed / 1 skipped / 0 failed**, 40 модулей,
 292.812 с, четыре процесса; Q-набор — **383**, новые тесты модели — **12**.
@@ -673,26 +735,31 @@ writer/validator и возобновление всей цепочки посл�
 **Приёмка (частично):**
 
 - [ ] Вся матрица D01–D12 покрыта применимыми мутациями. Аннотированы D01–D11;
-      прежние тесты с названием D12 не проверяют причину окна или пример вызова.
-      Содержательная приёмка D12 и остальных подпунктов матрицы остаётся открытой.
+      `D12ProseMutationTests` и `test_q07_content_review.py` проверяют ограниченные
+      утверждения о версии, даты и сигнатуры примеров. Это не приёмка причины окна
+      D12 и остальных содержательных подпунктов. `ClaimTableMutationTests` проверяет
+      только машинные поля claims.
 - [x] Каждый Q-случай имеет минимум одну мутацию.
 - [x] Мутации имеют обязательные поля и валидные группы.
 - [x] Ни одна размеченная критичная мутация не получает ready: **40/40**
       обнаружены (включая 4 q09 после исправления модели column.expression),
       **0** untested, **0 false-ready**, `valid: true`.
-- [ ] Содержательные мутации прозы/графа требуют отдельного цикла.
-- [ ] Эквивалентное содержательное объяснение принимается. Восстановление исходных
-      байтов — положительный контроль, а не новое эквивалентное объяснение;
-      проверено только форматирование в `test_equivalent_markdown_presentation_is_accepted`.
+- [ ] Полная содержательная приёмка прозы D12 и графа. Новый модуль улучшает
+      механическую проверку; причины окна, смысл графа и непокрытые утверждения
+      требуют независимого содержательного прохода.
+- [ ] Эквивалентное содержательное объяснение принимается. Смена неверного
+      утверждения на верное — положительный контроль, а не равнозначная
+      переформулировка. Проверены конкретные формы SQL-примеров, кавычки и оговорки;
+      общая приёмка эквивалентных объяснений остаётся открытой.
 
 `facts.dialect.version` существует: отсутствие D12 нельзя объяснять тем, что
 версия есть только в run_context. D12 также включает выдуманные причины окна и
 неверные примеры; мутация входной версии сама по себе не проверяет эти утверждения.
 
-**Следующее действие:** дополнить содержательные мутации прозы/графа и выполнить
-независимую проверку D12, текста/графа с корректными эквивалентами. Модель q09
-дополнена сохранением точного SQL каждой операции; null не отключает gate. Q-08 не
-закрывается детерминированным reference-прогоном.
+**Следующее действие:** выполнить содержательную приёмку D12, прозы/графа и
+равнозначных объяснений. Ограниченная машинная проверка описана в
+[content-claims.md](wiki-doc/references/content-claims.md).
+Q-08 не закрывается детерминированным reference-прогоном.
 
 **Проверки до повторного аудита модели:** reference Q-набора — **11/11** за один повтор;
 мутации — **40/40** обнаружены, **0** untested, **0** `invalid_mutation`,
@@ -768,8 +835,8 @@ writer/validator и возобновление всей цепочки посл�
 - [x] Старая приёмка сохранена как история; LLM-прогон явно отмечен как
       невыполненный и не подменён unit/reference-числами.
 - [x] Общая сверка «инструкции/CLI/схемы/тесты без противоречий» — в текущей
-      сессии подтверждён полный unit-прогон 1104/1103/1/0, исправлены контракт
-      null-сводки и завышенные заявления о D12. Reference/saved Q — 33/33
+      сессии подтверждён полный unit-прогон 1135/1134/1/0, исправлены проверки
+      content claims и завышенные заявления о D12. Reference/saved Q — 33/33
       в трёх повторах, мутации annotations — 40/40, `valid: true`.
       Сверка не закрывает смысловую приёмку прозы; итог по Q-08 требует LLM-прогона.
 - [ ] Итоговый отчёт с измерениями LLM-прогонов и приёмки большого SQL — требует
@@ -777,8 +844,9 @@ writer/validator и возобновление всей цепочки посл�
 
 **Следующее действие:** после Q-08 выпустить единый отчёт с измерениями и
 закрыть Q-09. Сейчас Q-09 остаётся частично выполненным. Аудит, исправленные
-замечания и открытые критерии: [REVIEW-Q09-MODEL.md](REVIEW-Q09-MODEL.md), текущие
-доказательства — `.runtime/q09-model-audit/`; [REVIEW-Q09.md](REVIEW-Q09.md)
+замечания и открытые критерии: [REVIEW-D12-CONTENT.md](REVIEW-D12-CONTENT.md), текущие
+доказательства — `.runtime/d12-prose-audit/`; [REVIEW-Q09-MODEL.md](REVIEW-Q09-MODEL.md),
+[REVIEW-Q09.md](REVIEW-Q09.md)
 и `.runtime/q09-fix-verify/` сохранены как история.
 
 ### Q-02. Устранить аварийное завершение анализа

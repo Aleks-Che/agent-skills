@@ -202,6 +202,8 @@ def finish(run,*,sql_files,context,project_root,profile_path=None,migration_mani
     from artifact_schema import read_json
     run=Path(run); facts=read_json(run/'facts.json'); plan=read_json(run/'validation_plan.json'); inv=read_json(run/'inventory.json')
     page=(run/'page.draft.md').read_text(encoding='utf-8-sig'); errors=check_page_claims(facts,page)
+    from content_claims import check_content_claims
+    errors.extend(check_content_claims(facts,page))
     refs=[{**r,'root':'project','start_line':1,'end_line':len((Path(project_root)/r['path']).read_text(encoding='utf-8-sig').splitlines())} for r in inv['inputs']]
     refs.append(dict(root='run',path='page.draft.md',sha256=sha256_file(run/'page.draft.md'),start_line=1,end_line=len(page.splitlines())))
     all_ids=[f['id'] for g in FACT_ARRAYS for f in facts[g]]

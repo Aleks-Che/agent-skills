@@ -32,17 +32,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   exact source_ref, structured data for counters, common KPI formulas,
   exact column types, unknown abbreviation handling, and reads → operation
   → writes graph.
-- **Q-07 mutation matrix (partial)**: D01–D11 mutation annotations across all
-  Q cases; tests for mutation detection, review-label/assertion linking,
-  annotation fields and target resolution. Fresh bundles: 40/40 executed
-  mutations detected, 0 false-ready, 0 untested (`valid: true`).
-  The former `D12ContentMutationTests` only changed a claim property, SQL
-  condition and object name; renamed to `ClaimTableMutationTests`, with
-  fail-on-missing-target and specific detection checks. Restoring original
-  bytes is a positive control, not an equivalent explanation. D12 prose,
-  window-cause/call-example and graph acceptance remain open.
+- **Q-07 mutation matrix (partial)**: D01–D11 mutation annotations
+  across all Q cases; tests for mutation detection, review-label/assertion
+  linking, annotation fields and target resolution. Fresh bundles: 40/40
+  executed mutations detected, 0 false-ready, 0 untested (`valid: true`).
+  These annotations do not include semantic D12 acceptance. The six
+  `D12ProseMutationTests` exercise bounded version/date/example checks;
+  date membership does not prove a window's rationale. Business explanations,
+  graph meaning and equivalent-prose acceptance remain open.
   q09 preserves every assignment as a visible operation SQL query; null column
   summaries require independently distinct variants and a planned unknown.
+- **Bounded content claims**: `scripts/content_claims.py` uses CommonMark and
+  SQL AST for marked examples, including Russian labels and fenced SQL.
+  It checks routine schema/signatures, argument counts/names and supported
+  literal types; literal contents are not interpreted as calls. Date checks
+  consider operators; explicit version claims consider the product. Target
+  version is not compatibility evidence, and explicit caveats are preserved.
+  Contract: `references/content-claims.md`; 25 review tests include all four
+  entry points and a fresh-hash bundle whose report contains only `ok`.
 
 ### Changed
 
@@ -58,6 +65,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - references/regression.md: acceptance/CI provenance command pointer.
 - tests/test_q05_run_prepare.py, tests/test_q05_finalize.py,
   tests/test_q05_resume.py, tests/test_q07_mutations.py: new test modules.
+- scripts/content_claims.py: new module invoked alongside
+  `page_claims.check_page_claims` in `validation_gate.py`,
+  `build_bundle.finish`, `run_regression.check_run` and `lint.lint`.
+  tests/test_q07_mutations.D12ProseMutationTests: 6 new tests for
+  prose-level D12 acceptance.
 - `scripts/sql_ast.py`: PL/pgSQL guards propagated through DDL/CTAS/CALL/
   EXECUTE/CTE/RETURN; GET [STACKED] DIAGNOSTICS represented as ASSIGN
   with diagnostic kind and stacked flag; RAISE fields include level,

@@ -458,6 +458,11 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
         catalogue=column_catalog(rebuilt,[resolve_reference(r,roots) for r in manifest['sql_files']],
             [resolve_reference(r,roots) for r in manifest.get('context_files',[])],roots['project'],
             resolve_reference(manifest['migration_manifest'],roots) if manifest.get('migration_manifest') else None)
+        # Gaps found while mapping statements against established DDL (for
+        # example an unprovable positional INSERT) block exactly like the
+        # analysis gaps above; they must never fall through to a ready path.
+        if rebuilt['coverage_notes']:
+            return _gate_result('blocked', errors=['analysis gap: ' + n['reason'] for n in rebuilt['coverage_notes']])
         for key in ('items', 'coverage_notes', 'inputs', 'documented_subjects'):
             if inventory.get(key, []) != rebuilt[key]:
                 errors.append(f'inventory.{key} differs from independently rebuilt SQL inventory')

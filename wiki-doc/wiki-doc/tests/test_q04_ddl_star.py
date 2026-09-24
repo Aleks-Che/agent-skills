@@ -17,7 +17,8 @@ sys.path.insert(0, str(PACKAGE / 'scripts'))
 
 from ddl import do_drop_columns, enrich_inventory, reconstruct
 from sql_extract import extract_inventory
-from sql_types import column_catalog, expand_wildcard_outputs, infer_expression
+from sql_types import (column_catalog, expand_wildcard_outputs, infer_expression,
+                       POSITIONAL_INSERT_NOTE)
 
 DO_DROP = """
 DO
@@ -403,9 +404,93 @@ class MultiBranchColumnExpressionTests(unittest.TestCase):
         self.assertIn('facts column col_1: multiple SQL mappings require a null expression/type summary with unknown status', errors)
 
 
+class PositionalInsertWidthTests(unittest.TestCase):
+    """A positional INSERT maps only at equal target/select widths.
+
+    A known width mismatch is a listed analysis gap: the mapping is never
+    zip-truncated into a plausible-looking but invented column map.
+    """
+
+    def _catalogue(self, body, context_sql):
+        import tempfile
+        from sql_types import column_catalog
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, context = root / 'source.sql', root / 'context.sql'
+            source.write_text('CREATE FUNCTION demo.f() RETURNS void LANGUAGE plpgsql AS $$'
+                              f'BEGIN {body} END $$;', encoding='utf8')
+            context.write_text(context_sql, encoding='utf8')
+            inv = extract_inventory(source.read_text(encoding='utf8'), 'source.sql', 'a' * 64)
+            return inv, column_catalog(inv, [source], [context], root)
+
+    def test_star_width_mismatch_is_a_listed_gap_not_a_mapping(self):
+        inv, cat = self._catalogue('INSERT INTO demo.out SELECT * FROM demo.src;',
+                                   'CREATE TABLE demo.src(id int); '
+                                   'CREATE TABLE demo.out(first int, second text);')
+        self.assertEqual([m for m in cat['mappings'] if m['table'] == 'demo.out'], [])
+        notes = [n for n in inv['coverage_notes'] if n['reason'] == POSITIONAL_INSERT_NOTE]
+        self.assertEqual(len(notes), 1, inv['coverage_notes'])
+        self.assertEqual(notes[0]['source_ref']['start_line'], 1)
+
+    def test_star_width_match_maps_columns_positionally(self):
+        inv, cat = self._catalogue('INSERT INTO demo.out SELECT * FROM demo.src;',
+                                   'CREATE TABLE demo.src(id int); CREATE TABLE demo.out(first int);')
+        self.assertEqual([(m['name'], m['expression']) for m in cat['mappings']],
+                         [('first', 'demo.src.id')])
+        self.assertFalse([n for n in inv['coverage_notes']
+                          if n['reason'] == POSITIONAL_INSERT_NOTE], inv['coverage_notes'])
+
+    def test_explicit_projection_width_mismatch_is_not_truncated(self):
+        inv, cat = self._catalogue('INSERT INTO demo.out SELECT id FROM demo.src;',
+                                   'CREATE TABLE demo.src(id int); '
+                                   'CREATE TABLE demo.out(first int, second text);')
+        self.assertEqual([m for m in cat['mappings'] if m['table'] == 'demo.out'], [])
+        self.assertEqual(sum(n['reason'] == POSITIONAL_INSERT_NOTE
+                             for n in inv['coverage_notes']), 1)
+
+    def test_explicit_column_list_projection_maps(self):
+        inv, cat = self._catalogue('INSERT INTO demo.out (second) SELECT id FROM demo.src;',
+                                   'CREATE TABLE demo.src(id int); '
+                                   'CREATE TABLE demo.out(first int, second text);')
+        self.assertEqual([(m['name'], m['expression']) for m in cat['mappings']],
+                         [('second', 'id')])
+        self.assertFalse([n for n in inv['coverage_notes']
+                          if n['reason'] == POSITIONAL_INSERT_NOTE], inv['coverage_notes'])
+
+    def test_values_insert_without_projection_is_not_a_width_gap(self):
+        inv, cat = self._catalogue("INSERT INTO demo.out VALUES (1, 'x');",
+                                   "CREATE TABLE demo.out(first int, second text);")
+        self.assertFalse([n for n in inv['coverage_notes']
+                          if n['reason'] == POSITIONAL_INSERT_NOTE], inv['coverage_notes'])
+
+    def test_unresolved_star_keeps_the_wildcard_gap_instead(self):
+        inv, cat = self._catalogue('INSERT INTO demo.out SELECT * FROM demo.src;',
+                                   'CREATE TABLE demo.out(first int, second text);')
+        self.assertTrue(any('Wildcard' in n['reason'] for n in inv['coverage_notes']),
+                        inv['coverage_notes'])
+        self.assertFalse([n for n in inv['coverage_notes']
+                          if n['reason'] == POSITIONAL_INSERT_NOTE], inv['coverage_notes'])
+
+    def test_full_gate_blocks_on_a_listed_width_gap(self):
+        import tempfile
+        from build_bundle import build
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, context = root / 'source.sql', root / 'context.sql'
+            source.write_text('CREATE FUNCTION demo.f() RETURNS void LANGUAGE plpgsql AS $$'
+                              'BEGIN INSERT INTO demo.out SELECT * FROM demo.src; END $$;',
+                              encoding='utf8')
+            context.write_text('CREATE TABLE demo.src(id int); '
+                               'CREATE TABLE demo.out(first int, second text);', encoding='utf8')
+            result = build(source, root / 'run', project_root=root,
+                           subject='demo.f', context=[context])
+            self.assertEqual(result['decision'], 'blocked', result)
+            self.assertFalse(result['publication_authorized'])
+            self.assertTrue(any(POSITIONAL_INSERT_NOTE in e for e in result['errors']), result)
+
+
 class DdlAcceptanceTests(unittest.TestCase):
     """Q-04 DDL acceptance on the pinned control project (when reachable)."""
-
     def _manifest_for(self, root):
         import os.path
         from sql_extract import sha256_file
@@ -434,6 +519,20 @@ class DdlAcceptanceTests(unittest.TestCase):
         raw = os.environ.get('WIKI_DOC_ACCEPTANCE_PROJECT', '')
         root = Path(raw) if raw else None
         return root if root is not None and root.is_dir() else None
+
+    def _source_context_for(self, root):
+        """Pinned read-only INI source DDL for the three retro SELECT * copies."""
+        from sql_extract import sha256_file
+        scenario = json.loads((PACKAGE / 'examples/fixtures/acceptance-large.json')
+                              .read_text(encoding='utf8'))
+        files = []
+        for entry in scenario['source_context']['files']:
+            source = root / entry['path']
+            self.assertTrue(source.is_file(), f'pinned source context is missing: {source}')
+            self.assertEqual(sha256_file(source), entry['sha256'],
+                             f'{source}: {scenario["hash_policy"]["on_hash_mismatch"]}')
+            files.append(source)
+        return files
 
     def test_onboarding_ddl_reconstructs_to_the_reviewed_state(self):
         root = self._project_root()
@@ -490,24 +589,57 @@ class DdlAcceptanceTests(unittest.TestCase):
         manifest = self._manifest_for(root)
         result = reconstruct(manifest, project_root=root)
         self.assertEqual(result['status'], 'resolved', result['errors'])
+        context = self._source_context_for(root)
         inv = extract_inventory(sql.read_text(encoding='utf-8-sig'),
                                 sql.relative_to(root).as_posix(), digest,
                                 dialect='greenplum', version='unknown', documented_subjects=[
                                     's_gp_p1024_dmr_svd_kb_ckr_uup_gp_core.ckr_uup_db_onboarding'])
-        enrich_inventory(inv, context_files=[], project_root=root, migration_manifest=manifest)
+        enrich_inventory(inv, context_files=context, project_root=root, migration_manifest=manifest)
         table_root = (root / 'gp/gp/all/u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader'
                       / '04s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core/02table')
         self.assertTrue(table_root.is_dir())
         # The ordered migration manifest alone establishes the reviewed target
         # state; drop-only scripts of other tables are unordered and out of
-        # this acceptance scope, so they are not smuggled in as context.
-        catalogue = column_catalog(inv, [sql], [], root, migration_manifest=manifest)
-        # DDL acceptance is not full Q-04 acceptance: a few local CTE/derived
-        # projections remain unexpanded even with the reviewed target DDL.
-        # UNION ALL CTE chains and nested derived tables now expand; the
-        # remaining gaps are physical table wildcards without established DDL.
+        # this acceptance scope, so they are not smuggled in as context. The
+        # pinned source_context is read-only INI DDL, used only to expand the
+        # three retro SELECT * copies.
+        catalogue = column_catalog(inv, [sql], context, root, migration_manifest=manifest)
+        # Every wildcard is expanded against established DDL now: the three
+        # retro INSERT ... SELECT * copies resolve through the pinned INI
+        # source tables. What remains is the intentional EXCEPTION limitation
+        # and the listed positional-mapping gaps below.
         self.assertEqual(sum(n['reason'] == 'Wildcard output columns require DDL expansion'
-                             for n in inv['coverage_notes']), 3)
+                             for n in inv['coverage_notes']), 0)
+        self.assertEqual(sum(n['reason'].startswith('Exception handlers are inventoried')
+                             for n in inv['coverage_notes']), 1)
+        # The retro copies expand to exactly the INI source columns.
+        ini = 's_gp_p1024_ora_svd_kb_ckr_uup_gp_ini'
+        retro_widths = {19328: 'main', 19359: 'new_clients', 19390: 'meet_tasks'}
+        expanded = {}
+        for item in inv['items']:
+            line = item['source_ref']['start_line']
+            if item['kind'] == 'SELECT' and line in retro_widths:
+                expanded[line] = [c['name'] for c in item['details'].get('columns') or []]
+        self.assertEqual(sorted(expanded), sorted(retro_widths))
+        for line, suffix in retro_widths.items():
+            source_columns = [c['name'] for c in
+                              catalogue['tables'][f'{ini}.ckr_uup_db_onboarding_{suffix}']['columns']]
+            self.assertEqual(expanded[line], source_columns)
+        # The INI sources are narrower than the migrated targets (24/25, 20/29,
+        # 26/31) and 43 calculated main inserts build 24-column rows into the
+        # 25-column target. Positional mapping is unproven for all of them and
+        # is listed, never zip-truncated into a plausible column map. This is
+        # an independent source-level finding of this acceptance run; whether
+        # it is a SQL defect or a stale DDL state needs the Q-07/Q-09 decision.
+        positional = [n for n in inv['coverage_notes'] if n['reason'] == POSITIONAL_INSERT_NOTE]
+        self.assertEqual(len(positional), 46,
+                         sorted(n['source_ref']['start_line'] for n in positional))
+        self.assertEqual(sorted(n['source_ref']['start_line'] for n in positional
+                                if n['source_ref']['start_line'] in retro_widths),
+                         sorted(retro_widths))
+        self.assertFalse([m for m in catalogue['mappings']
+                          if 'SELECT *' in (m.get('query') or '') and 'gp_ini' in m['query']],
+                         'no positional mapping may be invented for the retro copies')
         core = 's_gp_p1024_dmr_svd_kb_ckr_uup_gp_core'
         reviewed = {f'{core}.ckr_uup_db_onboarding_main',
                     f'{core}.ckr_uup_db_onboarding_meet_tasks',

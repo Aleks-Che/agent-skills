@@ -6,6 +6,9 @@ from sql_ast import (sql, type_name, relation, walk, require_parser, quote,
                      SET_OUTPUT_NOTE, set_output_columns, EXTERNAL_FUNCTION_CONTRACTS)
 from sql_gp import prepare as gp_prepare
 
+POSITIONAL_INSERT_NOTE = ('Positional INSERT mapping is unresolved: select output width '
+                          'differs from the established target width')
+
 
 def infer_expression(expression,tables,variables=None,aliases=None):
     require_parser()
@@ -352,12 +355,23 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
             # DROP/ADD changes in the supplied migration manifest.
             column_names = ([col.name for col in node.cols] if node.cols else
                             [col['name'] for col in tables.get(target, {}).get('columns', [])])
-            outputs = node.selectStmt.targetList or ()
             expanded = expand_star_outputs(node.selectStmt, tables)
-            has_star = bool(star_targets(outputs))
-            if expanded is not None and (not has_star or len(expanded) == len(column_names)):
+            # Positional mapping is proven only when the select output width
+            # equals the target width (explicit column list or established DDL
+            # order). A known mismatch is a listed gap: never zip-truncate a
+            # narrower projection onto a wider target into a plausible mapping.
+            if expanded is not None and column_names and len(expanded) == len(column_names):
                 for name,(_source_name,value) in zip(column_names,expanded):
                     mappings.append(dict(table=target,name=name,expression=value,source_ref=ref))
+            elif expanded and column_names and len(expanded) != len(column_names):
+                query = sql(node)
+                owner = next((item for item in inventory.get('items', [])
+                              if item.get('kind') == 'INSERT'
+                              and item.get('details', {}).get('query') == query), None)
+                note = dict(source_ref=owner['source_ref'] if owner else ref,
+                            reason=POSITIONAL_INSERT_NOTE)
+                if note not in inventory['coverage_notes']:
+                    inventory['coverage_notes'].append(note)
         for mapping in mappings[before:]:
             mapping.update(query=sql(node), kind=type(node).__name__.removesuffix('Stmt').upper())
         for child in walk(node):

@@ -106,8 +106,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   left names do not establish common expression/type evidence. Direct set
   outputs retain null expression/type with unknown status. Add 15 regression
   tests, including fresh-hash mutations and false-ready controls.
-- The large control now retains three physical-source wildcard gaps plus
-  EXCEPTION after the pinned DDL/column catalog pass; Q-04 remains in progress.
+- The large control now expands every wildcard against established DDL
+  (the three retro `INSERT … SELECT *` copies resolve through pinned
+  read-only INI source DDL in `acceptance-large.json` `source_context`) and
+  keeps only the intentional EXCEPTION gap plus the listed positional-mapping
+  gaps below; Q-04 remains in progress.
+- Positional INSERT mapping is proven only when the select output width equals
+  the target width (explicit column list or established DDL/manifest order).
+  A known mismatch is a listed blocking gap
+  (`Positional INSERT mapping is unresolved: select output width differs from
+  the established target width`) instead of a silent skip or a zip-truncated
+  column map. VALUES outputs without a projection are not mismatches;
+  unresolved stars keep the wildcard reason. The control SQL now lists 46 such
+  gaps (43 calculated 24-into-25 main inserts plus the three narrower retro
+  copies), previously invisible in facts. `validation_gate.evaluate_bundle`
+  blocks on gaps found while mapping against established DDL exactly like the
+  enrich-time analysis gaps.
+- tests/test_q04_ddl_star.py: new `PositionalInsertWidthTests` (7 cases:
+  mismatch listed, match mapped, non-star mismatch not truncated, column-list
+  positive control, VALUES positive control, unresolved star keeps wildcard
+  reason, full gate blocks) and extended `DdlAcceptanceTests` (pinned
+  `source_context` hashes, retro expansions equal the INI source columns,
+  46 listed gaps at the pinned lines, no invented retro mappings).
 - CTE/derived wildcard review: preserve unnamed trailing columns under partial
   CTE aliases, reject unknown output widths and excess aliases, distinguish
   CTE scope from FROM aliases and qualified physical relations, and link nested

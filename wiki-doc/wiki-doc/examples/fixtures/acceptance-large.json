@@ -111,5 +111,22 @@
         "sha256": "ba86d0e0b12916701e873d0caf0d1ae44db74bab72ac7832613a9eff40017e0a"
       }
     ]
+  },
+  "source_context": {
+    "scope": "Read-only INI source tables copied by the three retro INSERT ... SELECT * statements (lines 19328, 19359, 19390 of the control SQL). Pinned so wildcard expansion of those copies is reproducible; hashed with the same hash_policy. Context evidence only: these files are not part of the migration reconstruction order and do not establish production deployment order.",
+    "files": [
+      {
+        "path": "gp/gp/all/u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader/01s_gp_p1024_ora_svd_kb_ckr_uup_gp_ini/02table/001create_table/ckr_uup_db_onboarding_main.sql",
+        "sha256": "90acd19a9d860eabbcf44ca36c7a80644eafd71f97cdbed39cdb06bbaa2ff30d"
+      },
+      {
+        "path": "gp/gp/all/u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader/01s_gp_p1024_ora_svd_kb_ckr_uup_gp_ini/02table/001create_table/ckr_uup_db_onboarding_new_clients.sql",
+        "sha256": "530d0fd03d2552fa227b209a910bf97e5eda7d5d38e9c99d962ca3c7306f3129"
+      },
+      {
+        "path": "gp/gp/all/u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader/01s_gp_p1024_ora_svd_kb_ckr_uup_gp_ini/02table/001create_table/ckr_uup_db_onboarding_meet_tasks.sql",
+        "sha256": "8c2ab04a122c0354dcfaa5dd5e38beadd83c8f3ec57fe66361613e2ec6d27caf"
+      }
+    ]
   }
 }

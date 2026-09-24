@@ -20,9 +20,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `tests/test_q03_greenplum.py` to cover GP-only bare storage values.
 - Unknown facts for Oracle-compatibility functions emitted from
   `scripts/build_bundle.py`; availability is not implied.
+- **Q-05 verifiable run preparation**: scripts/run_prepare.py with prepare,
+  verify, finalize, provenance and resume subcommands. Explicit
+  skill_root/project_root/wiki_root/subject, UUID, runtime hash, inventory
+  and validation_plan before writer. Limitation with diagnostics on failure.
+  Runtime/SQL change detection. Resume after interruption with hash verification.
+  Writer/validator execution and full-chain recovery stay manual; resume
+  reports `needs_action` for missing author artifacts.
+- **Q-06 large object writer instructions**: doc-writer.md section on
+  dividing work by operations/branches and KPI families, context slices with
+  exact source_ref, structured data for counters, common KPI formulas,
+  exact column types, unknown abbreviation handling, and reads → operation
+  → writes graph.
+- **Q-07 mutation matrix (partial)**: D01–D11 mutation annotations across all
+  Q cases; tests for mutation detection, review-label/assertion linking,
+  annotation fields and target resolution. Fresh bundles: 36/36 executed
+  mutations detected, 0 false-ready, 4 q09 mutations untested (`valid: false`).
+  D12 compatibility/window/example prose probes, graph mutations and the q09
+  multi-expression limitation remain open.
 
 ### Changed
 
+- scripts/run_prepare.py: new module for verifiable run preparation and
+  verification with runtime hash binding and provenance checks.
+- scripts/wiki_doc.py: added prepare, verify-run, finalize,
+  provenance and resume subcommands.
+- doc-writer.md: added large object handling section.
+- examples/expected/q06/page_assertions.json: separate D11 mutations for each
+  INSERT target after the former D12 labels were corrected.
+- docs/answer-templates.md: reports for the Q-05 preparation stages and the
+  legacy/provenance distinction.
+- references/regression.md: acceptance/CI provenance command pointer.
+- tests/test_q05_run_prepare.py, tests/test_q05_finalize.py,
+  tests/test_q05_resume.py, tests/test_q07_mutations.py: new test modules.
 - `scripts/sql_ast.py`: PL/pgSQL guards propagated through DDL/CTAS/CALL/
   EXECUTE/CTE/RETURN; GET [STACKED] DIAGNOSTICS represented as ASSIGN
   with diagnostic kind and stacked flag; RAISE fields include level,
@@ -41,6 +71,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Regression runner: accept expected `blocked`/`revise` without publication,
+  check the expected diagnostics, and keep mutation controls strictly ready.
+  Reject unexecuted repair counts and empty suites instead of reporting completion.
+- Q-05 answer templates: separate prepare/verify fields and document blocked
+  finalization, including failures after publication and optional diagnostic paths.
 - Set-operation audit: preserve every UNION/INTERSECT/EXCEPT node, ALL, operand
   order and nesting, local WITH and root ORDER BY/LIMIT/OFFSET. The full gate
   checks this structure against SQL. Output width is checked on both operands;

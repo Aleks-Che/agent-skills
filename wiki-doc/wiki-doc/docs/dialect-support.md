@@ -1,6 +1,8 @@
 # Матрица поддержки диалектов
 
-Дата проверки: 2026-09-24 (повторное ревью Q-04; DDL-приёмка Q-04 не завершена). Матрица описывает статический анализ закреплённым
+Дата проверки: 2026-09-24 (повторное ревью Q-04; DDL-приёмка пройдена —
+`DdlAcceptanceTests` 2/2, но Q-04 не завершён: остались 3 wildcard-выхода
+физических INI-таблиц и 1 переход в EXCEPTION). Матрица описывает статический анализ закреплённым
 `pglast==7.14` (libpg_query) и подтверждённые тестами границы пакета.
 SQL в СУБД не выполнялся. Прохождение разбора не подтверждает совместимость
 с любой версией PostgreSQL или полноту семантического анализа.
@@ -73,14 +75,14 @@ SQL в СУБД не выполнялся. Прохождение разбора
 
 ### 2.2 Greenplum и профиль CKR_GP
 
-| Вход | Результат | Проверка |
+| Вход | Результат | Положительный / отрицательный тест |
 |---|---|---|
-| `dialect='greenplum'`, общий SQL-поднабор | Статический анализ общим AST; имя диалекта сохраняется | D `test_greenplum_adapter_accepts_bounded_subset` |
-| `EXECUTE ON MASTER / ANY / ALL SEGMENTS` | Атрибут CREATE FUNCTION в позиции опции; не dynamic EXECUTE | [test_q03_greenplum.py](../tests/test_q03_greenplum.py), [test_q03_review.py](../tests/test_q03_review.py) |
-| `CREATE TABLE` / CTAS, `DISTRIBUTED BY (колонки) / RANDOMLY / REPLICATED` | Распределение в inventory, facts, каталоге и claims; BY ограничен простыми идентификаторами без opclass | Те же тесты; q05 с GP-контекстом проходит полный gate |
-| `WITH (...)` перед `DISTRIBUTED` | Имена и значения storage parameters сохраняются, включая GP-only литерал `orientation = ROW`; повтор имени блокируется | Те же тесты, включая CTAS и реконструкцию миграций; Q `GreenplumStorageValueTests` |
-| GP-синтаксис при `dialect='postgres'` | Прежняя блокировка разбора | D `test_greenplum_specific_syntax_blocks_postgres_analysis` |
-| GP MERGE, неизвестные расширения и неподдержанные позиции клауз | Пробел анализа; неизвестный текст не удаляется | `test_q03_review.py`, `test_unknown_gp_extension_stays_blocked_with_localized_reason` |
+| `dialect='greenplum'`, общий SQL-поднабор | Статический анализ общим AST; имя диалекта сохраняется | D `test_greenplum_adapter_accepts_bounded_subset`; отказ для неизвестного расширения — D `test_greenplum_unknown_extension_stays_blocked` |
+| `EXECUTE ON MASTER / ANY / ALL SEGMENTS` | Атрибут CREATE FUNCTION в позиции опции; не dynamic EXECUTE | Положительные: [test_q03_greenplum.py](../tests/test_q03_greenplum.py) `test_execute_on_master_is_declaration_attribute`, `test_execute_on_any_and_all`, `test_gp_function_with_master_full_gate_ready`; отрицательные: `test_unknown_execute_target_is_kept_and_reported`, `test_postgres_dialect_still_rejects_gp_syntax` |
+| `CREATE TABLE` / CTAS, `DISTRIBUTED BY (колонки) / RANDOMLY / REPLICATED` | Распределение в inventory, facts, каталоге и claims; BY ограничен простыми идентификаторами без opclass | Положительные: [test_q03_greenplum.py](../tests/test_q03_greenplum.py) `test_distributed_table_attributes`, `test_distributed_randomly`, `test_gp_table_with_distribution_full_gate_ready`; отрицательные: `test_unknown_distributed_clause_is_kept_and_reported`, [test_q03_review.py](../tests/test_q03_review.py) `test_migration_distribution_change_stays_unsupported` |
+| `WITH (...)` перед `DISTRIBUTED` | Имена и значения storage parameters сохраняются, включая GP-only литерал `orientation = ROW`; повтор имени блокируется | Положительный: [test_q04_ddl_star.py](../tests/test_q04_ddl_star.py) `GreenplumStorageValueTests`, [test_q03_review.py](../tests/test_q03_review.py) `test_ctas_preserves_attributes`; отрицательный: `test_duplicate_storage_parameter_blocks` |
+| GP-синтаксис при `dialect='postgres'` | Прежняя блокировка разбора | D `test_greenplum_specific_syntax_blocks_postgres_analysis`; контроль контекстного DDL — `test_postgres_context_parse_still_rejects_gp_ddl` |
+| GP MERGE, неизвестные расширения и неподдержанные позиции клауз | Пробел анализа; неизвестный текст не удаляется | Отрицательные: [test_q03_review.py](../tests/test_q03_review.py) `test_gp_merge_does_not_use_postgres_version_threshold`, [test_q03_greenplum.py](../tests/test_q03_greenplum.py) `test_unknown_gp_extension_stays_blocked_with_localized_reason`; положительный контроль (postgres) — `test_postgres_bundle_positive_control_stays_ready` |
 | Профиль CKR_GP, SQL примера 11, `postgres/unknown` | Разбирается; профиль проверяет правила доступа | 11; D `test_case_11_unknown_version` |
 
 Строка CKR_GP не подтверждает диалект Greenplum. Его серверные версии,

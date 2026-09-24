@@ -108,3 +108,80 @@ Wiki: <wiki_root>. Снимок: <generated_at>.
 
 Не объявляйте выполненным откат без подтверждения recovery. При конфликте
 укажите сохранённые артефакты и необходимость разрешить конфликт.
+
+## 9. Этапы проверяемого запуска (Q-05)
+
+Команды и контракт — [подготовка запуска](../references/artifacts.md).
+Копию скилла выбирай явно (`--skill-root`); CLI запускай из той же копии,
+версию фиксируй по `--version`.
+
+Подготовка (`prepare`):
+
+```text
+Запуск подготовлен: run_id=<uuid>, run_dir=<новый каталог>.
+Состояние: prepared; publication_authorized=false, generation_completed=false.
+runtime_hash=<...>; SQL: <sql_sha256 из ответа prepare>.
+Следующий шаг: writer/validator по SKILL.md; автоматическое выполнение не заявляется.
+```
+
+Проверка подготовки (`verify-run`):
+
+```text
+Подготовка проверена: run_id=<uuid>, run_dir=<каталог из ответа>.
+Состояние: verified; publication_authorized=false, generation_completed=false.
+Ошибки: <errors из ответа>.
+```
+
+`verify-run` не возвращает runtime_hash/sql_sha256: если они нужны в ответе,
+возьми их из проверенного `run_context.json`, а не выдумывай поля ответа CLI.
+
+Отказ подготовки (limitation):
+
+```text
+Запуск не подготовлен: <subject>. Причина: <reason из limitation>.
+Диагностика: <diagnostic_paths: limitation.json, inventory.json, validation_plan.json>.
+Подготовка не завершена. Следующее действие: устранить причину и выполнить
+prepare в новом каталоге.
+```
+
+Выводи только фактически возвращённые `diagnostic_paths`: при отказе до создания
+каталога список пуст. Состояние ранее существующей страницы этим ответом не проверяется.
+
+Отказ завершения (`finalize`):
+
+```text
+Запуск не завершён: run_id=<uuid или null>, run_dir=<каталог из ответа>.
+Состояние: blocked; publication_authorized=false, generation_completed=false.
+Причины: <errors из ответа>.
+Следующее действие: <исправление по конкретной причине>.
+```
+
+При `validation_required=true` заново проверь слитый черновик и пересобери manifest.
+`blocked` не доказывает отсутствие записей: ошибка может возникнуть после publisher,
+при проверке provenance. Перед повтором проверь опубликованную страницу и транзакцию;
+не объявляй откат или неизменность wiki без подтверждения.
+
+Завершение (finalize):
+
+```text
+Запуск завершён: run_id=<uuid>, page_id=<page_id>. gate_decision=ready;
+generation_completed=true, publication_authorized=true; idempotent=<true|false>.
+Provenance опубликованной страницы подтверждён.
+```
+
+`resume` при недостающих facts/draft/coverage/validation возвращает
+`needs_action`, `next_stage`, `missing_artifacts` и оба флага false: это
+не выполненное возобновление. Выполни недостающий авторский этап и повтори.
+
+## 10. Legacy и происхождение
+
+```text
+Wiki: <wiki_root>. Lint: <valid>; legacy_metadata_missing: <число предупреждений>.
+Legacy-страницы сохранены и не объявлены проверенными или ошибочными.
+Provenance выбранных страниц: wiki_doc.py provenance --wiki-root <wiki> --page <page_id>.
+```
+
+Отсутствие управляемых metadata — неуспех подтверждения генерации для выбранной
+страницы, но не автоматический смысловой дефект произвольного текста. Обычный
+lint проверяет всю wiki, включая legacy и audit-отчёты, и не превращает их в
+managed-страницы.

@@ -70,9 +70,26 @@ def check_run(run,project,expected_dir,subject,profile=None):
     rules={c['rule_id'] for c in plan['required_checks']}
     for rule in checks['required_rules']:
         if rule not in rules: errors.append('missing required rule '+rule)
-    required_decision=read_json(expected_dir/'decision.json')['decision']
+    decision_expectation=read_json(expected_dir/'decision.json')
+    required_decision=decision_expectation['decision']
+    if required_decision not in ('ready','revise','blocked'):
+        raise ValueError('Unsupported expected gate decision: '+str(required_decision))
+    expected_errors=decision_expectation.get('errors',[])
+    if not isinstance(expected_errors,list) or not all(isinstance(e,str) for e in expected_errors):
+        raise ValueError('Expected gate errors must be a list of strings')
+    if required_decision=='ready' and expected_errors:
+        raise ValueError('Expected ready cannot include gate errors')
     gate=evaluate_bundle(run,roots={'project':project},profile_path=profile)
-    if gate['decision']!=required_decision or not gate['publication_authorized']: errors+=gate['errors'] or ['gate did not authorize expected ready bundle']
+    if gate['decision']!=required_decision:
+        errors.append(f"gate decision {gate['decision']} differs from expected {required_decision}")
+    if gate.get('publication_authorized') is not (required_decision=='ready'):
+        errors.append('gate publication authorization differs from expected decision')
+    if gate.get('input_error'):
+        errors.append('gate input error is not an expected semantic refusal')
+    # An unrelated refusal (stale hashes, missing evidence, etc.) is not success.
+    # Negative oracles pin any expected diagnostics as well as the decision.
+    if sorted(gate['errors'])!=sorted(expected_errors):
+        errors+=gate['errors'] or ['expected gate diagnostics are missing']
     assertion=read_json(expected_dir/'page_assertions.json')
     if assertion['contract']=='claims-v1':
         errors+=check_page_claims(facts,page)
@@ -87,6 +104,7 @@ def check_run(run,project,expected_dir,subject,profile=None):
     fingerprint=copy.deepcopy(facts)
     fingerprint.pop('run_id',None)
     return dict(valid=not errors,errors=errors,decision=gate['decision'],
+                publication_authorized=gate['publication_authorized'],gate_errors=gate['errors'],
                 facts_sha256=hashlib.sha256(json.dumps(fingerprint,sort_keys=True).encode()).hexdigest())
 
 
@@ -122,6 +140,10 @@ def isolate(case,workspace,examples):
 def run_suite(manifest_path,output,*,mode='saved',repeats=3,adapter=None,model=None,settings=None,timeout=120,iterations=0):
     manifest_path=Path(manifest_path).resolve(); cases=read_json(manifest_path)['cases']; examples=manifest_path.parent
     output=Path(output).resolve(); results=[]; started=time.monotonic()
+    if not cases or any(not c['subjects'] for c in cases):
+        raise ValueError('Regression manifest must contain cases with documented subjects')
+    if iterations!=0:
+        raise ValueError('Automatic repair iterations are not implemented; --repair-iterations must be 0')
     if mode=='adapter' and (not adapter or not model): raise ValueError('Agent adapter requires command argv and model/version')
     for repeat in range(1,repeats+1):
         for case in cases:
@@ -150,9 +172,10 @@ def run_suite(manifest_path,output,*,mode='saved',repeats=3,adapter=None,model=N
     spread={}
     for row in results:
         if 'subject' in row: spread.setdefault(row['case']+'/'+row['subject'],set()).add((row.get('facts_sha256'),row.get('decision'),tuple(row['errors'])))
+    valid=bool(results) and all(r['valid'] for r in results) and len(results)==repeats*sum(len(c['subjects']) for c in cases)
     report=dict(schema_version=1,mode=mode,cycle='full-agent' if mode=='adapter' else 'semi-automatic-saved',
-                full_agent_cycle_completed=mode=='adapter' and all(r['valid'] for r in results),
-                valid=all(r['valid'] for r in results) and len(results)==repeats*sum(len(c['subjects']) for c in cases),
+                full_agent_cycle_completed=mode=='adapter' and valid,
+                valid=valid,
                 cases=len(cases),subjects=sum(len(c['subjects']) for c in cases),repeats=repeats,repair_iterations=iterations,
                 model=model or 'deterministic-reference-v1',settings=settings or {},elapsed_seconds=round(time.monotonic()-started,3),
                 outcome_variants={k:len(v) for k,v in spread.items()},results=results,
@@ -165,7 +188,8 @@ def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__); p.add_argument('--manifest',default=str(PACKAGE/'examples/cases.json'))
     p.add_argument('--output',required=True); p.add_argument('--mode',choices=['saved','reference','adapter'],default='saved')
     p.add_argument('--repeats',type=int,default=3); p.add_argument('--adapter',help='JSON array argv; {request} is replaced, shell is never used')
-    p.add_argument('--model'); p.add_argument('--settings',default='{}'); p.add_argument('--timeout',type=float,default=120); p.add_argument('--repair-iterations',type=int,default=0)
+    p.add_argument('--model'); p.add_argument('--settings',default='{}'); p.add_argument('--timeout',type=float,default=120)
+    p.add_argument('--repair-iterations',type=int,default=0,help='Reserved; only 0 is supported until repair execution is implemented')
     a=p.parse_args(argv)
     if a.repeats<1 or a.timeout<=0: p.error('Positive repeats/timeout required')
     try:

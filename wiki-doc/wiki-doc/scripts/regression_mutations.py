@@ -81,6 +81,9 @@ def run_mutations(report_path, expected_root, output):
             # Recheck the real bundle, SQL oracle and visible claims. A cached decision
             # or an already broken baseline cannot establish mutation detection.
             control = check_run(run, project, expected, record['subject'], record.get('profile'))
+            if control['valid'] and (control['decision'] != 'ready' or not control.get('publication_authorized')):
+                control = {**control, 'valid': False,
+                           'errors': [*control['errors'], 'Mutation baseline must authorize a ready bundle']}
             controls.append(dict(case=case, subject=record['subject'], **control))
             if not control['valid']:
                 for annotation in annotations:

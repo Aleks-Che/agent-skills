@@ -4,21 +4,26 @@
 Этот файл — журнал выполнения задач Q-01…Q-09. История предыдущего этапа находится
 в [IMPLEMENTATION-STATUS.md](IMPLEMENTATION-STATUS.md).
 
-**Текущий итог 2026-09-24 (повторная проверка Q-05):** Q-02/Q-03 — `done`,
+**Текущий итог 2026-09-24 (повторный аудит finalize/provenance Q-05):** Q-02/Q-03 — `done`,
 Q-01/Q-04 — `in_progress`, Q-05 — `in_progress`, Q-06…Q-09 — `planned`.
-Исправлены принятие подменённых inventory/plan и чужого run_id, отсутствие
-проверки DDL/миграций, несоответствие skill_root исполняемому runtime, пропуск
-типов/профиля, prepared при analysis_gap и запись в опубликованную wiki.
-Prepare/verify переиспользуют tool_versions, manifest/evidence и восстанавливают
-план независимо; контекст подготовки не заменяет полный gate/publisher.
-Инструкции и контракт обновлены. Подробности: [REVIEW-Q05-PREPARE.md](REVIEW-Q05-PREPARE.md),
-[Q05-PREPARE-REVIEW.json](Q05-PREPARE-REVIEW.json).
+Заявленная цепочка build → gate → publish не сохраняла UUID подготовки,
+перезаписывала артефакты, обходила verify и не создавала publication.json.
+Provenance принимал пустой каталог и фиктивные metadata. Исправлено:
+finalize принимает готовые writer/validator артефакты, проверяет связь с prepare,
+вызывает gate/publisher и проверку результата. Provenance проверяет явно выбранные
+страницы, архивы и committed-журналы, сохраняя read-only режим.
+Подробности: [REVIEW-Q05-FINALIZE.md](REVIEW-Q05-FINALIZE.md),
+[Q05-FINALIZE-REVIEW.json](Q05-FINALIZE-REVIEW.json).
 
-Полный прогон: **987 tests / 986 passed / 1 skipped / 0 failed**, 33 модуля.
-Q-набор — **277**, Q-05 — **33** (10 обновлённых + 23 новых), внешняя приёмка
-включена. Единственный пропуск — Windows symlink. Reference в трёх повторах:
-исторический набор **45/45**, Q-набор **30/33**. q09 остаётся известным отказом;
-настоящий LLM-цикл и незакрытые критерии Q-05 не объявляются выполненными.
+Полный прогон: **1024 tests / 1023 passed / 1 skipped / 0 failed**, 35 модулей,
+включая все три внешних acceptance-теста. Q-набор — **314**, Q-05 — **70**.
+Reference в трёх повторах: **45/45** исторических и **30/33** Q-результатов,
+единственный отказ — q09. Пропуск unit-теста — Windows symlink.
+Настоящий LLM-цикл не запускался; публикации тестировались во временных wiki.
+
+Предыдущий аудит 2026-09-24: повторная проверка Q-05 исправила принятие
+подменённых inventory/plan и чужого run_id. Подробности:
+[REVIEW-Q05-PREPARE.md](REVIEW-Q05-PREPARE.md), [Q05-PREPARE-REVIEW.json](Q05-PREPARE-REVIEW.json).
 
 Предыдущий аудит 2026-09-24: повторная проверка reference-ожиданий Q-01
 подтвердила 10/11; восстановлены `date_boundary` у q04 и `unknown` у q11.
@@ -422,6 +427,21 @@ Python 3.12.7. SQL в БД не исполнялся. LLM-цикл и публи
 - 10 исходных тестов используют полные копии скилла и реальный CLI; добавлены
   23 регрессионных теста. До исправления 17 контрпримеров дали 16 failures и
   4 errors с учётом JSON-подслучаев. Подробности и хеши — Q05-PREPARE-REVIEW.json.
+- **Подкоманды `finalize` и `provenance` (2026-09-24):**
+  - `finalize` использует общий verify_prepared и принимает готовые writer/validator
+    артефакты. Полный manifest сохраняет UUID/runtime/входы/план подготовки.
+    Пропуски, смена runtime и подмена данных отклоняются до публикации;
+    reference build больше не перезаписывает их автоматически.
+  - Publication snapshot привязывается к manifest; merge с изменением draft
+    требует нового validator-отчёта. Completed возвращается после полного gate,
+    publisher и проверки provenance. Исправлена ошибка повторных keyword flags.
+  - `provenance --page` проверяет выбранные страницы: metadata, байты, полный
+    архивный gate, UUID/источники, текущий SQL/DDL, committed journal и индекс.
+    Пустой каталог/legacy/ручная запись не подтверждают генерацию. Обычный lint
+    и не выбранные legacy/audit-файлы не изменены.
+  - 6 исходных тестов актуализированы; добавлен 31 тест с настоящими временными
+    публикациями, CLI, профилем, миграциями и отрицательными сценариями. До
+    исправлений 22 контрпримера дали 30 failures с учётом подслучаев.
 
 **Приёмка (частично):**
 
@@ -429,24 +449,34 @@ Python 3.12.7. SQL в БД не исполнялся. LLM-цикл и публи
 - [x] При отказе возвращается limitation с диагностикой, а не готовая страница.
 - [x] Проверка runtime, SQL/DDL/миграций, артефактов, UUID и независимого плана.
 - [x] Привязка копии скилла на этапах prepare/verify; отказ вместо молчаливого выбора.
-- [ ] Передача одного runtime/UUID writer/validator/gate/publisher по всей цепочке.
-- [ ] Строгая проверка происхождения сгенерированных страниц для приёмки/CI.
-- [ ] Финальный статус «документация готова» только из полного gate и publisher.
+- [x] Проверка одного runtime/UUID в подготовке, готовых артефактах, gate и публикации.
+- [x] Строгая проверка происхождения выбранных страниц: metadata, архив, committed publisher.
+- [x] Финальный статус только из полного gate, publisher и проверки результата.
+- [ ] Автоматическое выполнение writer/validator с передачей подготовленного контекста.
+      Проверка их готовых артефактов не доказывает запуск LLM или порядок действий.
 - [ ] Возобновление всей последовательности после прерывания. Обнаружение неполной
       подготовки реализовано; её повтор требует нового каталога.
 
-**Проверки:**
+**Повторная приёмка finalize/provenance:** полный набор 1024/1023/1/0,
+Q-набор 314, Q-05 70; reference 45/45 и 30/33 в трёх повторах. Все 31 новые
+регрессии прошли, в том числе успешная публикация с исходным UUID, отказ при
+пропуске validation и подмене данных, merge с повторной валидацией, явный профиль,
+миграции, реальный CLI и идемпотентность. Команды/логи — Q05-FINALIZE-REVIEW.json.
+
+**Проверки исходной реализации (история; заменены новым аудитом):**
 
 | Команда | Каталог | Результат |
 |---|---|---|
-| Все test_*.py отдельными процессами, до четырёх одновременно | wiki-doc/wiki-doc | 987 tests, 1 skipped, 0 failed |
-| Q-набор в общем прогоне с внешней приёмкой | wiki-doc/wiki-doc | 277 tests, 0 skipped |
-| test_q05_run_prepare.py / test_q05_prepare_review.py | wiki-doc/wiki-doc | 10 + 23 passed |
-| reference, cases.json / cases-q.json, три повтора | wiki-doc/wiki-doc | 45/45 и 30/33, прежний q09 |
+| `python -X utf8 -B -m unittest tests.test_q05_finalize` | wiki-doc/wiki-doc | 6 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_q0*.py"` | wiki-doc/wiki-doc | 283 tests, 3 skipped, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_review_fixes.py"` | wiki-doc/wiki-doc | 41 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_dialect_matrix.py"` | wiki-doc/wiki-doc | 41 tests, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_p0_gate_regressions.py"` | wiki-doc/wiki-doc | 36 tests, 1 skipped, 0 failed |
+| `python -X utf8 -B -m unittest discover -s tests -p "test_inventory_plan.py"` | wiki-doc/wiki-doc | 22 tests, 0 failed |
 
-**Следующее действие:** завершить Q-05 — автоматическая передача runtime/UUID,
-проверка происхождения страниц, итоговый статус из gate+publisher и возобновление
-цепочки. Затем Q-06/Q-07. Prepare/verify сами по себе эту приёмку не закрывают.
+**Следующее действие:** завершить Q-05 — автоматическая передача контекста
+writer/validator и возобновление всей цепочки после прерывания. Затем Q-06/Q-07.
+Повтор неизменного committed-комплекта уже поддерживает идемпотентность publisher.
 
 ### Q-02. Устранить аварийное завершение анализа
 

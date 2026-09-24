@@ -71,11 +71,49 @@ runtime, run_id, subject/page_id и повторно строит inventory/plan
 Старый контекст без preparation_manifest требует новой подготовки.
 Статусы `prepared` и `verified` имеют `publication_authorized: false` и
 `generation_completed: false`. Они не удостоверяют происхождение страницы и не
-подменяют полный gate/publisher. Автоматическое продолжение writer/validator,
-восстановление всей цепочки и строгая приёмка происхождения страниц остаются Q-05.
+подменяют полный gate/publisher. Автоматическое продолжение writer/validator и
+восстановление всей цепочки остаются Q-05.
 Снимки без внешней доверенной фиксации не являются криптографической подписью
 авторства. Код выхода 0 означает успешную подготовку/проверку, 1 — limitation/invalid;
 ошибки синтаксиса аргументов CLI имеют код 2.
+
+### Финализация и проверка опубликованных страниц
+
+```text
+python <skill_root>/scripts/wiki_doc.py finalize --run-dir <run_dir>
+python <skill_root>/scripts/wiki_doc.py provenance --wiki-root <wiki_root> --page <page_id> [<other_page_id>] --project-root <project_root>
+```
+
+До `finalize` writer и validator сохраняют facts, page.draft.md, coverage,
+validation и полный manifest. Inventory/plan, UUID, SQL/DDL/миграции, профиль
+и tool_versions должны совпадать с подготовкой. Отсутствующий этап, изменившийся
+runtime или файл — отказ; команда не вызывает reference-адаптер `build_bundle`
+и не заменяет результат writer. Gate заново вычисляет решение из полного комплекта.
+
+Предпочтительно выполнить `publish.py prepare` до validator и включить
+publication.json в manifest. Если плана публикации ещё нет, `finalize` создаст
+его после первичного gate. Неизменившийся draft получает привязку publication_plan
+и повторный gate. Изменение draft при слиянии возвращает `blocked` с
+`validation_required: true`: сохранившийся текст нужно проверить заново и
+пересобрать полный manifest. Validation автоматически не переписывается.
+
+Только успешный полный gate, ответ publisher и проверка опубликованной страницы
+дают `completed`, `publication_authorized: true`, `generation_completed: true`.
+Ошибка любого шага даёт `blocked` и оба флага false; после ошибки provenance
+публикация уже могла состояться — проверь сохранённый publisher journal.
+Повтор целого неизменного committed-комплекта использует идемпотентность publisher;
+это не автоматическое восстановление прерванного writer/validator.
+
+`provenance` требует непустой явный список страниц. Пустой каталог metadata,
+отсутствующая или legacy-страница не подтверждают генерацию. Проверяются форма
+и идентичность metadata, байты страницы, архивный полный gate, UUID, canonical_key,
+SQL/DDL и текущие исходники, publication.json, committed-журнал и запись индекса.
+Ручная запись страницы без согласованного publisher-комплекта отклоняется.
+Команда ничего не пишет и не выбирает посторонние legacy/audit-файлы; обычный lint
+сохраняет прежнее поведение. Её `verified` имеет оба флага false: это проверка
+существующего результата, а не разрешение следующей публикации.
+Локальные JSON и журналы не подписаны: согласованная подделка всего комплекта
+не является доказуемой историей авторства. Настоящее качество LLM проверяется Q-08.
 
 ## Общие связи
 

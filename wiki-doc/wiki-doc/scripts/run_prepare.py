@@ -1,4 +1,4 @@
-"""Prepare independent SQL/DDL obligations; verification never authorizes publication."""
+"""Prepare, verify and finalize pinned runs; inspect selected publication provenance."""
 from __future__ import annotations
 
 import argparse
@@ -28,8 +28,9 @@ def _hash_tree(root: Path) -> str:
     return _runtime_hash(compute_tool_versions(root))
 
 
-def _result(status, **values):
-    return dict(status=status, publication_authorized=False, generation_completed=False, **values)
+def _result(status, *, publication_authorized=False, generation_completed=False, **values):
+    return dict(status=status, publication_authorized=publication_authorized,
+                generation_completed=generation_completed, **values)
 
 
 def _print(result):
@@ -211,65 +212,169 @@ def cmd_prepare(args: argparse.Namespace) -> int:
         return 1
 
 
-def cmd_verify(args: argparse.Namespace) -> int:
-    run = Path(args.run_dir).resolve()
+def verify_prepared(run):
+    """Read-only admission shared by verify and finalize; return the checked context."""
+    run = Path(run).resolve()
     context_path = run / RUN_CONTEXT_FILE
-    run_id = None
-    try:
-        if (run / LIMITATION_FILE).exists():
-            raise ValueError('Run has a limitation; prepare a new run after resolving it')
-        snapshots = {}
-        context = read_json(context_path, snapshot_hashes=snapshots)
-        errors = _context_errors(context)
+    if (run / LIMITATION_FILE).exists():
+        raise ValueError('Run has a limitation; prepare a new run after resolving it')
+    snapshots = {}
+    context = read_json(context_path, snapshot_hashes=snapshots)
+    errors = _context_errors(context)
+    if errors:
+        raise ValueError('; '.join(errors))
+    run_id = context['run_id']
+    skill = _active_package(context['skill_root'])
+    project, wiki = Path(context['project_root']), Path(context['wiki_root'])
+    if not project.is_absolute() or not wiki.is_absolute() or not project.is_dir() or not wiki.is_dir():
+        raise ValueError('Stored roots must be absolute existing directories')
+    if run.is_relative_to(wiki.resolve()):
+        raise ValueError('Preparation output must be outside wiki_root')
+    profile = Path(context['profile_path']) if context['profile_path'] else None
+    if profile is not None and not profile.is_absolute():
+        raise ValueError('Profile path must be absolute')
+    versions = compute_tool_versions(skill, profile_path=profile)
+    manifest = context['preparation_manifest']
+    if versions != manifest['tool_versions'] or _runtime_hash(versions) != context['runtime_hash'] or context['runtime_version'] != __version__:
+        raise ValueError('runtime hash/version mismatch')
+    if run_id != manifest['run_id'] or manifest.get('documented_subjects') != [context['subject']]:
+        raise ValueError('Run ID or subject differs from preparation manifest')
+    if len(manifest['sql_files']) != 1:
+        raise ValueError('A prepared run must select one SQL source')
+    for name, ref in manifest['artifacts'].items():
+        if ref.get('root', 'run') != 'run' or ref['path'] != name + '.json':
+            raise ValueError('Preparation artifact must name its fixed run-local file')
+    from profiles import CKR
+    candidate_profile = profile or CKR
+    runtime_before = compute_tool_versions(skill, profile_path=candidate_profile)
+    _check_snapshot(manifest, run, project, runtime_before, candidate_profile)
+    saved = {name:read_json(run / ref['path'], snapshot_hashes=snapshots)
+             for name, ref in manifest['artifacts'].items()}
+    for name, value in saved.items():
+        errors = validate_schema(value, load_schemas()[name], name)
         if errors:
             raise ValueError('; '.join(errors))
-        run_id = context['run_id']
-        skill = _active_package(context['skill_root'])
-        project, wiki = Path(context['project_root']), Path(context['wiki_root'])
-        if not project.is_absolute() or not wiki.is_absolute() or not project.is_dir() or not wiki.is_dir():
-            raise ValueError('Stored roots must be absolute existing directories')
-        if run.is_relative_to(wiki.resolve()):
-            raise ValueError('Preparation output must be outside wiki_root')
-        profile = Path(context['profile_path']) if context['profile_path'] else None
-        if profile is not None and not profile.is_absolute():
-            raise ValueError('Profile path must be absolute')
-        versions = compute_tool_versions(skill, profile_path=profile)
-        manifest = context['preparation_manifest']
-        if versions != manifest['tool_versions'] or _runtime_hash(versions) != context['runtime_hash'] or context['runtime_version'] != __version__:
-            raise ValueError('runtime hash/version mismatch')
-        if run_id != manifest['run_id'] or manifest.get('documented_subjects') != [context['subject']]:
-            raise ValueError('Run ID or subject differs from preparation manifest')
-        if len(manifest['sql_files']) != 1:
-            raise ValueError('A prepared run must select one SQL source')
-        for name, ref in manifest['artifacts'].items():
-            if ref.get('root', 'run') != 'run' or ref['path'] != name + '.json':
-                raise ValueError('Preparation artifact must name its fixed run-local file')
-        from profiles import CKR
-        candidate_profile = profile or CKR
-        runtime_before = compute_tool_versions(skill, profile_path=candidate_profile)
-        _check_snapshot(manifest, run, project, runtime_before, candidate_profile)
-        saved = {name:read_json(run / ref['path'], snapshot_hashes=snapshots)
-                 for name, ref in manifest['artifacts'].items()}
-        for name, value in saved.items():
-            errors = validate_schema(value, load_schemas()[name], name)
-            if errors:
-                raise ValueError('; '.join(errors))
-            ref = manifest['artifacts'][name]
-            if snapshots[(run / ref['path']).resolve()] != ref['sha256'] or value['run_id'] != run_id:
-                raise ValueError(f'{name}: changed bytes or foreign run_id')
-        inventory, plan, selected = _analysis(manifest, project, context['subject'], context['dialect'], context['version'], profile)
-        if inventory.get('coverage_notes'):
-            raise ValueError('Rebuilt inventory has analysis gaps')
-        if selected != profile or inventory != saved['inventory'] or plan != saved['validation_plan'] or manifest['page_id'] != plan['page_id']:
-            raise ValueError('Prepared inventory/plan/identity differs from independently rebuilt obligations')
-        _check_snapshot(manifest, run, project, runtime_before, candidate_profile)
-        if any(sha256_file(path) != digest for path, digest in snapshots.items()):
-            raise ValueError('Preparation artifacts changed during verification')
-        _print(_result('verified', run_id=run_id, run_dir=str(run), errors=[]))
+        ref = manifest['artifacts'][name]
+        if snapshots[(run / ref['path']).resolve()] != ref['sha256'] or value['run_id'] != run_id:
+            raise ValueError(f'{name}: changed bytes or foreign run_id')
+    inventory, plan, selected = _analysis(manifest, project, context['subject'], context['dialect'], context['version'], profile)
+    if inventory.get('coverage_notes'):
+        raise ValueError('Rebuilt inventory has analysis gaps')
+    if selected != profile or inventory != saved['inventory'] or plan != saved['validation_plan'] or manifest['page_id'] != plan['page_id']:
+        raise ValueError('Prepared inventory/plan/identity differs from independently rebuilt obligations')
+    _check_snapshot(manifest, run, project, runtime_before, candidate_profile)
+    if any(sha256_file(path) != digest for path, digest in snapshots.items()):
+        raise ValueError('Preparation artifacts changed during verification')
+    return context
+
+
+def cmd_verify(args: argparse.Namespace) -> int:
+    run = Path(args.run_dir).resolve()
+    try:
+        context = verify_prepared(run)
+        _print(_result('verified', run_id=context['run_id'], run_dir=str(run), errors=[]))
         return 0
     except Exception as exc:
-        _print(_result('invalid', run_id=run_id, errors=[str(exc)]))
+        _print(_result('invalid', run_id=None, errors=[str(exc)]))
         return 1
+
+
+def _bound_bundle(run, context):
+    """Require writer/validator output to extend, never replace, preparation."""
+    snapshots = {}
+    manifest = read_json(run / 'manifest.json', snapshot_hashes=snapshots)
+    errors = validate_schema(manifest, load_schemas()['manifest'], 'manifest')
+    if errors:
+        raise ValueError('; '.join(errors))
+    before = context['preparation_manifest']
+    for name in ('run_id', 'page_id', 'documented_subjects', 'tool_versions',
+                 'sql_files', 'context_files', 'migration_manifest'):
+        if manifest.get(name) != before.get(name):
+            raise ValueError(f'Full manifest {name} differs from preparation')
+    for name, ref in before['artifacts'].items():
+        if manifest['artifacts'][name] != ref:
+            raise ValueError(f'Full manifest replaced prepared {name}')
+    errors = verify_manifest_hashes(manifest, run, roots={'project': Path(context['project_root'])})
+    if errors:
+        raise ValueError('; '.join(errors))
+    if any(sha256_file(path) != digest for path, digest in snapshots.items()):
+        raise ValueError('Full manifest changed during admission')
+    return manifest
+
+
+def cmd_finalize(args: argparse.Namespace) -> int:
+    """Verify authored artifacts, prepare publication, run gate and publish.
+
+    Never invokes the deterministic reference writer or manufactures validation.
+    A changed merged draft requires a fresh validator report before continuing.
+    """
+    run = Path(args.run_dir).resolve()
+    run_id = None
+    try:
+        context = verify_prepared(run)
+        context_hash = sha256_file(run / RUN_CONTEXT_FILE)
+        run_id = context['run_id']
+        project, wiki = Path(context['project_root']), Path(context['wiki_root'])
+        profile = Path(context['profile_path']) if context['profile_path'] else None
+        manifest = _bound_bundle(run, context)
+        from validation_gate import evaluate_bundle
+        from publish import prepare as prepare_publication, publish
+        from page_provenance import check_provenance
+
+        def admit():
+            current = verify_prepared(run)
+            if current != context or sha256_file(run / RUN_CONTEXT_FILE) != context_hash:
+                raise ValueError('Prepared context changed during finalization')
+            return _bound_bundle(run, context)
+
+        def gate():
+            checked = evaluate_bundle(run, roots={'project': project, 'wiki': wiki},
+                                      profile_path=profile, write_decision=True)
+            if checked.get('decision') != 'ready' or not checked.get('publication_authorized'):
+                raise ValueError('Full gate refused: ' + '; '.join(checked.get('errors', []))
+                                 + f" (decision={checked.get('decision')})")
+            return checked
+
+        # Missing or invalid writer/validator artifacts fail before publication preparation.
+        gate()
+        if not manifest.get('publication_plan'):
+            prepared = prepare_publication(run, wiki)
+            if prepared['draft_changed']:
+                _print(_result('blocked', run_id=run_id, run_dir=str(run), validation_required=True,
+                    errors=['Merged draft changed; validate the merged page and rebuild the full manifest']))
+                return 1
+            # Only bind the publication snapshot; never refresh writer evidence hashes here.
+            admit()
+            manifest['publication_plan'] = dict(path='publication.json', sha256=sha256_file(run / 'publication.json'))
+            atomic_json(run / 'manifest.json', manifest)
+        admit()
+        checked = gate()
+        admit()
+        published = publish(run, wiki, project_root=project, profile_path=profile)
+        if not published.get('published') or published.get('page_id') != manifest['page_id']:
+            raise ValueError('Publisher did not confirm the selected page')
+        provenance = check_provenance(wiki, [manifest['page_id']], project_root=project, expected_run_id=run_id)
+        if not provenance['valid']:
+            raise ValueError('Published provenance invalid: ' + '; '.join(provenance['errors']))
+        admit()
+        # Reuse the gate decision and publisher transaction as authorities, not stage labels.
+        _print(_result('completed', run_id=run_id, run_dir=str(run), gate_decision=checked['decision'],
+                       publication_authorized=True, generation_completed=True, page_id=manifest['page_id'],
+                       idempotent=published.get('idempotent', False)))
+        return 0
+    except Exception as exc:
+        _print(_result('blocked', run_id=run_id, run_dir=str(run), errors=[str(exc)]))
+        return 1
+
+
+def cmd_provenance(args: argparse.Namespace) -> int:
+    """Strict, read-only admission of explicitly selected generated pages."""
+    from page_provenance import check_provenance
+    result = check_provenance(args.wiki_root, getattr(args, 'page', None),
+                              project_root=getattr(args, 'project_root', None))
+    _print(_result('verified' if result['valid'] else 'invalid',
+                   pages=result['pages'], errors=result['errors']))
+    return 0 if result['valid'] else 1
 
 
 def main(argv=None):
@@ -286,8 +391,22 @@ def main(argv=None):
     prep.add_argument('--output', help='New run directory (default: cwd/.wiki-doc-runs/<run_id>)')
     verify = sub.add_parser('verify', help='Verify preparation; never authorize publication')
     verify.add_argument('--run-dir', required=True)
+    finalize = sub.add_parser('finalize', help='Verify authored run, gate and publish; does not generate writer/validator output')
+    finalize.add_argument('--run-dir', required=True)
+    prov = sub.add_parser('provenance', help='Verify selected pages against publisher metadata, archive and committed transaction')
+    prov.add_argument('--wiki-root', required=True)
+    prov.add_argument('--page', nargs='+', required=True, help='Selected wiki-relative page paths; legacy/audit files are not selected implicitly')
+    prov.add_argument('--project-root', help='Override current SQL project root for source freshness and links')
     args = parser.parse_args(argv)
-    return cmd_prepare(args) if args.command == 'prepare' else cmd_verify(args)
+    if args.command == 'prepare':
+        return cmd_prepare(args)
+    elif args.command == 'verify':
+        return cmd_verify(args)
+    elif args.command == 'finalize':
+        return cmd_finalize(args)
+    elif args.command == 'provenance':
+        return cmd_provenance(args)
+    return 2
 
 
 if __name__ == '__main__':

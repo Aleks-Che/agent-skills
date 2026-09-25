@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Q-01 old-documentation defect kit (acceptance closed)**:
+  `examples/fixtures/old-doc-defects.json` pins the old page, the old audit and
+  the control SQL by SHA-256 (`refuse_to_apply_assertions`) and lists the
+  checked assertions D01-D12 plus three positive controls. Every defect is
+  verified as a pair: the false claim signature present in those control inputs
+  and contradicting SQL/DDL evidence (pinned source lines, raw inventory DML
+  and call counts, reconstructed table columns).
+  `tests/test_q01_old_doc_defects.py` executes the list under
+  `WIKI_DOC_ACCEPTANCE_PROJECT` (3 cases).
 - **Q-08 agent adapter (pilot stage)**: `scripts/agent_adapter.py` implements the
   generator seat of the adapter contract in references/regression.md. The factual
   substrate (facts/inventory/plan) is built by the skill's own analysis pipeline,

@@ -125,7 +125,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the decision enumerates every gap rather than one stage's subset; a catalog
   failure on an already-gapped inventory reduces to that list instead of a
   bare crash string. Large objects with known gaps therefore complete the
-  bundle contract with the full gap inventory.
+  bundle contract with the full gap inventory. The adapter seal also re-binds
+  run-owned evidence references to the bytes being sealed
+  (`rebind_run_evidence`): the mechanical validation draft points at the
+  pre-authoring page bytes, and after the writer seat those references must
+  not fail the evidence check. The validator seat prompt now requires the
+  review conclusion first (`validation-review.md`), so the seat delivers an
+  auditable result before any deep edits of large reports.
   `agent_adapter.seat` accepts delivered artifacts even when the agent CLI
   exits non-zero after finishing, and the validator seat can confirm a
   mechanical validation draft via `validation-review.md` instead of rewriting

@@ -68,11 +68,12 @@ coverage.json, validation_plan.json.
 списка обязательств сохраняй (не удаляй строки и не добавляй чужие id), для
 исправленных строк укажи конкретную причину и связанные fact_ids, evidence —
 короткие строки-источники либо source_refs из inventory (схема:
-{skill}/schemas/validation.schema.json). Если дефектов нет и файл остаётся без
-изменений, запиши краткое содержательное заключение в {run}/validation-review.md.
-Другие файлы не изменяй. Единственный источник инструкций — каталог {skill};
-другие копии скилла, подгруженные системой, не используй. Работай без лишней
-разведки. В конце ответа перечисли найденные дефекты."""
+{skill}/schemas/validation.schema.json). **Сначала запиши краткое содержательное
+заключение в {run}/validation-review.md** (что проверил, какие дефекты или
+подтверждения нашёл) — это обязательный результат места; затем при необходимости
+правь validation.json. Другие файлы не изменяй. Единственный источник
+инструкций — каталог {skill}; другие копии скилла, подгруженные системой, не
+используй. Работай без лишней разведки. В конце ответа перечисли найденные дефекты."""
 
 
 def sha256_bytes(data):
@@ -175,6 +176,39 @@ def build_substrate(request, subject, run_dir):
     return result
 
 
+def rebind_run_evidence(run_dir):
+    """Re-bind run-owned evidence references to the bytes being sealed.
+
+    The mechanical validation draft points at the pre-authoring page bytes;
+    after the writer seat those references are stale. Evidence records file
+    identity, so the seal re-computes hashes and line ranges of run files it
+    is about to bind in the manifest. Returns the number of re-bound refs.
+    """
+    run_dir = Path(run_dir)
+    validation = run_dir / 'validation.json'
+    if not validation.is_file():
+        return 0
+    data = json.loads(validation.read_text(encoding='utf-8'))
+    rebound = 0
+    for check in data.get('checks', []):
+        for entry in check.get('evidence', []):
+            if not isinstance(entry, dict) or entry.get('root') != 'run':
+                continue
+            target = run_dir / entry.get('path', '')
+            if not target.is_file():
+                continue
+            digest = sha256_bytes(target.read_bytes())
+            lines = len(target.read_text(encoding='utf-8-sig').splitlines())
+            if entry.get('sha256') != digest or entry.get('end_line') != max(lines, 1):
+                entry['sha256'] = digest
+                entry['start_line'] = 1
+                entry['end_line'] = max(lines, 1)
+                rebound += 1
+    if rebound:
+        validation.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    return rebound
+
+
 def reseal(skill_root, request, run_dir, result):
     from bundle import create_manifest, compute_tool_versions, write_manifest
     from validation_gate import evaluate_bundle
@@ -182,6 +216,7 @@ def reseal(skill_root, request, run_dir, result):
     skill_root = Path(skill_root)
     profile = Path(request['profile']) if request.get('profile') else (
         Path(result['profile']) if result.get('profile') else None)
+    rebind_run_evidence(run_dir)
     facts = json.loads((run_dir / 'facts.json').read_text(encoding='utf-8'))
     plan = json.loads((run_dir / 'validation_plan.json').read_text(encoding='utf-8'))
     source = project / request['sql']

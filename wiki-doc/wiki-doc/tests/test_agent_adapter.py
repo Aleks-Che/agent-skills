@@ -77,7 +77,10 @@ class AgentAdapterTests(unittest.TestCase):
         self.assertEqual(record['subject'], SUBJECT)
         self.assertEqual(record['model'], 'stub-model')
         self.assertEqual(record['repair_rounds'], 0)
-        self.assertIn(record['gate']['decision'], ('ready', 'revise', 'blocked'))
+        # Run-owned evidence is re-bound to the sealed bytes, so the rewritten
+        # page does not invalidate the mechanical validation draft.
+        self.assertEqual(record['gate']['decision'], 'ready', record['gate'])
+        self.assertTrue(record['gate']['publication_authorized'])
         self.assertEqual(record['writer']['continuations'], 0)
         self.assertEqual(len(record['writer']['page_sha256']), 64)
         self.assertEqual(len(record['validator']['validation_sha256']), 64)

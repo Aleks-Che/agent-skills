@@ -85,7 +85,12 @@ class AgentAdapterTests(unittest.TestCase):
             self.assertTrue((self.root / 'agent-logs' / seat).is_file(), seat)
 
     def test_failing_agent_does_not_produce_runs(self):
-        result = agent_adapter.main([str(self.request()), *self.argv(code=3)])
+        # A seat that fails without delivering an artifact must not create runs;
+        # delivered artifacts count even when the CLI exits non-zero afterwards.
+        self.stub.write_text('import sys\nsys.exit(3)\n', encoding='utf8')
+        result = agent_adapter.main([str(self.request()),
+                                     '--agent', json.dumps([sys.executable, '-B', str(self.stub), '{message}']),
+                                     '--model', 'stub-model'])
         self.assertEqual(result, 1)
         runs = json.loads((self.output / 'runs.json').read_text(encoding='utf-8'))
         self.assertEqual(runs['runs'], [])
@@ -119,6 +124,12 @@ class AgentAdapterTests(unittest.TestCase):
         self.assertIn('--session', command)
         self.assertIn('ses_stub', command)
         self.assertGreater(seconds, 0)
+
+    def test_delivered_artifact_counts_even_with_nonzero_exit(self):
+        result = agent_adapter.main([str(self.request()), *self.argv(code=3)])
+        self.assertEqual(result, 0)
+        runs = json.loads((self.output / 'runs.json').read_text(encoding='utf-8'))
+        self.assertEqual([(r['subject'], r['run_dir']) for r in runs['runs']], [(SUBJECT, '0')])
 
     def test_prompts_point_to_skill_instructions_and_prepared_context(self):
         request = json.loads(self.request().read_text(encoding='utf-8'))

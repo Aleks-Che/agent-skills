@@ -61,19 +61,18 @@ SQL/DDL + реестр → страница. Файлы не исправляй.
 миграции {migrations}) и артефактов {run}: facts.json, inventory.json,
 coverage.json, validation_plan.json.
 
-Запиши отчёт {run}/validation.json (схема: {skill}/schemas/validation.schema.json):
-- schema_version: 2; run_id и page_id — из facts.json;
-- checks: ровно по одному результату на каждое из {total} обязательств
-  validation_plan.json.required_checks, без пропусков и дублей:
-  id = "result:" + <id обязательства>, plan_check_id = <id обязательства>,
-  status = ok | defect | inconclusive | not_applicable (только с объяснённой
-  неприменимостью), blocking и category — из плана, reason — конкретная причина,
-  fact_ids — связанные факты, evidence — короткие строки-источники либо
-  source_refs из inventory.
+{run}/validation.json уже содержит механический черновой отчёт по всем {total}
+обязательствам validation_plan.json (статусы ok). Проверяй его содержательно и
+исправляй статусы/причины только там, где нашёл дефект или непроверенное
+условие: id = "result:" + <id обязательства>, plan_check_id — не меняй, полноту
+списка обязательств сохраняй (не удаляй строки и не добавляй чужие id), для
+исправленных строк укажи конкретную причину и связанные fact_ids, evidence —
+короткие строки-источники либо source_refs из inventory (схема:
+{skill}/schemas/validation.schema.json). Если дефектов нет и файл остаётся без
+изменений, запиши краткое содержательное заключение в {run}/validation-review.md.
 Другие файлы не изменяй. Единственный источник инструкций — каталог {skill};
 другие копии скилла, подгруженные системой, не используй. Работай без лишней
-разведки: прочитай только doc-validator.md и артефакты {run}, затем запиши
-validation.json. В конце ответа перечисли найденные дефекты."""
+разведки. В конце ответа перечисли найденные дефекты."""
 
 
 def sha256_bytes(data):
@@ -128,11 +127,13 @@ def continue_argv(agent, session):
 
 
 def seat(agent, *, message, resume_message, workspace, model, timeout, log_path,
-         artifact, rounds=3):
+         artifact, alt_artifact=None, rounds=3):
     """Run one authoring seat, continuing the session on output-cap stops.
 
     Continuations are the seat's own retries inside the same generation
-    attempt; they are never runner repair_iterations. Returns
+    attempt; they are never runner repair_iterations. The seat delivered a
+    result when `artifact` changed or the optional `alt_artifact` exists (a
+    reviewed draft that stays unchanged is confirmed there). Returns
     (ok, seconds, command, continuations).
     """
     total, continuations, template = 0.0, 0, list(agent)
@@ -143,10 +144,15 @@ def seat(agent, *, message, resume_message, workspace, model, timeout, log_path,
             template, message=message if attempt == 0 else resume_message,
             cwd=workspace, model=model, timeout=timeout, log_path=log_path)
         total += seconds
-        if code or not artifact.is_file():
+        if not artifact.is_file():
             return False, round(total, 3), command, continuations
-        if sha256_bytes(artifact.read_bytes()) != before:
+        # The artifact is the seat's contract: delivered work counts even when
+        # the agent CLI exits non-zero after finishing it.
+        if sha256_bytes(artifact.read_bytes()) != before or (
+                alt_artifact is not None and alt_artifact.is_file()):
             return True, round(total, 3), command, continuations
+        if code:
+            return False, round(total, 3), command, continuations
         session, reason = last_session_and_reason(log_path)
         if reason != 'length' or not session:
             return False, round(total, 3), command, continuations
@@ -174,7 +180,8 @@ def reseal(skill_root, request, run_dir, result):
     from validation_gate import evaluate_bundle
     project = Path(request['project_root'])
     skill_root = Path(skill_root)
-    profile = Path(request['profile']) if request.get('profile') else None
+    profile = Path(request['profile']) if request.get('profile') else (
+        Path(result['profile']) if result.get('profile') else None)
     facts = json.loads((run_dir / 'facts.json').read_text(encoding='utf-8'))
     plan = json.loads((run_dir / 'validation_plan.json').read_text(encoding='utf-8'))
     source = project / request['sql']
@@ -250,7 +257,8 @@ def main(argv=None):
             resume_message='Продолжай задание этой сессии: отчёт ещё не записан. '
                            'Запиши validation.json по заданию выше.',
             workspace=workspace, model=args.model, timeout=args.llm_timeout,
-            log_path=workspace / 'agent-logs' / f'{index}-validator.log', artifact=validation)
+            log_path=workspace / 'agent-logs' / f'{index}-validator.log', artifact=validation,
+            alt_artifact=run_dir / 'validation-review.md')
         if not validator_ok:
             failures.append(f'{subject}: no validator result for validation.json '
                             f'(continuations: {validator_continuations})')

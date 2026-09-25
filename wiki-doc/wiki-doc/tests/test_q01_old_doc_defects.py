@@ -22,6 +22,25 @@ from sql_extract import extract_inventory, sha256_file
 SPEC_PATH = PACKAGE / 'examples' / 'fixtures' / 'old-doc-defects.json'
 
 
+def corrected_page_failures(spec, page_text):
+    """Mechanical layer of "the corrected page contains no D01-D12".
+
+    A defect is still present when its false-claim signature survives in the
+    page, or when the corrected page misses the minimal marker of the fix.
+    Arbitrary prose beyond these signatures needs the independent review of Q-07.
+    """
+    failures = []
+    for defect in spec['defects']:
+        rules = defect.get('corrected') or {}
+        for text in rules.get('page_must_not_contain', []):
+            if text in page_text:
+                failures.append(f"{defect['id']}: false claim still present: {text!r}")
+        for text in rules.get('page_must_contain', []):
+            if text not in page_text:
+                failures.append(f"{defect['id']}: corrected marker missing: {text!r}")
+    return failures
+
+
 class OldDocumentationDefectKit(unittest.TestCase):
     """Execute the D01-D12 assertion list and its positive controls."""
 
@@ -123,6 +142,17 @@ class OldDocumentationDefectKit(unittest.TestCase):
                 for text in control.get('page_contains', []):
                     self.assertIn(text, self.page_text)
                 self._check_evidence(control['evidence'])
+
+    def test_old_page_fails_the_corrected_check_for_every_defect(self):
+        failures = corrected_page_failures(self.spec, self.page_text)
+        failing_ids = {line.split(':', 1)[0] for line in failures}
+        self.assertEqual(failing_ids, {d['id'] for d in self.spec['defects']}, failures)
+
+    def test_corrected_page_shape_passes_the_mechanical_check(self):
+        required = {text for d in self.spec['defects']
+                    for text in (d.get('corrected') or {}).get('page_must_contain', [])}
+        synthetic = 'Исправленная страница.\n' + '\n'.join(sorted(required))
+        self.assertEqual(corrected_page_failures(self.spec, synthetic), [])
 
 
 if __name__ == '__main__':

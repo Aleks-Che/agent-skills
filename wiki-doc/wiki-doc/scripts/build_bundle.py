@@ -198,18 +198,55 @@ def render(facts,plan,findings=()):
     return text,dict(schema_version=2,run_id=facts['run_id'],page_id=main['page_id'],entries=entries)
 
 
+def _check_fact_ids(inv, facts, plan):
+    """Per-check fact linkage for the validation report.
+
+    The full registry on every result explodes large bundles (12k+ obligations
+    x 17k facts); each result keeps only the facts its obligation covers. The
+    gate accepts any result carrying the expected ids, so the linkage is exact
+    per obligation instead of blunt on all. Operation ids follow the item order
+    of the inventory, matching how facts are appended.
+    """
+    anchor_op={}
+    items=[i for i in inv['items'] if i['kind']!='DECLARATION']
+    for item,entry in zip(items,facts['operations']):
+        anchor_op[tuple(item['anchor'][k] for k in ('object_or_scope','construct','ordinal'))]=entry['id']
+    column_unknown_ids={}
+    for entry in facts['unknowns']:
+        what=entry.get('what','')
+        if what.startswith('Type evidence for '):
+            key=what[len('Type evidence for '):]
+            table,_,column=key.rpartition('.')
+            column_unknown_ids.setdefault((table,column),[]).append(entry['id'])
+    check_fact_ids={}
+    for check in plan['required_checks']:
+        anchor=check.get('inventory_anchor'); rule=check.get('rule_id','')
+        op_id=anchor_op.get(tuple(anchor[k] for k in ('object_or_scope','construct','ordinal'))) if anchor else None
+        ids=[]
+        if rule in ('operation','trigger','index','constraint','access_rule') and op_id:
+            ids=[op_id]
+        elif rule in ('formula','condition','unknown') and op_id:
+            group={'formula':'formulas','condition':'conditions','unknown':'unknowns'}[rule]
+            ids=[f['id'] for f in facts[group] if op_id in f.get('operation_ids', f.get('related_facts', []))]
+        elif check['id'].startswith('unknown:type:'):
+            table,_,column=check.get('subject','').split('/type/',1)[-1].rpartition('/')
+            ids=list(column_unknown_ids.get((table,column), []))
+        check_fact_ids[check['id']]=ids
+    return check_fact_ids
+
+
 def finish(run,*,sql_files,context,project_root,profile_path=None,migration_manifest=None,wiki_root=None):
     from artifact_schema import read_json
     run=Path(run); facts=read_json(run/'facts.json'); plan=read_json(run/'validation_plan.json'); inv=read_json(run/'inventory.json')
+    check_fact_ids=_check_fact_ids(inv,facts,plan)
     page=(run/'page.draft.md').read_text(encoding='utf-8-sig'); errors=check_page_claims(facts,page)
     from content_claims import check_content_claims
     errors.extend(check_content_claims(facts,page))
     refs=[{**r,'root':'project','start_line':1,'end_line':len((Path(project_root)/r['path']).read_text(encoding='utf-8-sig').splitlines())} for r in inv['inputs']]
     refs.append(dict(root='run',path='page.draft.md',sha256=sha256_file(run/'page.draft.md'),start_line=1,end_line=len(page.splitlines())))
-    all_ids=[f['id'] for g in FACT_ARRAYS for f in facts[g]]
     checks=[dict(id='result:'+c['id'],plan_check_id=c['id'],status='defect' if errors else 'ok',category=c['category'],blocking=c['blocking'],
                  reason='Rendered claims, SQL inventory and evidence checked; this deterministic adapter does not certify arbitrary prose.',
-                 evidence=refs,fact_ids=all_ids,**({'defect_code':'unsupported_claim'} if errors else {})) for c in plan['required_checks']]
+                 evidence=refs,fact_ids=check_fact_ids.get(c['id'], []),**({'defect_code':'unsupported_claim'} if errors else {})) for c in plan['required_checks']]
     atomic_json(run/'validation.json',dict(schema_version=2,run_id=facts['run_id'],page_id=plan['page_id'],checks=checks))
     manifest=create_manifest(run_id=facts['run_id'],page_id=plan['page_id'],sql_files=sql_files,context_files=context,
         migration_manifest=migration_manifest,artifacts_dir=run,project_dir=project_root,tool_versions=compute_tool_versions(PACKAGE,profile_path=profile_path))

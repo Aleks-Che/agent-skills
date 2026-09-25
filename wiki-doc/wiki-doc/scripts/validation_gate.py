@@ -108,6 +108,30 @@ def _gate_result(decision, *, errors=None, metrics=None, input_error=False, reco
             'decision_record': record}
 
 
+def _analysis_gap_decision(run, manifest, manifest_snapshot_hash, artifacts, rebuilt, write_decision):
+    """Blocked by incomplete analysis is a semantic refusal and gets a decision.
+
+    Documentation cannot be declared ready while gaps remain, but the outcome is
+    expected and recorded: re-verification compares it like any other decision.
+    """
+    errors = ['analysis gap: ' + n['reason'] for n in rebuilt['coverage_notes']]
+    record = None
+    if write_decision:
+        plan = artifacts['validation_plan']
+        record = {'schema_version': 2, 'run_id': manifest['run_id'], 'page_id': manifest['page_id'],
+                  'decision': 'blocked', 'manifest_sha256': manifest_snapshot_hash,
+                  'validation_sha256': sha256_file(run / 'validation.json'),
+                  'metrics': {}, 'blocking_defects': [],
+                  'blocking_inconclusive': ['result:' + c['id'] for c in plan['required_checks']
+                                            if c.get('rule_id') == 'analysis_gap'],
+                  'timestamp': datetime.now(timezone.utc).isoformat()}
+        output = run / 'decision.json'
+        temporary = run / 'decision.json.tmp'
+        temporary.write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        temporary.replace(output)
+    return _gate_result('blocked', errors=errors, record=record)
+
+
 def evaluate_checks(checks, required, policy):
     """Count only independently required obligations; enforce policy severity."""
     by_plan, errors, defects, unknowns = {}, [], [], []
@@ -452,17 +476,23 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
             context_files=[resolve_reference(ref, roots) for ref in manifest.get('context_files', [])],
             project_root=roots['project'],
             migration_manifest=resolve_reference(manifest['migration_manifest'], roots) if manifest.get('migration_manifest') else None)
-        if rebuilt['coverage_notes']:
-            return _gate_result('blocked', errors=['analysis gap: ' + n['reason'] for n in rebuilt['coverage_notes']])
         from sql_types import column_catalog, check_types
-        catalogue=column_catalog(rebuilt,[resolve_reference(r,roots) for r in manifest['sql_files']],
-            [resolve_reference(r,roots) for r in manifest.get('context_files',[])],roots['project'],
-            resolve_reference(manifest['migration_manifest'],roots) if manifest.get('migration_manifest') else None)
-        # Gaps found while mapping statements against established DDL (for
-        # example an unprovable positional INSERT) block exactly like the
-        # analysis gaps above; they must never fall through to a ready path.
+        try:
+            catalogue=column_catalog(rebuilt,[resolve_reference(r,roots) for r in manifest['sql_files']],
+                [resolve_reference(r,roots) for r in manifest.get('context_files',[])],roots['project'],
+                resolve_reference(manifest['migration_manifest'],roots) if manifest.get('migration_manifest') else None)
+        except ValueError as exc:
+            # A catalog failure on an already-gapped inventory still belongs to
+            # the enumerated analysis gaps, not to a bare crash string.
+            if rebuilt['coverage_notes']:
+                return _analysis_gap_decision(run, manifest, manifest_snapshot_hash, artifacts, rebuilt, write_decision)
+            raise
+        # Gaps from the enrichment pass and from mapping statements against
+        # established DDL are listed together: the decision must enumerate
+        # every analysis gap, never only the earlier stage's subset. They block
+        # like any analysis gap and never fall through to a ready path.
         if rebuilt['coverage_notes']:
-            return _gate_result('blocked', errors=['analysis gap: ' + n['reason'] for n in rebuilt['coverage_notes']])
+            return _analysis_gap_decision(run, manifest, manifest_snapshot_hash, artifacts, rebuilt, write_decision)
         for key in ('items', 'coverage_notes', 'inputs', 'documented_subjects'):
             if inventory.get(key, []) != rebuilt[key]:
                 errors.append(f'inventory.{key} differs from independently rebuilt SQL inventory')

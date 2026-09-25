@@ -113,6 +113,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Large-object contract defects found by the Q-08 control run:
+  `build_bundle.finish` hit MemoryError because every validation result
+  carried the whole fact registry (`fact_ids=all_ids`, 12k results x 17k
+  facts); the new `_check_fact_ids` links each result to exactly the facts its
+  obligation covers (anchor order for operations, relations for
+  formulas/conditions/unknowns, columns for type unknowns). The gate's
+  analysis-gap refusal is a semantic outcome and now records `decision.json`
+  (`blocked` with `result:`-referenced gap obligations) instead of writing no
+  decision at all, and the gap list is collected after both analysis passes so
+  the decision enumerates every gap rather than one stage's subset; a catalog
+  failure on an already-gapped inventory reduces to that list instead of a
+  bare crash string. Large objects with known gaps therefore complete the
+  bundle contract with the full gap inventory.
+  `agent_adapter.seat` accepts delivered artifacts even when the agent CLI
+  exits non-zero after finishing, and the validator seat can confirm a
+  mechanical validation draft via `validation-review.md` instead of rewriting
+  thousands of rows. The Q-01 kit gained the `corrected` layer
+  (`corrected_page_failures`) that checks a generated page for the absence of
+  D01-D12 false claims and the presence of their corrected markers.
 - q09 follow-up: close the false-ready bypass where null/omitted column
   expressions disabled type checking. Single mappings remain mandatory;
   multi-variant summaries retain every INSERT/UPDATE/MERGE query and SQL

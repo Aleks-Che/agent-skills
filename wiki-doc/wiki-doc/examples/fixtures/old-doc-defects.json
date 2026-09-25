@@ -28,19 +28,53 @@
     {
       "id": "D01",
       "checked_claim": "Страница объявляет p_retro неиспользуемым и зарезервированным; SQL использует его в условии ретро-ветки с тремя парами DELETE/INSERT",
-      "page_contains": ["зарезервировано под будущие ветки", "не используется** ни в одном условии"],
+      "page_contains": [
+        "зарезервировано под будущие ветки",
+        "не используется** ни в одном условии"
+      ],
       "evidence": [
-        {"kind": "sql_line_contains", "line": 83, "contains": "v_retro = CASE WHEN p_retro IS NULL"},
-        {"kind": "sql_line_contains", "line": 19311, "contains": "IF v_retro = '1'"}
-      ]
+        {
+          "kind": "sql_line_contains",
+          "line": 83,
+          "contains": "v_retro = CASE WHEN p_retro IS NULL"
+        },
+        {
+          "kind": "sql_line_contains",
+          "line": 19311,
+          "contains": "IF v_retro = '1'"
+        }
+      ],
+      "corrected": {
+        "page_must_not_contain": [
+          "зарезервировано под будущие ветки"
+        ],
+        "page_must_contain": [
+          "v_retro"
+        ]
+      }
     },
     {
       "id": "D02",
       "checked_claim": "Страница показывает обратную полярность NULL-проверки фильтра ГКМ (IS NULL вместо IS NOT NULL)",
-      "page_contains": ["d.ucp_id IS NULL  THEN 0"],
+      "page_contains": [
+        "d.ucp_id IS NULL  THEN 0"
+      ],
       "evidence": [
-        {"kind": "sql_contains", "strings": ["type_pos = 'ГКМ' AND d.ucp_id IS NOT NULL"]}
-      ]
+        {
+          "kind": "sql_contains",
+          "strings": [
+            "type_pos = 'ГКМ' AND d.ucp_id IS NOT NULL"
+          ]
+        }
+      ],
+      "corrected": {
+        "page_must_not_contain": [
+          "d.ucp_id IS NULL"
+        ],
+        "page_must_contain": [
+          "IS NOT NULL"
+        ]
+      }
     },
     {
       "id": "D03",
@@ -51,112 +85,297 @@
         "Сортировка: сначала «отработанные»"
       ],
       "evidence": [
-        {"kind": "sql_line_contains", "line": 562, "contains": "INCORRECT_CONTACTS"},
-        {"kind": "sql_line_contains", "line": 568, "contains": "NOT_PHONED"},
-        {"kind": "sql_line_contains", "line": 625, "contains": "ORDER BY (CASE WHEN tx.result IN"},
-        {"kind": "sql_lines_lack", "from": 625, "to": 639, "strings": ["NOT_PHONED", "INCORRECT_CONTACTS", "NOT_ACCOMPLISHED"]}
-      ]
+        {
+          "kind": "sql_line_contains",
+          "line": 562,
+          "contains": "INCORRECT_CONTACTS"
+        },
+        {
+          "kind": "sql_line_contains",
+          "line": 568,
+          "contains": "NOT_PHONED"
+        },
+        {
+          "kind": "sql_line_contains",
+          "line": 625,
+          "contains": "ORDER BY (CASE WHEN tx.result IN"
+        },
+        {
+          "kind": "sql_lines_lack",
+          "from": 625,
+          "to": 639,
+          "strings": [
+            "NOT_PHONED",
+            "INCORRECT_CONTACTS",
+            "NOT_ACCOMPLISHED"
+          ]
+        }
+      ],
+      "corrected": {
+        "page_must_not_contain": [
+          "Сортировка: сначала «отработанные»"
+        ],
+        "page_must_contain": [
+          "is_phoned"
+        ]
+      }
     },
     {
       "id": "D04",
       "checked_claim": "В странице отсутствует переход формулы T+5 с 01.01.2026; SQL содержит границу date_open < '2026-01-01'",
-      "page_lacks": ["2026"],
+      "page_lacks": [
+        "2026"
+      ],
       "evidence": [
-        {"kind": "sql_contains", "strings": ["omt.date_open < '2026-01-01'"]}
-      ]
+        {
+          "kind": "sql_contains",
+          "strings": [
+            "omt.date_open < '2026-01-01'"
+          ]
+        }
+      ],
+      "corrected": {
+        "page_must_not_contain": [],
+        "page_must_contain": [
+          "2026"
+        ]
+      }
     },
     {
       "id": "D05",
       "checked_claim": "Страница утверждает, что EXECUTE ON MASTER не указан в объявлении; SQL заканчивается атрибутом EXECUTE ON MASTER",
-      "page_contains": ["`EXECUTE ON MASTER` не указан"],
+      "page_contains": [
+        "`EXECUTE ON MASTER` не указан"
+      ],
       "evidence": [
-        {"kind": "sql_line_contains", "line": 19538, "contains": "EXECUTE ON MASTER"}
-      ]
+        {
+          "kind": "sql_line_contains",
+          "line": 19538,
+          "contains": "EXECUTE ON MASTER"
+        }
+      ],
+      "corrected": {
+        "page_must_not_contain": [
+          "EXECUTE ON MASTER` не указан"
+        ],
+        "page_must_contain": [
+          "MASTER"
+        ]
+      }
     },
     {
       "id": "D06",
       "checked_claim": "Страница объявляет 5 строк фильтров; SQL содержит один INSERT с одним XML-агрегатом (xmlagg) — пять вызовов метаданных не являются строками фильтров",
-      "page_contains": ["5 строк в самом конце"],
-      "page_lacks": ["xmlagg"],
+      "page_contains": [
+        "5 строк в самом конце"
+      ],
+      "page_lacks": [
+        "xmlagg"
+      ],
       "evidence": [
-        {"kind": "sql_contains", "strings": ["xmlagg"]}
-      ]
+        {
+          "kind": "sql_contains",
+          "strings": [
+            "xmlagg"
+          ]
+        }
+      ],
+      "corrected": {
+        "page_must_not_contain": [
+          "5 строк в самом конце"
+        ],
+        "page_must_contain": [
+          "xmlagg"
+        ]
+      }
     },
     {
       "id": "D07",
       "checked_claim": "Счётчики страницы (38 DELETE, 71 INSERT main, ~82 add_log_add, 72 среза KPI) расходятся с SQL (77/77/1, 69 INSERT main, 164 add_log_add, 68 пар)",
-      "page_contains": ["DELETE` (по периоду) | ~38", "INSERT` в `main` | 71", "~82 | Лог-сообщения", "= 72 среза"],
+      "page_contains": [
+        "DELETE` (по периоду) | ~38",
+        "INSERT` в `main` | 71",
+        "~82 | Лог-сообщения",
+        "= 72 среза"
+      ],
       "evidence": [
-        {"kind": "inventory_dml_counts", "counts": {"INSERT": 77, "DELETE": 77, "UPDATE": 1}},
-        {"kind": "inventory_call_counts", "suffix": "add_log_add", "count": 164}
-      ]
+        {
+          "kind": "inventory_dml_counts",
+          "counts": {
+            "INSERT": 77,
+            "DELETE": 77,
+            "UPDATE": 1
+          }
+        },
+        {
+          "kind": "inventory_call_counts",
+          "suffix": "add_log_add",
+          "count": 164
+        }
+      ],
+      "corrected": {
+        "page_must_not_contain": [
+          "72 среза"
+        ],
+        "page_must_contain": []
+      }
     },
     {
       "id": "D08",
       "checked_claim": "Страница перечисляет имена KPI без формул: формула CALLS_PLAN (time_hours / 8) отсутствует при наличии имени",
-      "page_contains": ["`CALLS_PLAN`"],
-      "page_lacks": ["time_hours"],
+      "page_contains": [
+        "`CALLS_PLAN`"
+      ],
+      "page_lacks": [
+        "time_hours"
+      ],
       "evidence": [
-        {"kind": "sql_contains", "strings": ["time_hours"]}
-      ]
+        {
+          "kind": "sql_contains",
+          "strings": [
+            "time_hours"
+          ]
+        }
+      ],
+      "corrected": {
+        "page_must_not_contain": [],
+        "page_must_contain": [
+          "time_hours"
+        ]
+      }
     },
     {
       "id": "D09",
       "checked_claim": "Страница не упоминает источник ретро-копий схемы gp_ini; SQL читает три таблицы этой схемы",
-      "page_lacks": ["gp_ini"],
+      "page_lacks": [
+        "gp_ini"
+      ],
       "evidence": [
-        {"kind": "sql_contains", "strings": ["s_gp_p1024_ora_svd_kb_ckr_uup_gp_ini"]}
-      ]
+        {
+          "kind": "sql_contains",
+          "strings": [
+            "s_gp_p1024_ora_svd_kb_ckr_uup_gp_ini"
+          ]
+        }
+      ],
+      "corrected": {
+        "page_must_not_contain": [],
+        "page_must_contain": [
+          "gp_ini"
+        ]
+      }
     },
     {
       "id": "D10",
       "checked_claim": "Страница объявляет meet_tasks таблицей из 30 полей; восстановленное DDL даёт 31 колонку",
-      "page_contains": ["30 полей"],
+      "page_contains": [
+        "30 полей"
+      ],
       "evidence": [
-        {"kind": "ddl_table_columns", "table": "s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core.ckr_uup_db_onboarding_meet_tasks", "count": 31}
-      ]
+        {
+          "kind": "ddl_table_columns",
+          "table": "s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core.ckr_uup_db_onboarding_meet_tasks",
+          "count": 31
+        }
+      ],
+      "corrected": {
+        "page_must_not_contain": [
+          "30 полей"
+        ],
+        "page_must_contain": [
+          "31"
+        ]
+      }
     },
     {
       "id": "D11",
       "checked_claim": "Страница выдаёт tm за CTE («Плюс CTE в meet_tasks»); tm — алиас производной таблицы (FROM (SELECT ...)), не CTE",
-      "page_contains": ["Плюс CTE в `meet_tasks` для активации (`tm`"],
+      "page_contains": [
+        "Плюс CTE в `meet_tasks` для активации (`tm`"
+      ],
       "evidence": [
-        {"kind": "sql_line_contains", "line": 1077, "contains": "FROM (SELECT"}
-      ]
+        {
+          "kind": "sql_line_contains",
+          "line": 1077,
+          "contains": "FROM (SELECT"
+        }
+      ],
+      "corrected": {
+        "page_must_not_contain": [
+          "Плюс CTE в `meet_tasks`"
+        ],
+        "page_must_contain": []
+      }
     },
     {
       "id": "D12",
       "checked_claim": "Страница заявляет совместимость с PostgreSQL/Greenplum без подтверждённой версии и выдумывает причину окна 150 дней; старый аудит разрешает публикацию процентом 97,05% при этих ошибках",
-      "page_contains": ["совместимы с PostgreSQL", "150 дней рассчитан"],
-      "audit_contains": ["97.05"],
+      "page_contains": [
+        "совместимы с PostgreSQL",
+        "150 дней рассчитан"
+      ],
+      "audit_contains": [
+        "97.05"
+      ],
       "evidence": [
-        {"kind": "sql_contains", "strings": ["p_retro varchar DEFAULT"]}
-      ]
+        {
+          "kind": "sql_contains",
+          "strings": [
+            "p_retro varchar DEFAULT"
+          ]
+        }
+      ],
+      "corrected": {
+        "page_must_not_contain": [
+          "150 дней рассчитан",
+          "совместимы с PostgreSQL"
+        ],
+        "page_must_contain": []
+      }
     }
   ],
   "positive_controls": [
     {
       "id": "PC1",
       "checked_claim": "Верное утверждение страницы: new_clients — 29 полей (совпадает с восстановленным DDL)",
-      "page_contains": ["29 полей"],
+      "page_contains": [
+        "29 полей"
+      ],
       "evidence": [
-        {"kind": "ddl_table_columns", "table": "s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core.ckr_uup_db_onboarding_new_clients", "count": 29}
+        {
+          "kind": "ddl_table_columns",
+          "table": "s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core.ckr_uup_db_onboarding_new_clients",
+          "count": 29
+        }
       ]
     },
     {
       "id": "PC2",
       "checked_claim": "Верное утверждение страницы: main — 25 полей (совпадает с восстановленным DDL)",
-      "page_contains": ["25 полей"],
+      "page_contains": [
+        "25 полей"
+      ],
       "evidence": [
-        {"kind": "ddl_table_columns", "table": "s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core.ckr_uup_db_onboarding_main", "count": 25}
+        {
+          "kind": "ddl_table_columns",
+          "table": "s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core.ckr_uup_db_onboarding_main",
+          "count": 25
+        }
       ]
     },
     {
       "id": "PC3",
       "checked_claim": "Верное утверждение страницы: RETURNS void подтверждается объявлением функции",
-      "page_contains": ["RETURNS void"],
+      "page_contains": [
+        "RETURNS void"
+      ],
       "evidence": [
-        {"kind": "sql_contains", "strings": ["RETURNS void LANGUAGE plpgsql"]}
+        {
+          "kind": "sql_contains",
+          "strings": [
+            "RETURNS void LANGUAGE plpgsql"
+          ]
+        }
       ]
     }
   ]

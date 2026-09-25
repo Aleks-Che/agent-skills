@@ -153,6 +153,28 @@ class RegressionMeasurementTests(unittest.TestCase):
                     run_suite(manifest, root / 'output', mode='adapter', adapter=['unused'], model='test')
             self.assertFalse((root / 'output').exists())
 
+    def test_case_filter_selects_only_requested_ids(self):
+        import sys
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / 'runs'
+            report = run_suite(PACKAGE / 'examples/cases-q.json', output, mode='adapter',
+                               adapter=[sys.executable, '-B',
+                                        str(PACKAGE / 'scripts/regression_adapter.py'), '{request}'],
+                               model='deterministic-reference-v1', repeats=1,
+                               cases_filter={'q01'})
+            self.assertEqual({row['case'] for row in report['results']}, {'q01'})
+            self.assertEqual(report['cases'], 1)
+            self.assertTrue(report['valid'], report)
+
+    def test_case_filter_without_matches_cannot_claim_a_run(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            with self.assertRaisesRegex(ValueError, 'documented subjects'):
+                run_suite(PACKAGE / 'examples/cases-q.json', root / 'output',
+                          mode='adapter', adapter=['unused'], model='test',
+                          repeats=1, cases_filter={'no-such-case'})
+            self.assertFalse((root / 'output').exists())
+
 
 if __name__ == '__main__':
     unittest.main()

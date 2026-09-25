@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Q-08 agent adapter (pilot stage)**: `scripts/agent_adapter.py` implements the
+  generator seat of the adapter contract in references/regression.md. The factual
+  substrate (facts/inventory/plan) is built by the skill's own analysis pipeline,
+  so numbers never come from an impression of the text; the readable page and the
+  validation report belong to an external LLM agent instructed by doc-writer.md
+  and doc-validator.md. Independent expectations are never part of the generator
+  input; empty seat results (unchanged page/report) are rejected as vacuous.
+  A seat that stops at the model output cap (`reason: length`) is continued in
+  the same session up to three times — seat continuations are not runner
+  `repair_iterations` (those stay 0). Manifest/gate sealing happens after the
+  authoring seats. Per-seat prompts, commands, durations, continuations and
+  gate results are recorded under `agent-logs/`.
+  `run_regression.py --cases` selects manifest cases for staged runs (empty
+  filter results are rejected as an incomplete cycle). New
+  `tests/test_agent_adapter.py` (4 cases) plus runner filter tests.
+
 - **Q-04 partial DDL support**: catalog-guarded DROP COLUMN migration template,
   `SELECT *` / `alias.*` expansion against established DDL state,
   positional INSERT with omitted target list resolved against

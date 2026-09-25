@@ -139,8 +139,10 @@ def isolate(case,workspace,examples):
     return package,project,output
 
 
-def run_suite(manifest_path,output,*,mode='saved',repeats=3,adapter=None,model=None,settings=None,timeout=120,iterations=0):
+def run_suite(manifest_path,output,*,mode='saved',repeats=3,adapter=None,model=None,settings=None,timeout=120,iterations=0,cases_filter=None):
     manifest_path=Path(manifest_path).resolve(); cases=read_json(manifest_path)['cases']; examples=manifest_path.parent
+    if cases_filter is not None:
+        cases=[c for c in cases if c['id'] in cases_filter]
     output=Path(output).resolve(); results=[]; started=time.monotonic()
     if not cases or any(not c['subjects'] for c in cases):
         raise ValueError('Regression manifest must contain cases with documented subjects')
@@ -192,12 +194,16 @@ def main(argv=None):
     p.add_argument('--repeats',type=int,default=3); p.add_argument('--adapter',help='JSON array argv; {request} is replaced, shell is never used')
     p.add_argument('--model'); p.add_argument('--settings',default='{}'); p.add_argument('--timeout',type=float,default=120)
     p.add_argument('--repair-iterations',type=int,default=0,help='Reserved; only 0 is supported until repair execution is implemented')
+    p.add_argument('--cases',help='Comma-separated case ids to run (default: every case in the manifest)')
     a=p.parse_args(argv)
     if a.repeats<1 or a.timeout<=0: p.error('Positive repeats/timeout required')
+    cases_filter={part.strip() for part in a.cases.split(',')} if a.cases else None
+    if cases_filter is not None and not all(cases_filter):
+        p.error('--cases requires non-empty case ids')
     try:
         command=json.loads(a.adapter) if a.adapter else None
         if command is not None and (not isinstance(command,list) or not command or not all(isinstance(x,str) for x in command)): raise ValueError('Adapter must be a nonempty JSON string array')
-        report=run_suite(a.manifest,a.output,mode=a.mode,repeats=a.repeats,adapter=command,model=a.model,settings=json.loads(a.settings),timeout=a.timeout,iterations=a.repair_iterations)
+        report=run_suite(a.manifest,a.output,mode=a.mode,repeats=a.repeats,adapter=command,model=a.model,settings=json.loads(a.settings),timeout=a.timeout,iterations=a.repair_iterations,cases_filter=cases_filter)
         print(json.dumps({k:v for k,v in report.items() if k!='results'},ensure_ascii=True,indent=2)); return 0 if report['valid'] else 1
     except (ValueError,OSError) as exc: print(json.dumps({'error':str(exc)})); return 2
 

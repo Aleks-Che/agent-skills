@@ -78,6 +78,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **Q-07/Q-09 decision (2026-09-25)**: positional INSERT width mismatches are
+  source findings, not analysis gaps. The analysis is complete for these
+  statements — the widths are established and the mapping is impossible; the
+  defect belongs to the SQL versus the established DDL state. They move from
+  blocking `coverage_notes` to `inventory.source_findings` (schema extended),
+  are rendered on the page under "Source analysis observations", appear in
+  `lint` source findings, and no longer block publication. The EXCEPTION
+  handler gap stays a blocking analysis gap per the plan's explicit text.
+  New positive control: `test_source_finding_is_visible_but_does_not_block_the_gate`.
+  The non-blocking status is honest only while findings stay visible: the gate
+  now requires every source finding of the rebuilt inventory to appear on the
+  page (a writer that silently drops the observations gets `revise`); negative
+  control `test_page_that_drops_a_source_finding_is_not_publishable`.
 - scripts/run_prepare.py: new module for verifiable run preparation and
   verification with runtime hash binding and provenance checks.
 - scripts/wiki_doc.py: added prepare, verify-run, finalize,

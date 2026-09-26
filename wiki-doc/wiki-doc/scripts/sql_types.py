@@ -358,8 +358,11 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
             expanded = expand_star_outputs(node.selectStmt, tables)
             # Positional mapping is proven only when the select output width
             # equals the target width (explicit column list or established DDL
-            # order). A known mismatch is a listed gap: never zip-truncate a
-            # narrower projection onto a wider target into a plausible mapping.
+            # order). A known mismatch is a source finding, not an analysis
+            # gap: the analysis is complete (the statement cannot map), the
+            # defect belongs to the SQL versus the established DDL state. It
+            # is listed on the page and never zip-truncated into a plausible
+            # mapping.
             if expanded is not None and column_names and len(expanded) == len(column_names):
                 for name,(_source_name,value) in zip(column_names,expanded):
                     mappings.append(dict(table=target,name=name,expression=value,source_ref=ref))
@@ -368,10 +371,15 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
                 owner = next((item for item in inventory.get('items', [])
                               if item.get('kind') == 'INSERT'
                               and item.get('details', {}).get('query') == query), None)
-                note = dict(source_ref=owner['source_ref'] if owner else ref,
-                            reason=POSITIONAL_INSERT_NOTE)
-                if note not in inventory['coverage_notes']:
-                    inventory['coverage_notes'].append(note)
+                finding = dict(kind='positional_insert',
+                               source_ref=owner['source_ref'] if owner else ref,
+                               source_schema=target.rsplit('.', 1)[0] if '.' in target else None,
+                               target=target, operation='INSERT', status='unmapped',
+                               reason=POSITIONAL_INSERT_NOTE,
+                               target_width=len(column_names), select_width=len(expanded))
+                findings = inventory.setdefault('source_findings', [])
+                if finding not in findings:
+                    findings.append(finding)
         for mapping in mappings[before:]:
             mapping.update(query=sql(node), kind=type(node).__name__.removesuffix('Stmt').upper())
         for child in walk(node):

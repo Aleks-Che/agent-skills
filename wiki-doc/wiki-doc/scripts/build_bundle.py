@@ -138,16 +138,17 @@ def build(sql_path,run_dir,*,project_root,subject,context=(),migration_manifest=
                     reason=reason,related_facts=[cid]))
     findings=access_findings(inv,chosen) if chosen else []
     if chosen: main['access_observations']=findings
+    source_observations=inv.get('source_findings', [])
     plan=generate_plan(inv,load_policy(),page_id=pid,profile_active=bool(chosen),profile_path=profile_path)
     run.mkdir(parents=True,exist_ok=True)
     for name,value in (('facts',facts),('inventory',inv),('validation_plan',plan)): atomic_json(run/(name+'.json'),value)
-    page,coverage=render(facts,plan,findings)
+    page,coverage=render(facts,plan,findings,source_observations)
     atomic_bytes(run/'page.draft.md',page.encode('utf-8')); atomic_json(run/'coverage.json',coverage)
-    atomic_json(run/'source_findings.json',findings)
+    atomic_json(run/'source_findings.json',findings+source_observations)
     return finish(run,sql_files=[source],context=context,project_root=root,profile_path=profile_path,migration_manifest=migration_manifest,wiki_root=wiki_root)
 
 
-def render(facts,plan,findings=()):
+def render(facts,plan,findings=(),source_observations=()):
     main=facts['objects'][0]
     headings={'header_purpose':'Object and purpose','schema_signature':'Signature and parameters','entities':'Columns and definitions',
               'formulas_dependencies':'Operations, dependencies and expressions','dataflow_diagram':'Data flow','misc':'Limitations and source observations'}
@@ -194,6 +195,9 @@ def render(facts,plan,findings=()):
     if findings:
         sections['misc'].append('Source access observations (these describe SQL, separately from documentation defects):\n\n'+
             '\n'.join(f"- {f['operation']} `{f['target']}`: **{f['status']}** — {f['reason']}." for f in findings))
+    if source_observations:
+        sections['misc'].append('Source analysis observations (determinate findings of the SQL versus the established DDL; they describe the SQL, not documentation defects):\n\n'+
+            '\n'.join(f"- {f['operation']} `{f['target']}`: **{f['status']}** — {f['reason']}." for f in source_observations))
     text='<!-- wiki-doc:managed begin -->\n'+'\n\n'.join('## '+headings[s]+' {#'+s+'}\n\n'+'\n\n'.join(body) for s,body in sections.items() if body)+'\n<!-- wiki-doc:managed end -->\n'
     return text,dict(schema_version=2,run_id=facts['run_id'],page_id=main['page_id'],entries=entries)
 

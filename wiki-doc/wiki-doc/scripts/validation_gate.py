@@ -493,8 +493,8 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
         # like any analysis gap and never fall through to a ready path.
         if rebuilt['coverage_notes']:
             return _analysis_gap_decision(run, manifest, manifest_snapshot_hash, artifacts, rebuilt, write_decision)
-        for key in ('items', 'coverage_notes', 'inputs', 'documented_subjects'):
-            if inventory.get(key, []) != rebuilt[key]:
+        for key in ('items', 'coverage_notes', 'source_findings', 'inputs', 'documented_subjects'):
+            if inventory.get(key, []) != rebuilt.get(key, []):
                 errors.append(f'inventory.{key} differs from independently rebuilt SQL inventory')
         if errors:
             return _gate_result('revise', errors=errors)
@@ -528,6 +528,13 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
             errors.extend(check_page_claims(facts,draft_bytes.decode('utf-8-sig')))
         from content_claims import check_content_claims
         errors.extend(check_content_claims(facts,draft_bytes.decode('utf-8-sig')))
+        # Source findings do not block admission (Q-07/Q-09 decision), but they
+        # are only honest while visible: every finding of the rebuilt inventory
+        # must survive on the page, so a writer cannot silently drop them.
+        for finding in rebuilt.get('source_findings', []):
+            if finding['reason'] not in draft_bytes.decode('utf-8-sig'):
+                errors.append('source finding is not visible on the page: '
+                              f"{finding['operation']} {finding['target']}: {finding['reason']}")
         if profile_path:
             from profiles import access_findings
             obj=next(o for o in facts['objects'] if o['id'] in facts['documented_object_ids'])

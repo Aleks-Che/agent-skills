@@ -63,8 +63,10 @@ def lint(wiki_root,*,project_root=None):
                     for message in check_page_claims(facts,text): add('page_claim_invalid',path,message,'Correct the rendered claim against SQL and facts')
                 from content_claims import check_content_claims
                 for message in check_content_claims(facts,text): add('page_claim_invalid',path,message,'Correct the content claim against SQL and facts')
+                archived_inventory=read_json(archive/'inventory.json')
                 if facts.get('profile') and record['profile']:
-                    source_findings.extend(dict(page_id=relative,**f) for f in access_findings(read_json(archive/'inventory.json'),load_profile(record['profile'])))
+                    source_findings.extend(dict(page_id=relative,**f) for f in access_findings(archived_inventory,load_profile(record['profile'])))
+                source_findings.extend(dict(page_id=relative,**f) for f in archived_inventory.get('source_findings', []))
                 source_root=Path(project_root or record.get('project_root',archive)).resolve()
                 for ref in record['source_files']:
                     source=(source_root/ref['path']).resolve()

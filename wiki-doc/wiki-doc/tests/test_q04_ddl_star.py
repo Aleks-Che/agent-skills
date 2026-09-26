@@ -407,8 +407,10 @@ class MultiBranchColumnExpressionTests(unittest.TestCase):
 class PositionalInsertWidthTests(unittest.TestCase):
     """A positional INSERT maps only at equal target/select widths.
 
-    A known width mismatch is a listed analysis gap: the mapping is never
-    zip-truncated into a plausible-looking but invented column map.
+    A known width mismatch is a source finding, not an analysis gap: the
+    analysis is complete (the statement cannot map), the defect belongs to
+    the SQL versus the established DDL state. It is listed on the page and
+    never zip-truncated into a plausible-looking but invented column map.
     """
 
     def _catalogue(self, body, context_sql):
@@ -423,30 +425,36 @@ class PositionalInsertWidthTests(unittest.TestCase):
             inv = extract_inventory(source.read_text(encoding='utf8'), 'source.sql', 'a' * 64)
             return inv, column_catalog(inv, [source], [context], root)
 
-    def test_star_width_mismatch_is_a_listed_gap_not_a_mapping(self):
+    @staticmethod
+    def _positional(inv):
+        return [f for f in inv.get('source_findings', [])
+                if f.get('reason') == POSITIONAL_INSERT_NOTE]
+
+    def test_star_width_mismatch_is_a_listed_source_finding(self):
         inv, cat = self._catalogue('INSERT INTO demo.out SELECT * FROM demo.src;',
                                    'CREATE TABLE demo.src(id int); '
                                    'CREATE TABLE demo.out(first int, second text);')
         self.assertEqual([m for m in cat['mappings'] if m['table'] == 'demo.out'], [])
-        notes = [n for n in inv['coverage_notes'] if n['reason'] == POSITIONAL_INSERT_NOTE]
-        self.assertEqual(len(notes), 1, inv['coverage_notes'])
-        self.assertEqual(notes[0]['source_ref']['start_line'], 1)
+        findings = self._positional(inv)
+        self.assertEqual(len(findings), 1, inv.get('source_findings'))
+        self.assertEqual(findings[0]['source_ref']['start_line'], 1)
+        self.assertEqual((findings[0]['target_width'], findings[0]['select_width']), (2, 1))
+        self.assertFalse([n for n in inv['coverage_notes']
+                          if n['reason'] == POSITIONAL_INSERT_NOTE], inv['coverage_notes'])
 
     def test_star_width_match_maps_columns_positionally(self):
         inv, cat = self._catalogue('INSERT INTO demo.out SELECT * FROM demo.src;',
                                    'CREATE TABLE demo.src(id int); CREATE TABLE demo.out(first int);')
         self.assertEqual([(m['name'], m['expression']) for m in cat['mappings']],
                          [('first', 'demo.src.id')])
-        self.assertFalse([n for n in inv['coverage_notes']
-                          if n['reason'] == POSITIONAL_INSERT_NOTE], inv['coverage_notes'])
+        self.assertFalse(self._positional(inv), inv.get('source_findings'))
 
     def test_explicit_projection_width_mismatch_is_not_truncated(self):
         inv, cat = self._catalogue('INSERT INTO demo.out SELECT id FROM demo.src;',
                                    'CREATE TABLE demo.src(id int); '
                                    'CREATE TABLE demo.out(first int, second text);')
         self.assertEqual([m for m in cat['mappings'] if m['table'] == 'demo.out'], [])
-        self.assertEqual(sum(n['reason'] == POSITIONAL_INSERT_NOTE
-                             for n in inv['coverage_notes']), 1)
+        self.assertEqual(len(self._positional(inv)), 1)
 
     def test_explicit_column_list_projection_maps(self):
         inv, cat = self._catalogue('INSERT INTO demo.out (second) SELECT id FROM demo.src;',
@@ -454,24 +462,21 @@ class PositionalInsertWidthTests(unittest.TestCase):
                                    'CREATE TABLE demo.out(first int, second text);')
         self.assertEqual([(m['name'], m['expression']) for m in cat['mappings']],
                          [('second', 'id')])
-        self.assertFalse([n for n in inv['coverage_notes']
-                          if n['reason'] == POSITIONAL_INSERT_NOTE], inv['coverage_notes'])
+        self.assertFalse(self._positional(inv), inv.get('source_findings'))
 
     def test_values_insert_without_projection_is_not_a_width_gap(self):
         inv, cat = self._catalogue("INSERT INTO demo.out VALUES (1, 'x');",
                                    "CREATE TABLE demo.out(first int, second text);")
-        self.assertFalse([n for n in inv['coverage_notes']
-                          if n['reason'] == POSITIONAL_INSERT_NOTE], inv['coverage_notes'])
+        self.assertFalse(self._positional(inv), inv.get('source_findings'))
 
     def test_unresolved_star_keeps_the_wildcard_gap_instead(self):
         inv, cat = self._catalogue('INSERT INTO demo.out SELECT * FROM demo.src;',
                                    'CREATE TABLE demo.out(first int, second text);')
         self.assertTrue(any('Wildcard' in n['reason'] for n in inv['coverage_notes']),
                         inv['coverage_notes'])
-        self.assertFalse([n for n in inv['coverage_notes']
-                          if n['reason'] == POSITIONAL_INSERT_NOTE], inv['coverage_notes'])
+        self.assertFalse(self._positional(inv), inv.get('source_findings'))
 
-    def test_full_gate_blocks_on_a_listed_width_gap(self):
+    def test_source_finding_is_visible_but_does_not_block_the_gate(self):
         import tempfile
         from build_bundle import build
         with tempfile.TemporaryDirectory() as temporary:
@@ -484,9 +489,40 @@ class PositionalInsertWidthTests(unittest.TestCase):
                                'CREATE TABLE demo.out(first int, second text);', encoding='utf8')
             result = build(source, root / 'run', project_root=root,
                            subject='demo.f', context=[context])
-            self.assertEqual(result['decision'], 'blocked', result)
-            self.assertFalse(result['publication_authorized'])
-            self.assertTrue(any(POSITIONAL_INSERT_NOTE in e for e in result['errors']), result)
+            inv = json.loads((root / 'run/inventory.json').read_text(encoding='utf-8'))
+            self.assertEqual(len(self._positional(inv)), 1)
+            page = (root / 'run/page.draft.md').read_text(encoding='utf-8')
+            self.assertIn('Source analysis observations', page)
+            self.assertIn(POSITIONAL_INSERT_NOTE, page)
+            self.assertTrue(result['publication_authorized'], result)
+
+    def test_page_that_drops_a_source_finding_is_not_publishable(self):
+        import tempfile
+        from build_bundle import build, finish
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, context = root / 'source.sql', root / 'context.sql'
+            source.write_text('CREATE FUNCTION demo.f() RETURNS void LANGUAGE plpgsql AS $$'
+                              'BEGIN INSERT INTO demo.out SELECT * FROM demo.src; END $$;',
+                              encoding='utf8')
+            context.write_text('CREATE TABLE demo.src(id int); '
+                               'CREATE TABLE demo.out(first int, second text);', encoding='utf8')
+            result = build(source, root / 'run', project_root=root,
+                           subject='demo.f', context=[context])
+            self.assertTrue(result['publication_authorized'], result)
+            # A writer that silently drops the visible finding loses the
+            # honesty of the non-blocking classification: re-seal must refuse.
+            page = (root / 'run/page.draft.md').read_text(encoding='utf-8')
+            stripped = '\n'.join(line for line in page.splitlines()
+                                 if POSITIONAL_INSERT_NOTE not in line)
+            self.assertNotEqual(stripped, page)
+            (root / 'run/page.draft.md').write_text(stripped, encoding='utf-8')
+            resealed = finish(root / 'run', sql_files=[source], context=[context],
+                              project_root=root)
+            self.assertEqual(resealed['decision'], 'revise', resealed)
+            self.assertFalse(resealed['publication_authorized'])
+            self.assertTrue(any('source finding is not visible' in e
+                                for e in resealed['errors']), resealed['errors'])
 
 
 class DdlAcceptanceTests(unittest.TestCase):
@@ -628,15 +664,19 @@ class DdlAcceptanceTests(unittest.TestCase):
         # The INI sources are narrower than the migrated targets (24/25, 20/29,
         # 26/31) and 43 calculated main inserts build 24-column rows into the
         # 25-column target. Positional mapping is unproven for all of them and
-        # is listed, never zip-truncated into a plausible column map. This is
-        # an independent source-level finding of this acceptance run; whether
-        # it is a SQL defect or a stale DDL state needs the Q-07/Q-09 decision.
-        positional = [n for n in inv['coverage_notes'] if n['reason'] == POSITIONAL_INSERT_NOTE]
+        # is listed as a source finding, never zip-truncated into a plausible
+        # column map. This is an independent source-level finding of this
+        # acceptance run; it describes the SQL versus the established DDL state
+        # and is not an analysis gap (Q-07/Q-09 decision, 2026-09-25).
+        positional = [f for f in inv.get('source_findings', [])
+                      if f.get('reason') == POSITIONAL_INSERT_NOTE]
         self.assertEqual(len(positional), 46,
-                         sorted(n['source_ref']['start_line'] for n in positional))
-        self.assertEqual(sorted(n['source_ref']['start_line'] for n in positional
-                                if n['source_ref']['start_line'] in retro_widths),
+                         sorted(f['source_ref']['start_line'] for f in positional))
+        self.assertEqual(sorted(f['source_ref']['start_line'] for f in positional
+                                if f['source_ref']['start_line'] in retro_widths),
                          sorted(retro_widths))
+        self.assertFalse([n for n in inv['coverage_notes']
+                          if n['reason'] == POSITIONAL_INSERT_NOTE], inv['coverage_notes'])
         self.assertFalse([m for m in catalogue['mappings']
                           if 'SELECT *' in (m.get('query') or '') and 'gp_ini' in m['query']],
                          'no positional mapping may be invented for the retro copies')

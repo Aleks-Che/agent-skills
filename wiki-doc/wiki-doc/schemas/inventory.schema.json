@@ -50,6 +50,12 @@
         "$ref": "#/$defs/coverage_note"
       }
     },
+    "source_findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source_finding"
+      }
+    },
     "inputs": {
       "type": "array",
       "minItems": 1,
@@ -198,10 +204,19 @@
               "uniqueItems": true,
               "items": {
                 "type": "object",
-                "required": ["table", "name"],
+                "required": [
+                  "table",
+                  "name"
+                ],
                 "properties": {
-                  "table": {"type": "string", "minLength": 1},
-                  "name": {"type": "string", "minLength": 1}
+                  "table": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  }
                 },
                 "additionalProperties": false
               }
@@ -312,6 +327,97 @@
           "type": "string",
           "minLength": 1,
           "pattern": "\\S"
+        }
+      },
+      "additionalProperties": false
+    },
+    "source_finding": {
+      "type": "object",
+      "required": [
+        "kind",
+        "source_ref",
+        "target",
+        "operation",
+        "status",
+        "reason"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "source_ref": {
+          "type": "object",
+          "required": [
+            "path",
+            "start_line",
+            "end_line",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "start_line": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "end_line": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "root": {
+              "type": "string",
+              "enum": [
+                "project",
+                "run",
+                "wiki",
+                "package"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "source_schema": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "operation": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "target_width": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "select_width": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "additionalProperties": false

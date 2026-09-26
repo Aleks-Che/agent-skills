@@ -412,6 +412,10 @@ def _verify_evidence(artifacts, roots):
 
 def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None, write_decision=False):
     run = Path(run_dir).resolve()
+    if write_decision:
+        stale = run / 'decision.json'
+        if stale.exists():
+            stale.unlink()
     package = Path(__file__).resolve().parent.parent
     roots = {'project': run, **{k: Path(v).resolve() for k, v in (roots or {}).items()},
              'run': run, 'package': package}

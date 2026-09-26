@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-09-26T16:09:39.794543+00:00",
+  "audit_completed": true,
+  "q_plan_completed": false,
+  "task_status": {
+    "Q-01": "done",
+    "Q-02": "done",
+    "Q-03": "done",
+    "Q-04": "in_progress",
+    "Q-05": "in_progress",
+    "Q-06": "in_progress",
+    "Q-07": "in_progress",
+    "Q-08": "in_progress",
+    "Q-09": "in_progress"
+  },
+  "tests": {
+    "command": "python -B -m unittest discover -s wiki-doc/wiki-doc/tests -v",
+    "environment": {
+      "WIKI_DOC_ACCEPTANCE_PROJECT": "C:/work/git/my-repos/test-sql-wiki"
+    },
+    "total": 1163,
+    "passed": 1162,
+    "skipped": 1,
+    "failed": 0,
+    "exit_code": 0,
+    "seconds": 840.47,
+    "log": ".runtime/plan-review-2026-09-26/units.log",
+    "log_encoding": "utf-16",
+    "skip_reason": "Windows symlink creation unavailable (WinError 1314)"
+  },
+  "targeted_tests": {
+    "module": "test_q07_content_review",
+    "passed": 32,
+    "added_tests": 3,
+    "pre_fix_failing_subcases": 13
+  },
+  "regression": {
+    "q-reference": {
+      "mode": "reference",
+      "valid": true,
+      "cases": 11,
+      "subjects": 11,
+      "repeats": 3,
+      "full_agent_cycle_completed": false,
+      "elapsed_seconds": 79.609,
+      "results": 33,
+      "report": ".runtime/plan-review-2026-09-26/q-ref/reference-report.json"
+    },
+    "q-saved": {
+      "mode": "saved",
+      "valid": true,
+      "cases": 11,
+      "subjects": 11,
+      "repeats": 3,
+      "full_agent_cycle_completed": false,
+      "elapsed_seconds": 20.313,
+      "results": 33,
+      "report": ".runtime/plan-review-2026-09-26/q-ref/regression-report.json"
+    },
+    "hist-reference": {
+      "mode": "reference",
+      "valid": true,
+      "cases": 12,
+      "subjects": 15,
+      "repeats": 3,
+      "full_agent_cycle_completed": false,
+      "elapsed_seconds": 93.312,
+      "results": 45,
+      "report": ".runtime/plan-review-2026-09-26/hist-ref/reference-report.json"
+    },
+    "hist-saved": {
+      "mode": "saved",
+      "valid": true,
+      "cases": 12,
+      "subjects": 15,
+      "repeats": 3,
+      "full_agent_cycle_completed": false,
+      "elapsed_seconds": 25.062,
+      "results": 45,
+      "report": ".runtime/plan-review-2026-09-26/hist-ref/regression-report.json"
+    }
+  },
+  "mutations": {
+    "q": {
+      "valid": true,
+      "mutations": 40,
+      "tested_mutations": 40,
+      "detected": 40,
+      "untested": 0,
+      "false_ready": 0,
+      "report": ".runtime/plan-review-2026-09-26/q-mut/mutation-report.json"
+    },
+    "hist": {
+      "valid": true,
+      "mutations": 44,
+      "tested_mutations": 44,
+      "detected": 44,
+      "untested": 0,
+      "false_ready": 0,
+      "report": ".runtime/plan-review-2026-09-26/hist-mut/mutation-report.json"
+    }
+  },
+  "tool_versions": {
+    "scripts_sha256": "061d639e4169fad15abe17cabaac4fb12ef518d84e85a77d54a441a7621bea58",
+    "skill_md_sha256": "e0de2b0b21e15b82e359c2b1a16750fdc386538b5489508de6fcdf29241e5a91",
+    "template_sha256": "183f467eff3f538c848251fa6198a9f2d711c7f1e29ab05c09f6ed2fdeff387b",
+    "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+  },
+  "new_llm_runs": 0,
+  "sql_executed_in_database": false,
+  "commits_created": false,
+  "remaining": [
+    "EXCEPTION transition analysis",
+    "independent Q-07 content acceptance",
+    "real repair iterations",
+    "three LLM repeats of historical and Q cases after final instruction changes",
+    "three subsequent large-object runs in separate wikis",
+    "publish/lint/provenance for new successful pages",
+    "final Q-09 report"
+  ],
+  "sha256": {
+    "wiki-doc/scripts/content_claims.py": "c933ac93f082010cc01cfed2c80273d41ef672ac27ebb0c37117b48bb865d667",
+    "wiki-doc/scripts/agent_adapter.py": "f5e3afadc140f343ce5ffde40a084372e8ef80c9b84bff2e4dd2d9bb55c8323a",
+    "wiki-doc/scripts/validation_gate.py": "ae6efa98673a205a80f6908b8752c71bc3feddbf429cfb6ecdee0fa5a9b77473",
+    "wiki-doc/references/content-claims.md": "601358c38f0c3b13f4620e4f31188b90dc4875e324347ff7b142cc58e4e01aa6",
+    "wiki-doc/doc-validator.md": "682367abb88d9e83ba959263e92420eee2044ddffb392d721678330a8d5d7202",
+    "wiki-doc/tests/test_q07_content_review.py": "6f4a4437020aab2ac9e3f1d5abc652b03964fb83fb07acdc7309356bbd1a42ed",
+    "wiki-doc/tests/test_agent_adapter.py": "dffed066d69f58f77378c08d32ceab277cc4bef7a42dc56a7056204c76c8a5d7"
+  },
+  "links": {
+    "checked": 148,
+    "missing": []
+  }
+}

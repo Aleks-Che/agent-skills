@@ -155,6 +155,55 @@ class ContentClaimReviewTests(unittest.TestCase):
         for code in ("demo.f('bad'::integer)", "demo.f('999999999999999'::integer)"):
             self.assertTrue(check(self.facts, f'Example: `{code}`'))
 
+class ExampleExtractionReviewTests(unittest.TestCase):
+    def setUp(self):
+        self.facts = dict(dialect=dict(name='postgres', version='15'), objects=[routine()],
+                          conditions=[dict(id='cond_1', expression="r.d < DATE '2026-01-01'")])
+
+    def test_schematic_statement_forms_are_not_call_examples(self):
+        for text in ('Semantics: `SELECT \u2026 INTO` assigns the value.',
+                     'Semantics: `INSERT \u2026 SELECT` fills the target.'):
+            with self.subTest(text=text):
+                self.assertEqual(check(self.facts, text), [])
+
+    def test_prose_code_spans_under_example_headings_are_not_call_examples(self):
+        self.assertEqual(check(self.facts,
+            '## Limitations, examples and uncertainties\n\nThe aggregate `count(*)` is used.'), [])
+
+    def test_heading_fences_and_labelled_inline_stay_checked(self):
+        self.assertTrue(check(self.facts, '## Examples\n\n```sql\nSELECT demo.f(1,2,3);\n```'))
+        self.assertTrue(check(self.facts, 'Example: `demo.f(1,2,3)`'))
+
+    def test_leading_comments_in_example_fences_are_checked(self):
+        self.assertTrue(check(self.facts, 'Example:\n\n```sql\n-- note\nSELECT demo.f(1,2,3);\n```'))
+        self.assertEqual(check(self.facts, "Example:\n\n```sql\n-- note\nSELECT demo.f('x');\n```"), [])
+
+    def test_ellipsis_in_literals_or_comments_does_not_hide_wrong_calls(self):
+        for code in ("wrong.f('...')", "wrong.f('…')", "wrong.f($$...$$)",
+                     'SELECT demo.f(1,2,3); -- ...',
+                     '/* … */ SELECT demo.f(1,2,3);',
+                     "SELECT demo.f('x'); -- ...\nSELECT wrong.f('x');"):
+            with self.subTest(code=code):
+                self.assertTrue(check(self.facts, f'Example:\n\n```sql\n{code}\n```'))
+        for code in ("demo.f('...')", "demo.f('…')", "demo.f($$...$$)"):
+            with self.subTest(code=code):
+                self.assertEqual(check(self.facts, f'Example: `{code}`'), [])
+
+    def test_only_complete_schematic_statement_forms_are_skipped(self):
+        for code in ('SELECT … INTO', 'INSERT … SELECT', 'SELECT ... INTO', 'INSERT ... SELECT'):
+            with self.subTest(code=code):
+                self.assertEqual(check(self.facts, f'Example: `{code}`'), [])
+                self.assertTrue(check(self.facts, f'Example: `{code}; SELECT demo.f(1,2,3);`'))
+
+    def test_separated_and_nested_leading_comments_preserve_valid_calls(self):
+        for prefix in ('-- first\n\n  -- second\n',
+                       '/* outer /* inner */ tail */\n', '-- сначала…\n\n/* далее */\n'):
+            with self.subTest(prefix=prefix):
+                self.assertEqual(check(self.facts,
+                    f"Example:\n\n```sql\n{prefix}SELECT demo.f('x');\n```"), [])
+                self.assertTrue(check(self.facts,
+                    f'Example:\n\n```sql\n{prefix}SELECT demo.f(1,2,3);\n```'))
+
 
 class ContentEntryPointTests(unittest.TestCase):
     @classmethod
@@ -190,7 +239,7 @@ class ContentEntryPointTests(unittest.TestCase):
         self.assertTrue(result['publication_authorized'], result)
 
     def test_gate_checks_prose_even_with_fresh_hashes_and_all_ok_report(self):
-        self.insert(self.run / 'page.draft.md', "Example: `wrong.gp_master_probe('x')`")
+        self.insert(self.run / 'page.draft.md', "Example: `wrong.gp_master_probe('...')`")
         finish(self.run, **self.kwargs)
         report = read_json(self.run / 'validation.json')
         for item in report['checks']:

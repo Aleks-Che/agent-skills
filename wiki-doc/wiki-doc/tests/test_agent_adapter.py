@@ -146,7 +146,36 @@ class AgentAdapterTests(unittest.TestCase):
                                              request, self.output / '0', subject=SUBJECT, total=7)
         self.assertIn('doc-validator.md', validator)
         self.assertIn('7', validator)
+        self.assertIn('root/path/start_line/end_line/sha256', validator)
         self.assertNotIn('examples/expected', validator)
+
+
+    def test_seal_leaves_no_stale_ready_decision_after_refusal(self):
+        run_dir = self.output / '0'
+        self.stub.write_text(
+            'import json, sys\n'
+            'from pathlib import Path\n'
+            f'run = Path({str(run_dir)!r})\n'
+            "if 'validation-review.md' in sys.argv[-1]:\n"
+            "    target = run / 'validation.json'\n"
+            "    data = json.loads(target.read_text(encoding='utf-8'))\n"
+            "    for item in data['checks']:\n"
+            "        item['evidence'] = ['source.sql:1 - stub string evidence']\n"
+            "    target.write_text(json.dumps(data), encoding='utf-8')\n"
+            'else:\n'
+            "    target = run / 'page.draft.md'\n"
+            "    target.write_text(target.read_text(encoding='utf-8') + '\\nStub writer prose.\\n',\n"
+            "                      encoding='utf-8')\n",
+            encoding='utf8')
+        result = agent_adapter.main([str(self.request()),
+                                     '--agent', json.dumps([sys.executable, '-B', str(self.stub), '{message}']),
+                                     '--model', 'stub-model'])
+        self.assertEqual(result, 0)
+        record = read_json(self.root / 'agent-logs' / '0-adapter.json')
+        self.assertEqual(record['gate']['decision'], 'blocked', record['gate'])
+        self.assertTrue(any('structured file references' in e for e in record['gate']['errors']),
+                        record['gate'])
+        self.assertFalse((run_dir / 'decision.json').is_file())
 
 
 if __name__ == '__main__':

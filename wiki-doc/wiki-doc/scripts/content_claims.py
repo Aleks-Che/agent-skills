@@ -8,7 +8,7 @@ import datetime
 import re
 
 from markdown_it import MarkdownIt
-from pglast import ast, parse_sql
+from pglast import ast, parse_sql, scan
 from pglast.error import Error as ParseError
 from identity import normalize_type
 from sql_ast import sql, type_name
@@ -62,11 +62,11 @@ def _page_parts(page):
             prose.append(text)
             label = _EXAMPLE.search(text)
             in_example = example_heading or bool(label)
-            if in_example:
+            if label:
                 codes = [t.content for t in token.children or () if t.type == 'code_inline']
                 if codes:
                     examples.extend(codes)
-                elif label and text[label.end():].strip():
+                elif text[label.end():].strip():
                     examples.append(text[label.end():].strip())
             pending = in_example
         elif token.type in ('fence', 'code_block'):
@@ -229,8 +229,15 @@ def _examples(facts, examples):
     for code in examples:
         if not re.search(r'\b(?:SELECT|CALL)\b|[\w"]\s*\(', code, re.I):
             continue
+        # Only these complete statement sketches are prose notation. Ellipses
+        # in a literal/comment must never exempt a real call (or a whole batch).
+        if re.fullmatch(r'\s*(?:SELECT\s+(?:\.\.\.|…)\s+INTO|INSERT\s+(?:\.\.\.|…)\s+SELECT)\s*;?\s*', code, re.I):
+            continue
         try:
-            statements = parse_sql(code if re.match(r'\s*(?:SELECT|CALL)\b', code, re.I) else 'SELECT ' + code)
+            # PostgreSQL's lexer handles whitespace and nested comments. Keep
+            # the original bytes for parsing; no regex comment stripping.
+            first = next((t.name for t in scan(code) if t.name not in ('SQL_COMMENT', 'C_COMMENT')), None)
+            statements = parse_sql(code if first in ('SELECT', 'CALL') else 'SELECT ' + code)
         except ParseError:
             errors.append('Wrong call example: SQL syntax cannot be parsed')
             continue

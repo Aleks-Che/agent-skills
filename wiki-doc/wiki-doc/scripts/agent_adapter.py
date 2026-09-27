@@ -82,12 +82,24 @@ def sha256_bytes(data):
 def call_agent(argv_template, *, message, cwd, model, timeout, log_path):
     # Windows argv handling truncates multi-line arguments at the first line
     # break, so the task text is flattened; the full prompt is also persisted.
+    full_message = message
     message = ' '.join(message.split())
     command = [part.replace('{message}', message).replace('{cwd}', str(cwd))
                .replace('{model}', model) for part in argv_template]
     resolved = shutil.which(command[0])
     if resolved:
         command[0] = resolved
+    # npm's Windows .cmd launcher has a much smaller limit than CreateProcess.
+    # Preserve the complete task in UTF-8 instead of truncating repair feedback.
+    if (sys.platform == 'win32' and Path(command[0]).suffix.lower() in ('.cmd', '.bat')
+            and len(subprocess.list2cmdline(command)) > 7000):
+        task_path = log_path.with_suffix('.task.md').resolve()
+        task_path.parent.mkdir(parents=True, exist_ok=True)
+        task_path.write_text(full_message, encoding='utf-8')
+        message = f'Read the UTF-8 task file and carry out its instructions. TASK_FILE: {task_path}'
+        command = [part.replace('{message}', message).replace('{cwd}', str(cwd))
+                   .replace('{model}', model) for part in argv_template]
+        command[0] = resolved or command[0]
     started = time.monotonic()
     try:
         completed = subprocess.run(command, cwd=str(cwd), capture_output=True,
@@ -132,14 +144,16 @@ def seat(agent, *, message, resume_message, workspace, model, timeout, log_path,
 
     Continuations are the seat's own retries inside the same generation
     attempt; they are never runner repair_iterations. The seat delivered a
-    result when `artifact` changed or the optional `alt_artifact` exists (a
-    reviewed draft that stays unchanged is confirmed there). Returns
+    result when `artifact` or the optional `alt_artifact` changed (a new or
+    updated review confirms a draft that stays unchanged). Returns
     (ok, seconds, command, continuations).
     """
     total, continuations, template = 0.0, 0, list(agent)
     command = []
     for attempt in range(rounds + 1):
         before = sha256_bytes(artifact.read_bytes()) if artifact.is_file() else None
+        alt_before = (sha256_bytes(alt_artifact.read_bytes())
+                      if alt_artifact is not None and alt_artifact.is_file() else None)
         code, seconds, command = call_agent(
             template, message=message if attempt == 0 else resume_message,
             cwd=workspace, model=model, timeout=timeout, log_path=log_path)
@@ -148,8 +162,10 @@ def seat(agent, *, message, resume_message, workspace, model, timeout, log_path,
             return False, round(total, 3), command, continuations
         # The artifact is the seat's contract: delivered work counts even when
         # the agent CLI exits non-zero after finishing it.
-        if sha256_bytes(artifact.read_bytes()) != before or (
-                alt_artifact is not None and alt_artifact.is_file()):
+        alt_delivered = (alt_artifact is not None and alt_artifact.is_file()
+                         and (alt_before is None
+                              or sha256_bytes(alt_artifact.read_bytes()) != alt_before))
+        if sha256_bytes(artifact.read_bytes()) != before or alt_delivered:
             return True, round(total, 3), command, continuations
         if code:
             return False, round(total, 3), command, continuations
@@ -231,6 +247,58 @@ def reseal(skill_root, request, run_dir, result):
                            profile_path=profile, write_decision=True)
 
 
+RUN_ARTIFACTS = ('page.draft.md', 'coverage.json', 'validation.json', 'validation-review.md',
+                 'facts.json', 'inventory.json', 'validation_plan.json', 'manifest.json',
+                 'decision.json')
+
+
+WRITER_REPAIR_NOTE = 'Ремонт (попытка {attempt} из {rounds}) после отказа гате: предыдущий результат получил перечисленные замечания. Устрани их в page.draft.md и coverage.json, сохранив механический контракт claims-v1: служебные таблицы `| Fact | Property | SQL value |`, маркеры `<!-- wiki-doc:fragment ... -->` и идентификаторы секций не изменяй. facts.json, inventory.json и validation_plan.json не изменяй.\n\nЗамечания предыдущей попытки:'
+VALIDATOR_REPAIR_NOTE = 'Повторная проверка после ремонта (попытка {attempt} из {rounds}): страница исправлялась по перечисленным замечаниям. Провер её текущее состояние заново и обнови validation.json и validation-review.md: замечания могли быть устранены или остаться. Механический контракт не изменяй.\n\nЗамечания предыдущей попытки:'
+
+
+def repair_note(template, attempt, rounds, feedback):
+    return template.format(attempt=attempt, rounds=rounds) + '\n' + feedback
+
+
+def seat_record(role, round_number, delivered, seconds, command, continuations):
+    return dict(role=role, round=round_number, delivered=delivered, seconds=seconds,
+                command=command, continuations=continuations)
+
+
+def snapshot_run(run_dir):
+    return {name: (run_dir / name).read_bytes() for name in RUN_ARTIFACTS
+            if (run_dir / name).is_file()}
+
+
+def restore_run(run_dir, snapshot):
+    for name in RUN_ARTIFACTS:
+        path = run_dir / name
+        if name in snapshot:
+            path.write_bytes(snapshot[name])
+        elif path.is_file():
+            path.unlink()
+
+
+def repair_feedback(run_dir, gate):
+    parts = ['- ' + str(error) for error in (gate.get('errors') or ())[:30]]
+    validation = run_dir / 'validation.json'
+    if validation.is_file():
+        try:
+            data = json.loads(validation.read_text(encoding='utf-8'))
+        except ValueError:
+            data = {}
+        for check in (data.get('checks') or ()):
+            if check.get('status') != 'ok':
+                parts.append('- {0} [{1}] {2}'.format(
+                    check.get('id'), check.get('status'), check.get('reason')))
+    review = run_dir / 'validation-review.md'
+    if review.is_file():
+        text = review.read_text(encoding='utf-8-sig', errors='replace')
+        if text.strip():
+            parts.append(text[:4000])
+    return '\n'.join(parts[:60]).strip()
+
+
 def prompt_for(template, skill_root, request, run_dir, *, subject, **extra):
     project = Path(request['project_root'])
     return template.format(
@@ -248,7 +316,11 @@ def main(argv=None):
                         help='JSON argv; {message}/{cwd}/{model} placeholders are replaced')
     parser.add_argument('--model', required=True)
     parser.add_argument('--llm-timeout', type=int, default=900)
+    parser.add_argument('--repair-rounds', type=int, default=0,
+                        help='Repair rounds after a refused seal (0..3)')
     args = parser.parse_args(argv)
+    if not 0 <= args.repair_rounds <= 3:
+        parser.error('Repair rounds must be between 0 and 3')
     request = json.loads(Path(args.request).read_text(encoding='utf-8'))
     agent = json.loads(args.agent)
     if not isinstance(agent, list) or not agent or not all(isinstance(p, str) for p in agent):
@@ -263,6 +335,8 @@ def main(argv=None):
         run_dir = output / str(index)
         started = time.monotonic()
         substrate = build_substrate(request, subject, run_dir)
+        # A substrate decision is not a completed authoring/validation cycle.
+        (run_dir / 'decision.json').unlink(missing_ok=True)
         page = run_dir / 'page.draft.md'
         writer_prompt = prompt_for(WRITER_PROMPT, skill_root, request, run_dir, subject=subject)
         prompt_file = workspace / 'agent-logs' / f'{index}-writer-prompt.md'
@@ -273,7 +347,8 @@ def main(argv=None):
             resume_message='Продолжай задание этой сессии: страница ещё не записана. '
                            'Запиши page.draft.md и coverage.json по заданию выше.',
             workspace=workspace, model=args.model, timeout=args.llm_timeout,
-            log_path=workspace / 'agent-logs' / f'{index}-writer.log', artifact=page)
+            log_path=workspace / 'agent-logs' / f'{index}-writer.log', artifact=page,
+            alt_artifact=run_dir / 'coverage.json')
         if not writer_ok:
             failures.append(f'{subject}: no writer result for page.draft.md '
                             f'(continuations: {writer_continuations})')
@@ -298,23 +373,90 @@ def main(argv=None):
                             f'(continuations: {validator_continuations})')
             continue
         gate = reseal(skill_root, request, run_dir, substrate)
+        initial_decision = gate['decision']
+        first_writer = dict(command=writer_command, seconds=writer_seconds,
+                            continuations=writer_continuations, page_sha256=sha256_bytes(page.read_bytes()))
+        first_validator = dict(command=validator_command, seconds=validator_seconds,
+                               continuations=validator_continuations,
+                               validation_sha256=sha256_bytes(validation.read_bytes()))
+        seat_attempts = [
+            seat_record('writer', 0, True, writer_seconds, writer_command, writer_continuations),
+            seat_record('validator', 0, True, validator_seconds, validator_command, validator_continuations)]
+        repair_history, repair_rounds_done = [], 0
+        while (repair_rounds_done < args.repair_rounds
+               and not (gate['decision'] == 'ready' and gate['publication_authorized'])):
+            attempt = repair_rounds_done + 1
+            feedback = repair_feedback(run_dir, gate)
+            if not feedback:
+                repair_history.append(dict(round=attempt, outcome='no_actionable_feedback'))
+                break
+            snapshot = snapshot_run(run_dir)
+            repair_rounds_done += 1
+            repair_writer_prompt = writer_prompt + repair_note(
+                WRITER_REPAIR_NOTE, attempt, args.repair_rounds, feedback)
+            repair_writer_file = (workspace / 'agent-logs'
+                                  / f'{index}-writer-repair-{attempt}-prompt.md')
+            repair_writer_file.write_text(repair_writer_prompt, encoding='utf-8')
+            writer_ok, writer_seconds, writer_command, writer_continuations = seat(
+                agent, message=f'Полный текст задания сохранён в файле {repair_writer_file}. {repair_writer_prompt}',
+                resume_message='Продолжай ремонт текущей сессии: страница ещё не записана. Запиши page.draft.md и coverage.json по заданию выше.',
+                workspace=workspace, model=args.model, timeout=args.llm_timeout,
+                log_path=workspace / 'agent-logs' / f'{index}-writer-repair-{attempt}.log',
+                artifact=page, alt_artifact=run_dir / 'coverage.json')
+            seat_attempts.append(seat_record('writer', attempt, writer_ok, writer_seconds,
+                                             writer_command, writer_continuations))
+            if not writer_ok:
+                restore_run(run_dir, snapshot)
+                repair_history.append(dict(round=attempt, outcome='writer_failed'))
+                break
+            repair_validator_prompt = validator_prompt + repair_note(
+                VALIDATOR_REPAIR_NOTE, attempt, args.repair_rounds, feedback)
+            repair_validator_file = (workspace / 'agent-logs'
+                                    / f'{index}-validator-repair-{attempt}-prompt.md')
+            repair_validator_file.write_text(repair_validator_prompt, encoding='utf-8')
+            validator_ok, validator_seconds, validator_command, validator_continuations = seat(
+                agent, message=f'Полный текст задания сохранён в файле {repair_validator_file}. {repair_validator_prompt}',
+                resume_message='Продолжай повторную проверку текущей сессии: отчёт ещё не обновлён. Запиши validation.json по заданию выше.',
+                workspace=workspace, model=args.model, timeout=args.llm_timeout,
+                log_path=workspace / 'agent-logs' / f'{index}-validator-repair-{attempt}.log',
+                artifact=validation, alt_artifact=run_dir / 'validation-review.md')
+            seat_attempts.append(seat_record('validator', attempt, validator_ok, validator_seconds,
+                                             validator_command, validator_continuations))
+            if not validator_ok:
+                restore_run(run_dir, snapshot)
+                repair_history.append(dict(round=attempt, outcome='validator_failed'))
+                break
+            try:
+                repaired_gate = reseal(skill_root, request, run_dir, substrate)
+            except (ValueError, OSError, KeyError, TypeError) as exc:
+                restore_run(run_dir, snapshot)
+                repair_history.append(dict(round=attempt, outcome='seal_failed', errors=[str(exc)]))
+                break
+            gate = repaired_gate
+            repair_history.append(dict(round=attempt, outcome='sealed',
+                                       decision=gate['decision'],
+                                       errors=list(gate['errors'])))
         (workspace / 'agent-logs' / f'{index}-adapter.json').write_text(json.dumps({
             'subject': subject, 'model': args.model,
-            'writer': {'command': writer_command, 'seconds': writer_seconds,
-                       'continuations': writer_continuations,
-                       'page_sha256': sha256_bytes(page.read_bytes())},
-            'validator': {'command': validator_command, 'seconds': validator_seconds,
-                          'continuations': validator_continuations,
-                          'validation_sha256': sha256_bytes(validation.read_bytes())},
-            'repair_rounds': 0,
+            'writer': first_writer,
+            'validator': first_validator,
+            'seat_attempts': seat_attempts,
+            'final_page_sha256': sha256_bytes(page.read_bytes()),
+            'final_validation_sha256': sha256_bytes(validation.read_bytes()),
+            'initial_decision': initial_decision,
+            'repair_rounds': repair_rounds_done,
+            'repair_history': repair_history,
             'note': 'Seat continuations retry the same generation attempt on output-cap '
-                    'stops; runner repair_iterations stay 0.',
+                    'stops; repair rounds re-run both seats with the gate feedback '
+                    'and count only actually executed attempts.',
             'gate': {'decision': gate['decision'], 'publication_authorized': gate['publication_authorized'],
                      'errors': gate['errors']},
             'total_seconds': round(time.monotonic() - started, 3),
         }, ensure_ascii=False, indent=2), encoding='utf-8')
         runs.append(dict(subject=subject, run_dir=str(index),
-                         profile=substrate.get('profile')))
+                         profile=substrate.get('profile'),
+                         initial_decision=initial_decision,
+                         repair_rounds=repair_rounds_done))
     (output / 'runs.json').write_text(json.dumps({'schema_version': 1, 'runs': runs},
                                                  ensure_ascii=False), encoding='utf-8')
     if failures:

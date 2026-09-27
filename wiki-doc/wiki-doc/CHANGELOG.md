@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Q-08 repair review (2026-09-27)**: long Windows batch prompts are delivered
+  through UTF-8 task files; coverage-only writer changes count as delivery.
+  Failed repairs restore all core sealed artifacts, including facts and decision,
+  and malformed reseals roll back. Per-seat attempt telemetry preserves initial
+  and repair costs; repair counts and conflicting CLI limits are validated.
+  Substrate decisions are invalidated before authoring starts.
+
 - **Q-01 old-documentation defect kit (acceptance closed)**:
   `examples/fixtures/old-doc-defects.json` pins the old page, the old audit and
   the control SQL by SHA-256 (`refuse_to_apply_assertions`) and lists the
@@ -75,6 +82,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   version is not compatibility evidence, and explicit caveats are preserved.
   Contract: `references/content-claims.md`; 25 review tests include all four
   entry points and a fresh-hash bundle whose report contains only `ok`.
+
+- **Q-08 repair rounds (executed attempts only)**: `scripts/agent_adapter.py`
+  accepts `--repair-rounds N` and, after a refused seal, re-runs both seats
+  with gate/validator feedback (the writer fixes the page, the validator
+  re-checks it) and reseals the bundle; a seat that delivers nothing stops
+  the round and restores the previously sealed bundle. Seat delivery now
+  requires the review artifact to change, so a stale review cannot confirm
+  a repair. `scripts/run_regression.py --repair-iterations N` (0..3) forwards
+  the rounds to the adapter and reports only executed work:
+  `results[].initial_decision` keeps the first-attempt outcome,
+  `results[].repair_iterations` and the summary `repair_iterations` count
+  executed rounds, and `repair_iterations_requested` keeps the CLI value.
+  Tests: `tests/test_repair_iterations.py`.
 
 ### Changed
 

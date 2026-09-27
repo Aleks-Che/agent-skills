@@ -1,0 +1,377 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-09-27T02:28:47.897164+00:00",
+  "audit_completed": true,
+  "q_plan_completed": false,
+  "new_llm_runs": 0,
+  "commits_created": false,
+  "sql_executed_in_database": false,
+  "task_status": {
+    "Q-01": "done",
+    "Q-02": "done",
+    "Q-03": "done",
+    "Q-04": "in_progress",
+    "Q-05": "in_progress",
+    "Q-06": "in_progress",
+    "Q-07": "in_progress",
+    "Q-08": "in_progress",
+    "Q-09": "in_progress"
+  },
+  "tests": {
+    "command": "python -B -m unittest discover -s wiki-doc/wiki-doc/tests -v",
+    "environment": {
+      "WIKI_DOC_ACCEPTANCE_PROJECT": "C:/work/git/my-repos/test-sql-wiki"
+    },
+    "total": 1176,
+    "passed": 1175,
+    "skipped": 1,
+    "failed": 0,
+    "exit_code": 0,
+    "seconds": 793.535,
+    "log": ".runtime/plan-review-2026-09-27/units.log",
+    "log_sha256": "e099e9f762d03f0dc66dc5a03fa1a6f78b8456a05a0a7c7cc6b5dd59490bb7a7",
+    "skip_reason": "Windows symlink creation unavailable (WinError 1314)"
+  },
+  "targeted_tests": {
+    "test_repair_iterations": 13,
+    "test_agent_adapter": 6,
+    "test_regression_decisions": 13,
+    "new_tests": 8
+  },
+  "tool_versions": {
+    "scripts_sha256": "2f46faee6ca382a84b8e7189acc3011944e467a801d7e1e96d457913a56ea35f",
+    "skill_md_sha256": "daabf89eb9125a4ae0907f555c8588e2f34fe12cc293dbc1fc0566dd7cc30999",
+    "template_sha256": "183f467eff3f538c848251fa6198a9f2d711c7f1e29ab05c09f6ed2fdeff387b",
+    "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+  },
+  "regression": {
+    "q-reference": {
+      "valid": true,
+      "mode": "reference",
+      "cases": 11,
+      "subjects": 11,
+      "repeats": 3,
+      "repair_iterations": 0,
+      "full_agent_cycle_completed": false,
+      "results": 33,
+      "report": ".runtime/plan-review-2026-09-27/q-ref/reference-report.json"
+    },
+    "q-saved": {
+      "valid": true,
+      "mode": "saved",
+      "cases": 11,
+      "subjects": 11,
+      "repeats": 3,
+      "repair_iterations": 0,
+      "full_agent_cycle_completed": false,
+      "results": 33,
+      "report": ".runtime/plan-review-2026-09-27/q-ref/regression-report.json"
+    },
+    "hist-reference": {
+      "valid": true,
+      "mode": "reference",
+      "cases": 12,
+      "subjects": 15,
+      "repeats": 3,
+      "repair_iterations": 0,
+      "full_agent_cycle_completed": false,
+      "results": 45,
+      "report": ".runtime/plan-review-2026-09-27/hist-ref/reference-report.json"
+    },
+    "hist-saved": {
+      "valid": true,
+      "mode": "saved",
+      "cases": 12,
+      "subjects": 15,
+      "repeats": 3,
+      "repair_iterations": 0,
+      "full_agent_cycle_completed": false,
+      "results": 45,
+      "report": ".runtime/plan-review-2026-09-27/hist-ref/regression-report.json"
+    }
+  },
+  "mutations": {
+    "q": {
+      "valid": true,
+      "mutations": 40,
+      "tested_mutations": 40,
+      "detected": 40,
+      "untested": 0,
+      "false_ready": 0,
+      "report": ".runtime/plan-review-2026-09-27/q-mut/mutation-report.json"
+    },
+    "hist": {
+      "valid": true,
+      "mutations": 44,
+      "tested_mutations": 44,
+      "detected": 44,
+      "untested": 0,
+      "false_ready": 0,
+      "report": ".runtime/plan-review-2026-09-27/hist-mut/mutation-report.json"
+    }
+  },
+  "qset_r2": {
+    "cases": 11,
+    "ready": [
+      "q02",
+      "q04",
+      "q09",
+      "q11"
+    ],
+    "revise": [
+      "q01",
+      "q03",
+      "q05",
+      "q06",
+      "q07",
+      "q08",
+      "q10"
+    ],
+    "valid": 4,
+    "repair_attempts": 7,
+    "delivered_repair_writers": 0,
+    "accepted_repeat": false,
+    "results": [
+      {
+        "case": "q01",
+        "valid": false,
+        "decision": "revise",
+        "initial_decision": "revise",
+        "repair_rounds": 1,
+        "repair_history": [
+          {
+            "round": 1,
+            "outcome": "writer_failed"
+          }
+        ],
+        "tool_versions": {
+          "scripts_sha256": "cb418a1499e28355be4f2549cc8672196d48064a3b3199527f589465cd4c188c",
+          "skill_md_sha256": "c809cb0bbcb2ecb13edc08441517f4e20f90b35110a85f62933a92dc58256e03",
+          "template_sha256": "183f467eff3f538c848251fa6198a9f2d711c7f1e29ab05c09f6ed2fdeff387b",
+          "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+        },
+        "report": "wiki-doc/.runtime/q08-pilot/qset-r2-q01/regression-report.json",
+        "writer_command_chars": 9525,
+        "repair_log": "wiki-doc/.runtime/q08-pilot/qset-r2-q01/run-01/q01/agent-logs/0-writer-repair-1.log",
+        "repair_log_sha256": "e28ba0d253517db21d3672309b07c15ae037ca2088e30ef5799b6cd0ae430199",
+        "repair_stderr": "Слишком длинная командная строка."
+      },
+      {
+        "case": "q02",
+        "valid": true,
+        "decision": "ready",
+        "initial_decision": "ready",
+        "repair_rounds": 0,
+        "repair_history": [],
+        "tool_versions": {
+          "scripts_sha256": "cb418a1499e28355be4f2549cc8672196d48064a3b3199527f589465cd4c188c",
+          "skill_md_sha256": "c809cb0bbcb2ecb13edc08441517f4e20f90b35110a85f62933a92dc58256e03",
+          "template_sha256": "183f467eff3f538c848251fa6198a9f2d711c7f1e29ab05c09f6ed2fdeff387b",
+          "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+        },
+        "report": "wiki-doc/.runtime/q08-pilot/qset-r2-q02/regression-report.json"
+      },
+      {
+        "case": "q03",
+        "valid": false,
+        "decision": "revise",
+        "initial_decision": "revise",
+        "repair_rounds": 1,
+        "repair_history": [
+          {
+            "round": 1,
+            "outcome": "writer_failed"
+          }
+        ],
+        "tool_versions": {
+          "scripts_sha256": "cb418a1499e28355be4f2549cc8672196d48064a3b3199527f589465cd4c188c",
+          "skill_md_sha256": "c809cb0bbcb2ecb13edc08441517f4e20f90b35110a85f62933a92dc58256e03",
+          "template_sha256": "183f467eff3f538c848251fa6198a9f2d711c7f1e29ab05c09f6ed2fdeff387b",
+          "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+        },
+        "report": "wiki-doc/.runtime/q08-pilot/qset-r2-q03/regression-report.json",
+        "writer_command_chars": 13289,
+        "repair_log": "wiki-doc/.runtime/q08-pilot/qset-r2-q03/run-01/q03/agent-logs/0-writer-repair-1.log",
+        "repair_log_sha256": "e28ba0d253517db21d3672309b07c15ae037ca2088e30ef5799b6cd0ae430199",
+        "repair_stderr": "Слишком длинная командная строка."
+      },
+      {
+        "case": "q04",
+        "valid": true,
+        "decision": "ready",
+        "initial_decision": "ready",
+        "repair_rounds": 0,
+        "repair_history": [],
+        "tool_versions": {
+          "scripts_sha256": "cb418a1499e28355be4f2549cc8672196d48064a3b3199527f589465cd4c188c",
+          "skill_md_sha256": "c809cb0bbcb2ecb13edc08441517f4e20f90b35110a85f62933a92dc58256e03",
+          "template_sha256": "183f467eff3f538c848251fa6198a9f2d711c7f1e29ab05c09f6ed2fdeff387b",
+          "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+        },
+        "report": "wiki-doc/.runtime/q08-pilot/qset-r2-q04/regression-report.json"
+      },
+      {
+        "case": "q05",
+        "valid": false,
+        "decision": "revise",
+        "initial_decision": "revise",
+        "repair_rounds": 1,
+        "repair_history": [
+          {
+            "round": 1,
+            "outcome": "writer_failed"
+          }
+        ],
+        "tool_versions": {
+          "scripts_sha256": "cb418a1499e28355be4f2549cc8672196d48064a3b3199527f589465cd4c188c",
+          "skill_md_sha256": "c809cb0bbcb2ecb13edc08441517f4e20f90b35110a85f62933a92dc58256e03",
+          "template_sha256": "183f467eff3f538c848251fa6198a9f2d711c7f1e29ab05c09f6ed2fdeff387b",
+          "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+        },
+        "report": "wiki-doc/.runtime/q08-pilot/qset-r2-q05/regression-report.json",
+        "writer_command_chars": 10021,
+        "repair_log": "wiki-doc/.runtime/q08-pilot/qset-r2-q05/run-01/q05/agent-logs/0-writer-repair-1.log",
+        "repair_log_sha256": "e28ba0d253517db21d3672309b07c15ae037ca2088e30ef5799b6cd0ae430199",
+        "repair_stderr": "Слишком длинная командная строка."
+      },
+      {
+        "case": "q06",
+        "valid": false,
+        "decision": "revise",
+        "initial_decision": "revise",
+        "repair_rounds": 1,
+        "repair_history": [
+          {
+            "round": 1,
+            "outcome": "writer_failed"
+          }
+        ],
+        "tool_versions": {
+          "scripts_sha256": "cb418a1499e28355be4f2549cc8672196d48064a3b3199527f589465cd4c188c",
+          "skill_md_sha256": "c809cb0bbcb2ecb13edc08441517f4e20f90b35110a85f62933a92dc58256e03",
+          "template_sha256": "183f467eff3f538c848251fa6198a9f2d711c7f1e29ab05c09f6ed2fdeff387b",
+          "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+        },
+        "report": "wiki-doc/.runtime/q08-pilot/qset-r2-q06/regression-report.json",
+        "writer_command_chars": 9544,
+        "repair_log": "wiki-doc/.runtime/q08-pilot/qset-r2-q06/run-01/q06/agent-logs/0-writer-repair-1.log",
+        "repair_log_sha256": "e28ba0d253517db21d3672309b07c15ae037ca2088e30ef5799b6cd0ae430199",
+        "repair_stderr": "Слишком длинная командная строка."
+      },
+      {
+        "case": "q07",
+        "valid": false,
+        "decision": "revise",
+        "initial_decision": "revise",
+        "repair_rounds": 1,
+        "repair_history": [
+          {
+            "round": 1,
+            "outcome": "writer_failed"
+          }
+        ],
+        "tool_versions": {
+          "scripts_sha256": "cb418a1499e28355be4f2549cc8672196d48064a3b3199527f589465cd4c188c",
+          "skill_md_sha256": "c809cb0bbcb2ecb13edc08441517f4e20f90b35110a85f62933a92dc58256e03",
+          "template_sha256": "183f467eff3f538c848251fa6198a9f2d711c7f1e29ab05c09f6ed2fdeff387b",
+          "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+        },
+        "report": "wiki-doc/.runtime/q08-pilot/qset-r2-q07/regression-report.json",
+        "writer_command_chars": 8701,
+        "repair_log": "wiki-doc/.runtime/q08-pilot/qset-r2-q07/run-01/q07/agent-logs/0-writer-repair-1.log",
+        "repair_log_sha256": "e28ba0d253517db21d3672309b07c15ae037ca2088e30ef5799b6cd0ae430199",
+        "repair_stderr": "Слишком длинная командная строка."
+      },
+      {
+        "case": "q08",
+        "valid": false,
+        "decision": "revise",
+        "initial_decision": "revise",
+        "repair_rounds": 1,
+        "repair_history": [
+          {
+            "round": 1,
+            "outcome": "writer_failed"
+          }
+        ],
+        "tool_versions": {
+          "scripts_sha256": "cb418a1499e28355be4f2549cc8672196d48064a3b3199527f589465cd4c188c",
+          "skill_md_sha256": "c809cb0bbcb2ecb13edc08441517f4e20f90b35110a85f62933a92dc58256e03",
+          "template_sha256": "183f467eff3f538c848251fa6198a9f2d711c7f1e29ab05c09f6ed2fdeff387b",
+          "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+        },
+        "report": "wiki-doc/.runtime/q08-pilot/qset-r2-q08/regression-report.json",
+        "writer_command_chars": 9578,
+        "repair_log": "wiki-doc/.runtime/q08-pilot/qset-r2-q08/run-01/q08/agent-logs/0-writer-repair-1.log",
+        "repair_log_sha256": "e28ba0d253517db21d3672309b07c15ae037ca2088e30ef5799b6cd0ae430199",
+        "repair_stderr": "Слишком длинная командная строка."
+      },
+      {
+        "case": "q09",
+        "valid": true,
+        "decision": "ready",
+        "initial_decision": "ready",
+        "repair_rounds": 0,
+        "repair_history": [],
+        "tool_versions": {
+          "scripts_sha256": "cb418a1499e28355be4f2549cc8672196d48064a3b3199527f589465cd4c188c",
+          "skill_md_sha256": "c809cb0bbcb2ecb13edc08441517f4e20f90b35110a85f62933a92dc58256e03",
+          "template_sha256": "183f467eff3f538c848251fa6198a9f2d711c7f1e29ab05c09f6ed2fdeff387b",
+          "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+        },
+        "report": "wiki-doc/.runtime/q08-pilot/qset-r2-q09/regression-report.json"
+      },
+      {
+        "case": "q10",
+        "valid": false,
+        "decision": "revise",
+        "initial_decision": "revise",
+        "repair_rounds": 1,
+        "repair_history": [
+          {
+            "round": 1,
+            "outcome": "writer_failed"
+          }
+        ],
+        "tool_versions": {
+          "scripts_sha256": "cb418a1499e28355be4f2549cc8672196d48064a3b3199527f589465cd4c188c",
+          "skill_md_sha256": "c809cb0bbcb2ecb13edc08441517f4e20f90b35110a85f62933a92dc58256e03",
+          "template_sha256": "183f467eff3f538c848251fa6198a9f2d711c7f1e29ab05c09f6ed2fdeff387b",
+          "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+        },
+        "report": "wiki-doc/.runtime/q08-pilot/qset-r2-q10/regression-report.json",
+        "writer_command_chars": 14350,
+        "repair_log": "wiki-doc/.runtime/q08-pilot/qset-r2-q10/run-01/q10/agent-logs/0-writer-repair-1.log",
+        "repair_log_sha256": "e28ba0d253517db21d3672309b07c15ae037ca2088e30ef5799b6cd0ae430199",
+        "repair_stderr": "Слишком длинная командная строка."
+      },
+      {
+        "case": "q11",
+        "valid": true,
+        "decision": "ready",
+        "initial_decision": "ready",
+        "repair_rounds": 0,
+        "repair_history": [],
+        "tool_versions": {
+          "scripts_sha256": "cb418a1499e28355be4f2549cc8672196d48064a3b3199527f589465cd4c188c",
+          "skill_md_sha256": "c809cb0bbcb2ecb13edc08441517f4e20f90b35110a85f62933a92dc58256e03",
+          "template_sha256": "183f467eff3f538c848251fa6198a9f2d711c7f1e29ab05c09f6ed2fdeff387b",
+          "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+        },
+        "report": "wiki-doc/.runtime/q08-pilot/qset-r2-q11/regression-report.json"
+      }
+    ]
+  },
+  "sha256": {
+    "scripts/agent_adapter.py": "ed67b8e24395163df86f8903299fa083d5db65716c90e6867d4e51aa5ada9327",
+    "scripts/run_regression.py": "e74480686e281f1104b75c835e21aa11ae354d55c0c06df576739a4df92c7293",
+    "references/regression.md": "b91693e0c9a20dba33d3aac63fc4cfaa1289c915a5ee7c7013e038827fe9091f",
+    "tests/test_repair_iterations.py": "ec65c236e5ed7fedba15e59d46e275b3f2d1bee2d57a30ac68a2abce832036ca",
+    "tests/test_agent_adapter.py": "f81e3aa03b04868993a258f9363db88fa488c66a3162af4cc3f5ccfe6c11ff1c",
+    "tests/test_regression_decisions.py": "8a29dc00714a394cc26ad296914339b6040683d4c4089429f5ba08a81f2adb63"
+  },
+  "links": {
+    "checked": 152,
+    "missing": []
+  }
+}

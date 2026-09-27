@@ -138,9 +138,11 @@ class RegressionMeasurementTests(unittest.TestCase):
     def test_unexecuted_repairs_cannot_be_reported(self):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / 'runs'
-            for count in (-1, 1, 3):
-                with self.subTest(count=count), self.assertRaisesRegex(ValueError, 'not implemented'):
+            for count in (-1, 4):
+                with self.subTest(count=count), self.assertRaisesRegex(ValueError, 'between 0 and 3'):
                     run_suite(PACKAGE / 'examples/cases.json', output, iterations=count)
+            with self.assertRaisesRegex(ValueError, 'require adapter mode'):
+                run_suite(PACKAGE / 'examples/cases.json', output, iterations=1)
             self.assertFalse(output.exists())
 
     def test_empty_manifest_cannot_claim_full_agent_cycle(self):

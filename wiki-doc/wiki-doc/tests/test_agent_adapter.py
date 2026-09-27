@@ -97,6 +97,7 @@ class AgentAdapterTests(unittest.TestCase):
         self.assertEqual(result, 1)
         runs = json.loads((self.output / 'runs.json').read_text(encoding='utf-8'))
         self.assertEqual(runs['runs'], [])
+        self.assertFalse((self.output / '0' / 'decision.json').exists())
 
     def test_seat_continues_the_session_after_an_output_cap_stop(self):
         run_dir = self.output / '0'

@@ -146,16 +146,35 @@ def run_suite(manifest_path,output,*,mode='saved',repeats=3,adapter=None,model=N
     output=Path(output).resolve(); results=[]; started=time.monotonic()
     if not cases or any(not c['subjects'] for c in cases):
         raise ValueError('Regression manifest must contain cases with documented subjects')
-    if iterations!=0:
-        raise ValueError('Automatic repair iterations are not implemented; --repair-iterations must be 0')
+    if type(iterations) is not int or not 0 <= iterations <= 3:
+        raise ValueError('Repair iterations must be between 0 and 3')
+    if iterations and mode != 'adapter':
+        raise ValueError('Repair iterations require adapter mode; deterministic runs have nothing to repair')
     if mode=='adapter' and (not adapter or not model): raise ValueError('Agent adapter requires command argv and model/version')
+    adapter_command = list(adapter or [])
+    if mode == 'adapter':
+        configured = []
+        for i, part in enumerate(adapter_command):
+            if part == '--repair-rounds':
+                if i + 1 == len(adapter_command):
+                    raise ValueError('--repair-rounds requires a value')
+                configured.append(int(adapter_command[i + 1]))
+            elif part.startswith('--repair-rounds='):
+                configured.append(int(part.split('=', 1)[1]))
+        if len(configured) > 1 or (configured and configured[0] != iterations):
+            raise ValueError('Adapter --repair-rounds must match --repair-iterations')
+        if iterations and not configured:
+            adapter_command += ['--repair-rounds', str(iterations)]
     for repeat in range(1,repeats+1):
         for case in cases:
             workspace=output/f'run-{repeat:02d}'/case['id']
             try:
                 if mode!='saved':
                     package,project,out=isolate(case,workspace,examples)
-                    command=adapter if mode=='adapter' else [sys.executable,'-B',str(package/'scripts/regression_adapter.py'),'{request}']
+                    if mode=='adapter':
+                        command=list(adapter_command)
+                    else:
+                        command=[sys.executable,'-B',str(package/'scripts/regression_adapter.py'),'{request}']
                     command=[part.replace('{request}',str(workspace/'request.json')) for part in command]
                     env=dict(os.environ)
                     # Expose installed dependencies, never the original source/test tree.
@@ -168,19 +187,31 @@ def run_suite(manifest_path,output,*,mode='saved',repeats=3,adapter=None,model=N
                 generated=read_json(out/'runs.json')['runs']
                 if Counter(r['subject'] for r in generated)!=Counter(case['subjects']): raise ValueError('Adapter omitted, duplicated or invented a documented subject')
                 for row in generated:
+                    repairs = row.get('repair_rounds', 0)
+                    limit = iterations if mode == 'adapter' else 3
+                    if type(repairs) is not int or not 0 <= repairs <= limit:
+                        raise ValueError(f'Invalid reported repair_rounds: expected integer between 0 and {limit}')
+                    initial = row.get('initial_decision')
+                    if ((initial is not None and initial not in ('ready', 'revise', 'blocked'))
+                            or (repairs and initial not in ('revise', 'blocked'))):
+                        raise ValueError('Repair accounting requires a valid initial_decision; repairs must start from a refusal')
                     run=inside(out,row['run_dir'])
                     checked=check_run(run,project,examples/'expected'/case['id'],row['subject'],row.get('profile'))
+                    checked['initial_decision']=row.get('initial_decision') or checked['decision']
+                    checked['repair_iterations']=repairs
                     results.append(dict(case=case['id'],repeat=repeat,subject=row['subject'],run_dir=str(run),project_root=str(project),profile=row.get('profile'),**checked))
             except (ValueError,OSError,KeyError,subprocess.TimeoutExpired) as exc:
                 results.append(dict(case=case['id'],repeat=repeat,valid=False,errors=[str(exc)]))
     spread={}
     for row in results:
-        if 'subject' in row: spread.setdefault(row['case']+'/'+row['subject'],set()).add((row.get('facts_sha256'),row.get('decision'),tuple(row['errors'])))
+        if 'subject' in row: spread.setdefault(row['case']+'/'+row['subject'],set()).add((row.get('facts_sha256'),row.get('initial_decision'),row.get('decision'),tuple(row['errors'])))
     valid=bool(results) and all(r['valid'] for r in results) and len(results)==repeats*sum(len(c['subjects']) for c in cases)
+    repair_total=sum(r.get('repair_iterations', 0) for r in results)
     report=dict(schema_version=1,mode=mode,cycle='full-agent' if mode=='adapter' else 'semi-automatic-saved',
                 full_agent_cycle_completed=mode=='adapter' and valid,
                 valid=valid,
-                cases=len(cases),subjects=sum(len(c['subjects']) for c in cases),repeats=repeats,repair_iterations=iterations,
+                cases=len(cases),subjects=sum(len(c['subjects']) for c in cases),repeats=repeats,
+                repair_iterations=repair_total,repair_iterations_requested=iterations,
                 model=model or 'deterministic-reference-v1',settings=settings or {},elapsed_seconds=round(time.monotonic()-started,3),
                 outcome_variants={k:len(v) for k,v in spread.items()},results=results,
                 limitation='Arbitrary prose requires an independent content review; controlled rendered claims are checked against separately authored expectations.')
@@ -193,7 +224,7 @@ def main(argv=None):
     p.add_argument('--output',required=True); p.add_argument('--mode',choices=['saved','reference','adapter'],default='saved')
     p.add_argument('--repeats',type=int,default=3); p.add_argument('--adapter',help='JSON array argv; {request} is replaced, shell is never used')
     p.add_argument('--model'); p.add_argument('--settings',default='{}'); p.add_argument('--timeout',type=float,default=120)
-    p.add_argument('--repair-iterations',type=int,default=0,help='Reserved; only 0 is supported until repair execution is implemented')
+    p.add_argument('--repair-iterations',type=int,default=0,help='Repair rounds after a refused first attempt (0..3); the report counts only executed rounds')
     p.add_argument('--cases',help='Comma-separated case ids to run (default: every case in the manifest)')
     a=p.parse_args(argv)
     if a.repeats<1 or a.timeout<=0: p.error('Positive repeats/timeout required')

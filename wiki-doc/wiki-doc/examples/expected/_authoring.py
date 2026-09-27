@@ -35,7 +35,7 @@ CASES = {
                 'volatility': 'volatile',
             },
             # Explicit assignment plus GET DIAGNOSTICS n = ROW_COUNT.
-            'operations': {'IF': 1, 'DELETE': 1, 'INSERT': 1, 'SELECT': 1, 'ASSIGN': 2, 'RETURN': 1},
+            'operations': {'IF': 1, 'DELETE': 1, 'INSERT': 1, 'SELECT': 1, 'ASSIGN': 3, 'RETURN': 1},
             'reads': ['q_src.kpi_facts'],
             'writes': ['q_hist.retro_pairs'],
             'calls': [],

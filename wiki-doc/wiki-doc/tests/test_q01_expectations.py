@@ -170,6 +170,12 @@ class OracleConsistencyTests(unittest.TestCase):
 
     def test_q01(self):
         self.check_case('q01')
+        # DECLARE v_retro := p_retro, GET DIAGNOSTICS n, and ELSE n := 0
+        # are three executable assignments, not just the latter two.
+        assignments = [i for i in inventory_of('q01')['items'] if i['kind'] == 'ASSIGN']
+        self.assertEqual(assignments[0]['details']['assignments'],
+                         [{'target': 'v_retro', 'expression': 'p_retro'}])
+        self.assertTrue(assignments[0]['details']['initializer'])
 
     def test_q02(self):
         self.check_case('q02')

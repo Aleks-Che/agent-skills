@@ -75,7 +75,11 @@ END IF;""")
             details = operations(inv, kind)[0]['details']
             self.assertEqual(details.get('branch'), 'then_body/exception:division_by_zero')
             self.assertEqual(details.get('guards'), ['p'])
-        self.assertTrue(any('runtime failure point' in n['reason'] for n in inv['coverage_notes']))
+        self.assertEqual(inv['coverage_notes'], [])
+        flow = operations(inv, 'EXCEPTION_BLOCK')[0]['details']['exception_flow']
+        self.assertEqual(flow['failure_point'], 'runtime_dependent_any_expression_in_protected_body')
+        self.assertEqual(flow['handlers'][0]['conditions'], ['division_by_zero'])
+        self.assertEqual([a['construct'] for a in flow['handlers'][0]['body']], ['TRUNCATE', 'CALL'])
 
 
 class RaiseReviewTests(unittest.TestCase):

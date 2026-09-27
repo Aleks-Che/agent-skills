@@ -87,6 +87,25 @@ class AgentAdapterTests(unittest.TestCase):
         for seat in ('0-writer.log', '0-validator.log'):
             self.assertTrue((self.root / 'agent-logs' / seat).is_file(), seat)
 
+    def test_rebinding_preserves_current_precise_and_invalid_ranges_for_gate_review(self):
+        run = self.output / 'ranges'
+        run.mkdir()
+        page = run / 'page.draft.md'
+        page.write_text('first\nsecond\nthird\n', encoding='utf-8')
+        digest = agent_adapter.sha256_bytes(page.read_bytes())
+        entries = [dict(root='run', path='page.draft.md', start_line=2, end_line=end,
+                        sha256=digest) for end in (2, 99999)]
+        report = dict(checks=[dict(evidence=entries)])
+        path = run / 'validation.json'
+        path.write_text(json.dumps(report), encoding='utf-8')
+        self.assertEqual(agent_adapter.rebind_run_evidence(run), 0)
+        self.assertEqual(read_json(path), report)
+        page.write_text('replacement\n', encoding='utf-8')
+        self.assertEqual(agent_adapter.rebind_run_evidence(run), 2)
+        for ref in read_json(path)['checks'][0]['evidence']:
+            self.assertEqual((ref['start_line'], ref['end_line']), (1, 1))
+            self.assertEqual(ref['sha256'], agent_adapter.sha256_bytes(page.read_bytes()))
+
     def test_failing_agent_does_not_produce_runs(self):
         # A seat that fails without delivering an artifact must not create runs;
         # delivered artifacts count even when the CLI exits non-zero afterwards.
@@ -128,6 +147,10 @@ class AgentAdapterTests(unittest.TestCase):
         self.assertIn('--session', command)
         self.assertIn('ses_stub', command)
         self.assertGreater(seconds, 0)
+        self.assertEqual(agent_adapter.last_session_and_reason(
+            self.root / 'agent-logs' / 'seat.log')[1], 'length')
+        self.assertEqual(agent_adapter.last_session_and_reason(
+            self.root / 'agent-logs' / 'seat-continue-1.log')[1], 'stop')
 
     def test_delivered_artifact_counts_even_with_nonzero_exit(self):
         result = agent_adapter.main([str(self.request()), *self.argv(code=3)])

@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Conditional EXCEPTION flow: protected body and initializer anchors, ordered
+  handlers, nested propagation, rollback and runtime-dependent failure points.
+  DECLARE defaults retain executable expressions and calls; ambiguous AST block
+  ownership still blocks. Gate independently verifies operation order.
+- Live subprocess logs and PID/deadline/result status for adapter and regression
+  runner, with timeout tree termination and separate continuation logs.
+- Large-bundle rendering groups claims by fact; gate validates identical
+  evidence references once per evaluation and still rechecks all bound bytes
+  before admitting the result.
+- Type checking indexes normalized operation queries by kind and target.
+  Markdown coverage indexes adjacent blocks and content spans, preserving
+  whitespace-only marker attachment and bounded fragment checks without
+  repeatedly scanning the entire large page.
+
 - **Q-08 repair review (2026-09-27)**: long Windows batch prompts are delivered
   through UTF-8 task files; coverage-only writer changes count as delivery.
   Failed repairs restore all core sealed artifacts, including facts and decision,

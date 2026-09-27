@@ -15,9 +15,20 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from agent_process import run_logged
 
 DEFAULT_AGENT = ['opencode', 'run', '--pure', '--agent', 'build', '--format', 'json',
                  '--dir', '{cwd}', '-m', '{model}', '{message}']
+
+FILE_ACCESS_NOTE = """
+Файлы задания уже перечислены: не обходи каталоги рекурсивно и не ищи другие
+копии скилла. Все файлы — UTF-8. Для PowerShell чтения задавай одновременно
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) и
+Get-Content -LiteralPath <path> -Encoding UTF8; для записи используй явный UTF-8.
+Не перекодируй исходники в CP1251/OEM. Читай независимые входы одним вызовом,
+большие JSON разбирай программно и выбирай нужные поля. После проверки сохрани
+требуемые артефакты; не запускай runner или новый writer/validator из этого места.
+"""
 
 WRITER_PROMPT = """Ты — writer-агент скилла wiki-doc. Следуй инструкциям пакета:
 - {skill}/SKILL.md (рабочий процесс), {skill}/doc-writer.md (правила writer),
@@ -100,19 +111,14 @@ def call_agent(argv_template, *, message, cwd, model, timeout, log_path):
         command = [part.replace('{message}', message).replace('{cwd}', str(cwd))
                    .replace('{model}', model) for part in argv_template]
         command[0] = resolved or command[0]
-    started = time.monotonic()
-    try:
-        completed = subprocess.run(command, cwd=str(cwd), capture_output=True,
-                                   timeout=timeout, shell=False)
-        returncode, stderr = completed.returncode, completed.stderr
-        stdout = completed.stdout
-    except subprocess.TimeoutExpired as exc:
-        returncode, stdout, stderr = 124, exc.stdout or b'', exc.stderr or b''
-    except OSError as exc:
-        returncode, stdout, stderr = 127, b'', str(exc).encode('utf-8')
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-    log_path.write_bytes(stdout + b'\n--- stderr ---\n' + stderr)
-    return returncode, round(time.monotonic() - started, 3), [str(c) for c in command]
+    stderr_path = log_path.with_suffix('.stderr.log')
+    returncode, seconds = run_logged(command, cwd=cwd, timeout=timeout,
+                                     stdout_path=log_path, stderr_path=stderr_path)
+    # Preserve the historical combined-log format; stdout is already visible
+    # while the process is running and stderr has its own live file.
+    with log_path.open('ab') as output:
+        output.write(b'\n--- stderr ---\n' + stderr_path.read_bytes())
+    return returncode, seconds, [str(c) for c in command]
 
 
 def last_session_and_reason(log_path):
@@ -154,9 +160,11 @@ def seat(agent, *, message, resume_message, workspace, model, timeout, log_path,
         before = sha256_bytes(artifact.read_bytes()) if artifact.is_file() else None
         alt_before = (sha256_bytes(alt_artifact.read_bytes())
                       if alt_artifact is not None and alt_artifact.is_file() else None)
+        attempt_log = (log_path if attempt == 0 else log_path.with_name(
+            f'{log_path.stem}-continue-{attempt}{log_path.suffix}'))
         code, seconds, command = call_agent(
             template, message=message if attempt == 0 else resume_message,
-            cwd=workspace, model=model, timeout=timeout, log_path=log_path)
+            cwd=workspace, model=model, timeout=timeout, log_path=attempt_log)
         total += seconds
         if not artifact.is_file():
             return False, round(total, 3), command, continuations
@@ -169,7 +177,7 @@ def seat(agent, *, message, resume_message, workspace, model, timeout, log_path,
             return True, round(total, 3), command, continuations
         if code:
             return False, round(total, 3), command, continuations
-        session, reason = last_session_and_reason(log_path)
+        session, reason = last_session_and_reason(attempt_log)
         if reason != 'length' or not session:
             return False, round(total, 3), command, continuations
         template = continue_argv(template, session)
@@ -205,6 +213,7 @@ def rebind_run_evidence(run_dir):
         return 0
     data = json.loads(validation.read_text(encoding='utf-8'))
     rebound = 0
+    files = {}
     for check in data.get('checks', []):
         for entry in check.get('evidence', []):
             if not isinstance(entry, dict) or entry.get('root') != 'run':
@@ -212,9 +221,13 @@ def rebind_run_evidence(run_dir):
             target = run_dir / entry.get('path', '')
             if not target.is_file():
                 continue
-            digest = sha256_bytes(target.read_bytes())
-            lines = len(target.read_text(encoding='utf-8-sig').splitlines())
-            if entry.get('sha256') != digest or entry.get('end_line') != max(lines, 1):
+            if target not in files:
+                raw = target.read_bytes()
+                files[target] = (sha256_bytes(raw), len(raw.decode('utf-8-sig').splitlines()))
+            digest, lines = files[target]
+            # Preserve the validator's precise range when it already refers to
+            # these bytes. Invalid current ranges must be rejected by the gate.
+            if entry.get('sha256') != digest:
                 entry['sha256'] = digest
                 entry['start_line'] = 1
                 entry['end_line'] = max(lines, 1)
@@ -306,7 +319,7 @@ def prompt_for(template, skill_root, request, run_dir, *, subject, **extra):
         dialect=request.get('dialect', 'postgres'), version=request['version'],
         subject=subject,
         context=', '.join(request.get('context') or ()) or 'нет',
-        migrations=request.get('migration_manifest') or 'нет', **extra)
+        migrations=request.get('migration_manifest') or 'нет', **extra) + FILE_ACCESS_NOTE
 
 
 def main(argv=None):
@@ -319,6 +332,8 @@ def main(argv=None):
     parser.add_argument('--repair-rounds', type=int, default=0,
                         help='Repair rounds after a refused seal (0..3)')
     args = parser.parse_args(argv)
+    if args.llm_timeout <= 0:
+        parser.error('LLM timeout must be positive')
     if not 0 <= args.repair_rounds <= 3:
         parser.error('Repair rounds must be between 0 and 3')
     request = json.loads(Path(args.request).read_text(encoding='utf-8'))

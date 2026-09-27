@@ -642,12 +642,14 @@ class DdlAcceptanceTests(unittest.TestCase):
         catalogue = column_catalog(inv, [sql], context, root, migration_manifest=manifest)
         # Every wildcard is expanded against established DDL now: the three
         # retro INSERT ... SELECT * copies resolve through the pinned INI
-        # source tables. What remains is the intentional EXCEPTION limitation
-        # and the listed positional-mapping gaps below.
+        # source tables. EXCEPTION is a complete conditional model; positional
+        # mismatches below remain source findings, not analysis gaps.
+        self.assertEqual(inv['coverage_notes'], [])
         self.assertEqual(sum(n['reason'] == 'Wildcard output columns require DDL expansion'
                              for n in inv['coverage_notes']), 0)
         self.assertEqual(sum(n['reason'].startswith('Exception handlers are inventoried')
-                             for n in inv['coverage_notes']), 1)
+                             for n in inv['coverage_notes']), 0)
+        self.assertEqual(len([i for i in inv['items'] if i['kind'] == 'EXCEPTION_BLOCK']), 1)
         # The retro copies expand to exactly the INI source columns.
         ini = 's_gp_p1024_ora_svd_kb_ckr_uup_gp_ini'
         retro_widths = {19328: 'main', 19359: 'new_clients', 19390: 'meet_tasks'}

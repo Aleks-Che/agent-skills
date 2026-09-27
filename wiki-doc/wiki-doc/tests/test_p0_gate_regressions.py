@@ -28,6 +28,79 @@ class FullGateTests(unittest.TestCase):
         self.assertEqual(result['decision'], 'ready', result)
         self.assertTrue(result['publication_authorized'])
 
+    def test_repeated_evidence_does_not_hide_a_distinct_invalid_range(self):
+        report = read_json(self.run / 'validation.json')
+        report['checks'][-1]['evidence'][0]['end_line'] = 99999
+        write_json(self.run, 'validation', report)
+        checked = seal(self.run)
+        self.assertFalse(checked['publication_authorized'], checked)
+        self.assertTrue(any('exceeds file length' in e for e in checked['errors']), checked)
+
+    def test_repeated_evidence_does_not_hide_source_change_after_verification(self):
+        from unittest.mock import patch
+        import validation_gate
+        original = validation_gate._fact_checks
+
+        def change_after_analysis(*args, **kwargs):
+            errors = original(*args, **kwargs)
+            with (self.run / 'source.sql').open('ab') as source:
+                source.write(b'\n-- changed after evidence and SQL analysis\n')
+            return errors
+
+        with patch.object(validation_gate, '_fact_checks', change_after_analysis):
+            checked = evaluate_bundle(self.run, write_decision=True)
+        self.assertFalse(checked['publication_authorized'], checked)
+        self.assertTrue(any('mismatch' in e for e in checked['errors']), checked)
+
+    def test_cached_evidence_alias_retarget_is_rejected_even_for_identical_bytes(self):
+        import os
+        from unittest.mock import patch
+        import validation_gate
+        alias, replacement = self.run / 'alias', self.run / 'replacement'
+        replacement.mkdir()
+        (replacement / 'source.sql').write_bytes((self.run / 'source.sql').read_bytes())
+
+        def point_at(target):
+            if alias.is_symlink() or getattr(alias, 'is_junction', lambda: False)():
+                if os.name == 'nt':
+                    os.rmdir(alias)  # The junction entry only, never its target.
+                else:
+                    alias.unlink()
+            if os.name == 'nt':
+                quote = lambda p: "'" + str(p).replace("'", "''") + "'"
+                subprocess.run(['powershell', '-NoProfile', '-Command',
+                                f'New-Item -ItemType Junction -Path {quote(alias)} -Target {quote(target)} | Out-Null'],
+                               check=True, capture_output=True)
+            else:
+                alias.symlink_to(target, target_is_directory=True)
+
+        point_at(self.run)
+        try:
+            report = read_json(self.run / 'validation.json')
+            for check in report['checks']:
+                ref = copy.deepcopy(check['evidence'][0])
+                ref['path'] = 'alias/source.sql'
+                check['evidence'].append(ref)
+            write_json(self.run, 'validation', report)
+            seal(self.run, issue=False)
+            original = validation_gate._fact_checks
+
+            def retarget_after_analysis(*args, **kwargs):
+                errors = original(*args, **kwargs)
+                point_at(replacement)
+                return errors
+
+            with patch.object(validation_gate, '_fact_checks', retarget_after_analysis):
+                checked = evaluate_bundle(self.run, write_decision=True)
+            self.assertFalse(checked['publication_authorized'], checked)
+            self.assertTrue(any('path binding changed' in e for e in checked['errors']), checked)
+        finally:
+            if alias.is_symlink() or getattr(alias, 'is_junction', lambda: False)():
+                if os.name == 'nt':
+                    os.rmdir(alias)
+                else:
+                    alias.unlink()
+
     def test_every_required_artifact_is_required(self):
         for name in ('facts', 'inventory', 'validation_plan', 'coverage', 'validation', 'decision', 'manifest'):
             path = self.run / (name + '.json')

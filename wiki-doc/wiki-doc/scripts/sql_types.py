@@ -465,9 +465,16 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
 
 def check_types(facts,catalogue):
     """Reject invented target types, swapped expression types and dropped DDL columns."""
+    from functools import lru_cache
+    from validation_gate import _expression_key
+    expression_key = lru_cache(maxsize=None)(_expression_key)
     errors=[]
     objects={o['id']:o for o in facts['objects']}
     groups=group_mappings(catalogue['mappings'])
+    # A wide INSERT uses the same full SQL for every target column. Normalize
+    # each distinct query once, retaining kind and target identity in the key.
+    operation_queries = {(op['kind'], oid, expression_key(op.get('structure',{}).get('query','')))
+                         for op in facts.get('operations',[]) for oid in op.get('writes',[])}
     for col in facts['columns']:
         obj=objects[col['object_id']]
         key=obj.get('canonical_key') if obj['kind'] in ('cte','temp_table') else f"{obj.get('schema')}.{obj['name']}"
@@ -478,7 +485,6 @@ def check_types(facts,catalogue):
         if not same(col['type_target'],expected['type'] if expected else None):
             errors.append(f"facts column {col['id']}: target type is not established by SQL/ordered DDL")
         mappings=groups.get((key,col['name']),[])
-        from validation_gate import _expression_key
         if len(mapping_variants(mappings)) > 1:
             if ('expression' not in col or col['expression'] is not None
                     or col['type_expression'] is not None or col.get('expression_status')!='unknown'):
@@ -486,16 +492,14 @@ def check_types(facts,catalogue):
             # Null describes only the aggregate. The exact statements must remain
             # visible as operation claims, independently checked by the SQL gate.
             for mapping in mappings:
-                if not mapping.get('query') or not any(
-                        op['kind']==mapping.get('kind') and col['object_id'] in op.get('writes',[])
-                        and _expression_key(op.get('structure',{}).get('query',''))==_expression_key(mapping['query'])
-                        for op in facts.get('operations',[])):
+                if not mapping.get('query') or (
+                        mapping.get('kind'), col['object_id'], expression_key(mapping['query'])) not in operation_queries:
                     errors.append(f"facts column {col['id']}: SQL mapping variant lacks its operation query")
         else:
             for mapping in mappings:
                 actual,expected_expression=col.get('expression'),mapping['expression']
                 matches=(actual==expected_expression if actual is None or expected_expression is None
-                         else _expression_key(actual)==_expression_key(expected_expression))
+                         else expression_key(actual)==expression_key(expected_expression))
                 if not matches:
                     errors.append(f"facts column {col['id']}: expression differs from SQL mapping")
                 if not same(col['type_expression'],mapping['type_expression']):
@@ -504,7 +508,7 @@ def check_types(facts,catalogue):
             for field,target in (('default','default'),('description','comment'),('primary_key','primary_key')):
                 if field in col and col[field]!=expected.get(target): errors.append(f"facts column {col['id']}: {field} differs from DDL")
         if 'expression_status' in col:
-            mapped=any(m['table']==key and m['name']==col['name'] for m in catalogue['mappings'])
+            mapped=bool(mappings)
             status=('known' if col['type_expression'] is not None else 'unknown') if mapped else 'not_applicable'
             if col['expression_status']!=status: errors.append(f"facts column {col['id']}: incorrect expression applicability")
     documented=set(facts['documented_object_ids'])

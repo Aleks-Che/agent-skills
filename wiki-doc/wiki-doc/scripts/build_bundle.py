@@ -75,7 +75,7 @@ def build(sql_path,run_dir,*,project_root,subject,context=(),migration_manifest=
         structural={k:v for k,v in details.items() if k in ('branches','branch','ddl','temporary','lifetime','reference','confirmed_call_effects','group_by','arguments','command_kind','query','assignments','target_columns','into','assignment_target','return_expression','result_for',
                     'extension_version','constraints','trigger_name','table','timing','events','for_each_row','function','is_constraint','when','update_columns',
                     'index_name','unique','primary','access_method','columns','where','privileges','privilege_columns','object_type','grantees','targets','grant_option',
-                    'distributed','storage_parameters','gp_extension_version','guards','derived_aliases','order_by','limit','offset','raise_level','message','diagnostic','raise_condition','raise_options','rethrow','set_operation')
+                    'distributed','storage_parameters','gp_extension_version','guards','derived_aliases','order_by','limit','offset','raise_level','message','diagnostic','raise_condition','raise_options','rethrow','set_operation','exception_flow','initializer')
                     and (k != 'columns' or item['kind'] == 'INDEX')}
         if structural: entry['structure']=structural
         if item['kind']=='EXECUTE':
@@ -154,15 +154,18 @@ def render(facts,plan,findings=(),source_observations=()):
               'formulas_dependencies':'Operations, dependencies and expressions','dataflow_diagram':'Data flow','misc':'Limitations and source observations'}
     sections={k:[] for k in headings}
     claims=expected_claims(facts); entries={}
+    claims_by_fact={}
+    for (fid,field),value in claims.items():
+        claims_by_fact.setdefault(fid,[]).append((field,value))
     for group in FACT_ARRAYS:
         section='formulas_dependencies' if group in ('operations','formulas','conditions') else ('entities' if group=='columns' else ('misc' if group=='unknowns' else 'schema_signature'))
         for fact in facts[group]:
             rows=[]
-            for (fid,field),value in claims.items():
-                if fid==fact['id']:
-                    encoded=json.dumps(value,ensure_ascii=False,sort_keys=True).replace('|','\\|')
-                    delimiter='`'*(max([len(x) for x in __import__('re').findall(r'`+',encoded)]+[0])+1)
-                    rows.append(f'| {fid} | {field} | {delimiter} {encoded} {delimiter} |')
+            fid=fact['id']
+            for field,value in claims_by_fact.get(fid,[]):
+                encoded=json.dumps(value,ensure_ascii=False,sort_keys=True).replace('|','\\|')
+                delimiter='`'*(max([len(x) for x in __import__('re').findall(r'`+',encoded)]+[0])+1)
+                rows.append(f'| {fid} | {field} | {delimiter} {encoded} {delimiter} |')
             sections[section].append('<!-- wiki-doc:fragment '+fact['id']+' -->\n| Fact | Property | SQL value |\n| --- | --- | --- |\n'+'\n'.join(rows))
             entries[fact['id']]=[dict(section_id=section,fragment_ref=fact['id'])]
     sections['header_purpose']=[f"`{main['canonical_key']}`. Static technical reference for the selected SQL declaration. Statements and evidence below describe the visible behavior."]

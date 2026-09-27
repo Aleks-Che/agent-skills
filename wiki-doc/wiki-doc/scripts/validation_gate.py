@@ -228,10 +228,10 @@ def _fact_checks(artifacts, rebuilt, required, draft):
     operations = [o for o in facts['operations'] if o.get('scope') in documented]
     operation_kinds = ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'CALL', 'PERFORM', 'EXECUTE',
                        'RETURN', 'CREATE', 'CTAS', 'CTE', 'ALTER', 'DROP', 'COMMENT', 'TRUNCATE', 'IF', 'ASSIGN', 'RAISE',
-                       'TRIGGER', 'INDEX', 'GRANT', 'REVOKE')
+                       'TRIGGER', 'INDEX', 'GRANT', 'REVOKE', 'EXCEPTION_BLOCK')
     items = [i for i in rebuilt['items'] if i['kind'] in operation_kinds]
     matched, item_facts = set(), {}
-    for item in items:
+    for expected_order, item in enumerate(items, 1):
         ref = item['source_ref']
         matches = [op for op in operations if op['id'] not in matched and op['kind'] == item['kind']
                    and any(r['path'] == ref['path'] and r['start_line'] <= ref['start_line'] <= r['end_line']
@@ -243,6 +243,8 @@ def _fact_checks(artifacts, rebuilt, required, draft):
             continue
         op = matches[0]
         matched.add(op['id'])
+        if op.get('order') != expected_order:
+            errors.append(f"facts {op['id']}: order differs from independent SQL inventory")
         if item['kind'] == 'EXECUTE':
             dynamic = op.get('dynamic')
             if not isinstance(dynamic, dict) or dynamic.get('template') != item['details'].get('template'):
@@ -253,7 +255,7 @@ def _fact_checks(artifacts, rebuilt, required, draft):
                       ('branches','branch','ddl','temporary','lifetime','reference','confirmed_call_effects','group_by','arguments','command_kind','query','assignments','target_columns','into','assignment_target','return_expression','result_for',
                        'extension_version','constraints','trigger_name','table','timing','events','for_each_row','function','is_constraint','when','update_columns',
                        'index_name','unique','primary','access_method','columns','where','privileges','privilege_columns','object_type','grantees','targets','grant_option',
-                       'distributed','storage_parameters','gp_extension_version','guards','derived_aliases','order_by','limit','offset','raise_level','message','diagnostic','raise_condition','raise_options','rethrow','set_operation')
+                       'distributed','storage_parameters','gp_extension_version','guards','derived_aliases','order_by','limit','offset','raise_level','message','diagnostic','raise_condition','raise_options','rethrow','set_operation','exception_flow','initializer')
                       and (k not in ('columns',) or item['kind'] == 'INDEX')}
         if structural and op.get('structure') != structural:
             errors.append(f"facts {op['id']}: structure differs from independent SQL inventory")
@@ -360,7 +362,18 @@ def _expression_key(expression):
     return tuple(tokens)
 
 
-def _verify_evidence(artifacts, roots):
+def _verify_evidence_bindings(bindings, roots):
+    errors = []
+    for ref, expected_path in bindings.values():
+        try:
+            if resolve_reference(ref, roots) != expected_path:
+                errors.append('Evidence path binding changed during evaluation: ' + ref['path'])
+        except EvidenceError as exc:
+            errors.append('Evidence path binding changed during evaluation: ' + str(exc))
+    return errors
+
+
+def _verify_evidence(artifacts, roots, *, bindings=None):
     errors = []
     manifest = artifacts['manifest']
     allowed = {}
@@ -379,15 +392,24 @@ def _verify_evidence(artifacts, roots):
     for path in (package / 'template').glob('*.md'):
         allowed[path.resolve()] = sha256_file(path)
 
+    # Large reports repeat the same source/page reference for thousands of
+    # obligations. Validate each distinct reference once in this evaluation.
+    # Admission still re-hashes all manifest inputs and tooling at the end.
+    verified_refs = {} if bindings is None else bindings
+
     def visit(value, location):
         if isinstance(value, dict):
             if {'path', 'start_line', 'end_line', 'sha256'} <= value.keys():
                 ref = {'root': 'project', **value}
                 try:
-                    validate_evidence(ref, roots)
-                    path = resolve_reference(ref, roots)
-                    if allowed.get(path) != ref['sha256']:
-                        errors.append(f'{location}: evidence is outside the checked input bundle')
+                    key = json.dumps(ref, sort_keys=True, separators=(',', ':'))
+                    if key not in verified_refs:
+                        validate_evidence(ref, roots)
+                        path = resolve_reference(ref, roots)
+                        if allowed.get(path) != ref['sha256']:
+                            errors.append(f'{location}: evidence is outside the checked input bundle')
+                        else:
+                            verified_refs[key] = (dict(ref), path)
                 except EvidenceError as exc:
                     errors.append(f'{location}: {exc}')
             for key, child in value.items():
@@ -407,6 +429,7 @@ def _verify_evidence(artifacts, roots):
                     errors.append(f'{name}.inputs: undeclared or changed input {ref["path"]}')
             except EvidenceError as exc:
                 errors.append(f'{name}.inputs: {exc}')
+    errors.extend(_verify_evidence_bindings(verified_refs, roots))
     return errors
 
 
@@ -458,7 +481,8 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
             from profiles import load_profile
             if facts['profile'] != load_profile(profile_path)['id']:
                 return _gate_result('blocked', errors=['Facts profile differs from explicitly selected profile'])
-        errors = _verify_evidence(artifacts, roots)
+        evidence_bindings = {}
+        errors = _verify_evidence(artifacts, roots, bindings=evidence_bindings)
         if errors:
             return _gate_result('blocked', errors=errors)
         rebuilt = {'schema_version': 2, 'run_id': manifest['run_id'], 'dialect': inventory['dialect'],
@@ -571,6 +595,7 @@ def evaluate_bundle(run_dir, *, policy_path=None, roots=None, profile_path=None,
                 return _gate_result('blocked', errors=decision_errors, metrics=evaluation['metrics'])
         # Close the read/check interval before issuing or accepting a decision.
         final_errors = verify_manifest_hashes(manifest, run, roots=roots)
+        final_errors.extend(_verify_evidence_bindings(evidence_bindings, roots))
         if sha256_file(run / 'manifest.json') != record['manifest_sha256']:
             final_errors.append('manifest changed during evaluation')
         if compute_tool_versions(package, profile_path=profile_path, policy_path=policy_path) != versions:

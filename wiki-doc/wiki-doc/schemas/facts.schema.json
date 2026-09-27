@@ -586,7 +586,8 @@
             "RAISE",
             "ASSIGN",
             "OTHER",
-            "CTE"
+            "CTE",
+            "EXCEPTION_BLOCK"
           ]
         },
         "reads": {
@@ -688,12 +689,29 @@
           "properties": {
             "set_operation": {
               "type": "object",
-              "required": ["operator", "all", "left", "right"],
+              "required": [
+                "operator",
+                "all",
+                "left",
+                "right"
+              ],
               "properties": {
-                "operator": {"enum": ["UNION", "INTERSECT", "EXCEPT"]},
-                "all": {"type": "boolean"},
-                "left": {"$ref": "#/$defs/set_operand_anchor"},
-                "right": {"$ref": "#/$defs/set_operand_anchor"}
+                "operator": {
+                  "enum": [
+                    "UNION",
+                    "INTERSECT",
+                    "EXCEPT"
+                  ]
+                },
+                "all": {
+                  "type": "boolean"
+                },
+                "left": {
+                  "$ref": "#/$defs/set_operand_anchor"
+                },
+                "right": {
+                  "$ref": "#/$defs/set_operand_anchor"
+                }
               },
               "additionalProperties": false
             },
@@ -895,6 +913,12 @@
             "gp_extension_version": {
               "type": "integer",
               "const": 1
+            },
+            "exception_flow": {
+              "$ref": "#/$defs/exception_flow"
+            },
+            "initializer": {
+              "const": true
             }
           },
           "dependentRequired": {
@@ -1060,16 +1084,49 @@
               }
             }
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "EXCEPTION_BLOCK"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "structure"
+            ],
+            "properties": {
+              "structure": {
+                "required": [
+                  "exception_flow"
+                ]
+              }
+            }
+          }
         }
       ]
     },
     "set_operand_anchor": {
       "type": "object",
-      "required": ["object_or_scope", "construct", "ordinal"],
+      "required": [
+        "object_or_scope",
+        "construct",
+        "ordinal"
+      ],
       "properties": {
-        "object_or_scope": {"type": "string", "minLength": 1},
-        "construct": {"const": "SELECT"},
-        "ordinal": {"type": "integer", "minimum": 1}
+        "object_or_scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "construct": {
+          "const": "SELECT"
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1
+        }
       },
       "additionalProperties": false
     },
@@ -1406,6 +1463,150 @@
             "string",
             "null"
           ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "exception_anchor": {
+      "type": "object",
+      "required": [
+        "object_or_scope",
+        "construct",
+        "ordinal"
+      ],
+      "properties": {
+        "object_or_scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "construct": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "exception_flow": {
+      "type": "object",
+      "required": [
+        "version",
+        "parent",
+        "initializers",
+        "body",
+        "handlers",
+        "selection",
+        "failure_point",
+        "no_error",
+        "handled_error",
+        "unmatched_error",
+        "handler_error",
+        "initialization_error",
+        "rollback",
+        "variables",
+        "external_effects",
+        "others_excludes"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "parent": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/exception_anchor"
+            }
+          ]
+        },
+        "body": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/exception_anchor"
+          },
+          "uniqueItems": true
+        },
+        "handlers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "ordinal",
+              "conditions",
+              "body"
+            ],
+            "properties": {
+              "ordinal": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "conditions": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "body": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/exception_anchor"
+                },
+                "uniqueItems": true
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "selection": {
+          "const": "first_matching_condition_in_source_order"
+        },
+        "failure_point": {
+          "const": "runtime_dependent_any_expression_in_protected_body"
+        },
+        "no_error": {
+          "const": "continue_after_block_unless_control_transfer"
+        },
+        "handled_error": {
+          "const": "skip_remaining_body_then_handler_then_continue_unless_control_transfer"
+        },
+        "unmatched_error": {
+          "const": "propagate_to_parent_or_caller"
+        },
+        "handler_error": {
+          "const": "propagate_to_parent_or_caller_not_same_handler_list"
+        },
+        "initialization_error": {
+          "const": "propagate_to_parent_or_caller_before_protected_body"
+        },
+        "rollback": {
+          "const": "transactional_database_changes_within_protected_block"
+        },
+        "variables": {
+          "const": "values_at_failure_are_retained"
+        },
+        "external_effects": {
+          "const": "not_assumed_transactional"
+        },
+        "others_excludes": {
+          "const": [
+            "query_canceled",
+            "assert_failure"
+          ]
+        },
+        "initializers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/exception_anchor"
+          },
+          "uniqueItems": true
         }
       },
       "additionalProperties": false

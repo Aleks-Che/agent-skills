@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+from agent_process import run_logged
 import sys
 import time
 
@@ -179,10 +180,10 @@ def run_suite(manifest_path,output,*,mode='saved',repeats=3,adapter=None,model=N
                     env=dict(os.environ)
                     # Expose installed dependencies, never the original source/test tree.
                     env['PYTHONPATH']=os.pathsep.join(p for p in env.get('PYTHONPATH','').split(os.pathsep) if p and Path(p).resolve()!=PACKAGE/'scripts')
-                    completed=subprocess.run(command,cwd=workspace,env=env,capture_output=True,timeout=timeout,shell=False)
-                    (workspace/'stdout.log').write_bytes(completed.stdout); (workspace/'stderr.log').write_bytes(completed.stderr)
-                    atomic_json(workspace/'adapter.json',dict(mode=mode,model=model or 'deterministic-reference-v1',settings=settings or {},timeout_seconds=timeout,returncode=completed.returncode))
-                    if completed.returncode: raise ValueError(f'Adapter failed with exit {completed.returncode}; see stderr.log')
+                    code, seconds = run_logged(command,cwd=workspace,env=env,timeout=timeout,
+                                               stdout_path=workspace/'stdout.log',stderr_path=workspace/'stderr.log')
+                    atomic_json(workspace/'adapter.json',dict(mode=mode,model=model or 'deterministic-reference-v1',settings=settings or {},timeout_seconds=timeout,returncode=code,seconds=seconds))
+                    if code: raise ValueError(f'Adapter failed with exit {code}; see stdout.status.json and stderr.log')
                 else: project,out=workspace/'input',workspace/'output'
                 generated=read_json(out/'runs.json')['runs']
                 if Counter(r['subject'] for r in generated)!=Counter(case['subjects']): raise ValueError('Adapter omitted, duplicated or invented a documented subject')

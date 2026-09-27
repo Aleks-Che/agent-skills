@@ -25,7 +25,7 @@
 | PL/pgSQL IF / ELSIF / ELSE / ASSIGN / INTO / RETURN | Цепочка guards и путь ветки; ELSIF/ELSE учитывают FALSE и NULL предыдущих условий; цели присваивания, INTO, RETURN |
 | GET [STACKED] DIAGNOSTICS | Отдельный ASSIGN на каждую цель с видом диагностического значения и признаком stacked |
 | RAISE | Уровень, сообщение, аргументы, условие/SQLSTATE, USING, повторное возбуждение; reads/calls и обязательства выражений |
-| EXCEPTION | Операции всех обработчиков и их условия; неизвестный момент перехода в обработчик остаётся blocking gap |
+| EXCEPTION | Условная модель защищённых блоков: все операции и обработчики, порядок WHEN, передача ошибок наружу и область отката; [контракт](exception-flow.md) |
 | EXECUTE constant / format | Шаблон, аргументы, тип команды и статически видимые источники; runtime-имена неизвестны |
 | TRIGGER | Имя, таблица, timing (BEFORE/AFTER/INSTEAD OF), события, FOR EACH ROW, вызываемая функция |
 | INDEX | Имя, таблица, UNIQUE/PRIMARY, access method, колонки/выражения, частичный WHERE |
@@ -116,7 +116,7 @@ set-результата `expression` и выведенный тип остаю�
 Семантика сверена с [PostgreSQL set operations](https://www.postgresql.org/docs/17/queries-union.html)
 и [type resolution](https://www.postgresql.org/docs/17/typeconv-union-case.html).
 
-Циклы и анализ перехода в exception handlers PL/pgSQL, рекурсивный lineage CTE, wildcard-выходы объявлений без развёртки,
+Циклы, неподдержанные конструкции внутри exception handlers PL/pgSQL, рекурсивный lineage CTE, wildcard-выходы объявлений без развёртки,
 неподдержанные AST-узлы, неизвестный search_path и неразобранная динамика создают
 `coverage_notes` и блокируют gate. Полная поддержка PostgreSQL/Greenplum не заявлена.
 Префикс CKR_GP не устанавливает версию Greenplum. Матрица расширяется только с тестами.

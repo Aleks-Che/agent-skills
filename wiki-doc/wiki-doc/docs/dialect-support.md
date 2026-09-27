@@ -1,8 +1,10 @@
 # Матрица поддержки диалектов
 
-Дата проверки: 2026-09-24 (повторное ревью Q-04; DDL-приёмка пройдена —
-`DdlAcceptanceTests` 2/2, но Q-04 не завершён: остались 3 wildcard-выхода
-физических INI-таблиц и 1 переход в EXCEPTION). Матрица описывает статический анализ закреплённым
+Контракт обновлён 2026-09-27: wildcard-выходы разрешаются закреплёнными DDL,
+EXCEPTION представлен условной статической моделью; фактическая точка сбоя
+остаётся зависимой от выполнения. Итоговая приёмка отражена отдельно в
+`IMPROVEMENT-STATUS-2026-09-23.md` репозитория разработки.
+Матрица описывает статический анализ закреплённым
 `pglast==7.14` (libpg_query) и подтверждённые тестами границы пакета.
 SQL в СУБД не выполнялся. Прохождение разбора не подтверждает совместимость
 с любой версией PostgreSQL или полноту семантического анализа.
@@ -153,7 +155,8 @@ D `test_all_examples_parse_cleanly` проверяет наличие объяв
 | Версии PostgreSQL кроме условия MERGE >= 15 | Нет общей таблицы минимальных версий; серверные испытания не проводились |
 | Новые варианты MERGE | Принимаемый pglast синтаксис не означает поддержку всех вариантов в объявленной версии |
 | Рекурсивный CTE lineage | Блокирующая диагностика; A `test_recursive_cte_keeps_gap` |
-| Циклы/exception handlers PL/pgSQL | Циклы остаются неподдержанными; тела обработчиков обходятся, но момент перехода в EXCEPTION остаётся blocking gap; Q4 `test_exception_context_reaches_ddl_and_calls` |
+| PL/pgSQL EXCEPTION и DECLARE | Условные переходы, порядок WHEN, вложенная защита, откат и явные initializer-выражения сохраняются; фактический сбой не предсказывается. Неоднозначная принадлежность DECLARE блокируется; [контракт](../references/exception-flow.md), `test_exception_flow.py` |
+| Циклы PL/pgSQL | Неподдержанные AST-узлы сохраняют blocking gap, включая узлы в обработчиках; `test_unknown_handler_body_still_blocks` |
 | ADD CONSTRAINT USING INDEX | Блокируется до разрешения колонок индекса; E `test_using_index_does_not_invent_primary_key_column_properties` |
 | GRANT на schema/routines/ALL IN SCHEMA | Блокируется; E `test_unsupported_access_targets_remain_analysis_gaps` |
 | Неоднозначные имена/search_path | Не разрешаются по догадке; неизвестный unqualified call проверен A `test_unresolved_call_not_assumed_builtin` |

@@ -374,9 +374,8 @@ class AcceptanceNumbersTests(unittest.TestCase):
         from collections import Counter
         self.assertEqual(Counter(n['reason'] for n in inv['coverage_notes']), {
             'Wildcard output columns require DDL expansion': 72,
-            'Exception handlers are inventoried as branch ops; runtime failure point is not analysed': 1,
         })
-        self.assertEqual(len(gaps), 73)
+        self.assertEqual(len(gaps), 72)
         self.assertTrue(all(c['blocking'] for c in gaps))
 
 

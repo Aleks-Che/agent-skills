@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-27",
+  "stage": "Q",
+  "acceptance_complete": false,
+  "local_checks_valid": true,
+  "runtime": {
+    "scripts_sha256": "9e8ef5b843df55bdc6ca3124e0ce6915d73c194d9c10f5d145b637e0f8c962c5",
+    "skill_md_sha256": "575622362f42247afc2f9acb402d952debe7dbd60084f18bf03cf61e5639e961",
+    "template_sha256": "21836646828f802a82adb030225a6807f44fe76cb2bf84217ec2f311cbc74290",
+    "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
+  },
+  "status": {
+    "Q-01": "done",
+    "Q-02": "done",
+    "Q-03": "done",
+    "Q-04": "done",
+    "Q-05": "in_progress",
+    "Q-06": "in_progress",
+    "Q-07": "in_progress",
+    "Q-08": "in_progress",
+    "Q-09": "in_progress"
+  },
+  "user_acceptance": "Complete static conditional EXCEPTION model is sufficient; concrete failure remains runtime-dependent",
+  "tests": {
+    "total": 1192,
+    "passed": 1191,
+    "skipped": 1,
+    "failed": 0,
+    "report": ".runtime/stage-2026-09-27/candidate-4/unit-report-final.json"
+  },
+  "suites": {
+    "q": {
+      "reference_results": 33,
+      "saved_results": 33,
+      "repeats": 3,
+      "reference_valid": true,
+      "saved_valid": true,
+      "full_agent_cycle_completed": false,
+      "mutations": {
+        "mutations": 40,
+        "detected": 40,
+        "untested": 0,
+        "false_ready": 0,
+        "valid": true
+      },
+      "reference_report": ".runtime/stage-2026-09-27/candidate-4/reference-q/reference-report.json",
+      "saved_report": ".runtime/stage-2026-09-27/candidate-4/reference-q/regression-report.json",
+      "mutation_report": ".runtime/stage-2026-09-27/candidate-4/mutations-q-escalated/mutation-report.json"
+    },
+    "historical": {
+      "reference_results": 45,
+      "saved_results": 45,
+      "repeats": 3,
+      "reference_valid": true,
+      "saved_valid": true,
+      "full_agent_cycle_completed": false,
+      "mutations": {
+        "mutations": 44,
+        "detected": 44,
+        "untested": 0,
+        "false_ready": 0,
+        "valid": true
+      },
+      "reference_report": ".runtime/stage-2026-09-27/candidate-4/reference-historical/reference-report.json",
+      "saved_report": ".runtime/stage-2026-09-27/candidate-4/reference-historical/regression-report.json",
+      "mutation_report": ".runtime/stage-2026-09-27/candidate-4/mutations-historical/mutation-report.json"
+    }
+  },
+  "large_static": {
+    "decision": "ready",
+    "full_llm_cycle": false,
+    "seconds": 264.672,
+    "metrics": {
+      "accuracy_percent": 100.0,
+      "coverage_percent": 100.0,
+      "defect_count": 0,
+      "inconclusive_count": 0,
+      "not_applicable_count": 0,
+      "ok_count": 12437,
+      "total_checks": 12437
+    },
+    "analysis_gaps": 0,
+    "source_findings": 46,
+    "dml": {
+      "INSERT": 77,
+      "DELETE": 77,
+      "UPDATE": 1,
+      "EXCEPTION_BLOCK": 1
+    },
+    "sql_inputs": [
+      {
+        "path": "gp/gp/all/u_gp_p1024_dmr_svd_kb_ckr_uup_gp_loader/04s_gp_p1024_dmr_svd_kb_ckr_uup_gp_core/05function/ckr_uup_db_onboarding.sql",
+        "sha256": "168dc68069a244fa957931d092b93c44a8f01a0b0b3bd3538a6de507cb4941c3"
+      }
+    ],
+    "summary": ".runtime/stage-2026-09-27/candidate-4/large-local/summary.json"
+  },
+  "reference_publication": {
+    "valid": true,
+    "report": ".runtime/stage-2026-09-27/candidate-4/reference-q/run-01/q01/publication-acceptance.json"
+  },
+  "semantic_pilot": {
+    "valid": true,
+    "cases": 9,
+    "ready": 4,
+    "revise": 5,
+    "false_ready": 0,
+    "current_runtime": false,
+    "report": ".runtime/stage-2026-09-27/content-final/gate-results.json"
+  },
+  "exception_review": ".runtime/stage-2026-09-27/exception-review/review.md",
+  "evidence_cache_review": ".runtime/stage-2026-09-27/exception-review/evidence-cache-review.md",
+  "type_index_review": ".runtime/stage-2026-09-27/exception-review/type-index-review.md",
+  "markdown_index_review": ".runtime/stage-2026-09-27/exception-review/markdown-index-review.md",
+  "external_runs": {
+    "provider": "MiniMax via OpenCode",
+    "model": "minimax-coding-plan/MiniMax-M3",
+    "authorization": "pending_user_answer_after_auto_review_rejection",
+    "valid_final_runtime_llm_cycles": 0,
+    "real_repair_accepted": false,
+    "synthetic_repeats_per_suite_required": 3,
+    "large_runs_required": 3,
+    "remaining": [
+      "real repair with writer and validator",
+      "three complete historical and Q LLM repeats",
+      "three large LLM runs",
+      "independent D01-D12 and Mermaid acceptance",
+      "publish/lint/provenance for accepted LLM pages"
+    ]
+  },
+  "excluded": [
+    "qset-r1",
+    "qset-r2",
+    "partial qset-r3",
+    "repair pilot with mixed runtime",
+    "candidate-1",
+    "candidate-2 large-local",
+    "candidate-3 large-local"
+  ],
+  "artifact_storage": "Full local artifacts under ignored .runtime/stage-2026-09-27; not part of the tracked repository"
+}

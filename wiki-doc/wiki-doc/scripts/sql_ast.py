@@ -251,6 +251,8 @@ class Analyzer:
         self.query_number = 0
         self.cte_nodes = {}
         self.external_calls = set()
+        self.exception_scopes = []
+        self.block_initializers = {}
 
     def cte_reference(self, node):
         if id(node) not in self.cte_nodes:
@@ -586,6 +588,46 @@ class Analyzer:
         else:
             self.note(line, f'Unsupported executable AST node: {cls}')
 
+    def bind_initializers(self, function, body_line):
+        """Bind DECLARE defaults to their following BEGIN, without guessing ties.
+
+        libpg_query exposes datum declaration lines but omits initvarnos. A
+        declaration precedes its block's BEGIN; competing blocks on the same
+        line cannot be distinguished with that public AST representation.
+        """
+        blocks = []
+
+        def visit(value):
+            if isinstance(value, dict):
+                if 'PLpgSQL_stmt_block' in value:
+                    blocks.append(value['PLpgSQL_stmt_block'])
+                for nested in value.values():
+                    visit(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    visit(nested)
+
+        visit(function['action'])
+        self.block_initializers = {}
+        for wrapped in function.get('datums') or []:
+            datum = next(iter(wrapped.values()))
+            default = datum.get('default_val')
+            if not default:
+                continue
+            line = datum.get('lineno', 0)
+            candidates = [b for b in blocks if b.get('lineno', 0) >= line > 0]
+            first = min((b['lineno'] for b in candidates), default=None)
+            owners = [b for b in candidates if b['lineno'] == first]
+            query = default.get('PLpgSQL_expr', {}).get('query')
+            # Line positions cannot establish whether a BEGIN on the datum's
+            # line precedes or follows the declaration (possibly in a child
+            # block). Never assign that ambiguous initializer to its parent.
+            if len(owners) != 1 or first == line or not query or not datum.get('refname'):
+                self.note(body_line + max(1, line) - 1,
+                          'Unresolved DECLARE initializer block ownership or expression')
+                continue
+            self.block_initializers.setdefault(id(owners[0]), []).append(datum)
+
     def plpgsql(self, data, body_line, branch=None, guard=(), datums=None):
         # Apply the enclosing control flow to every emitted operation, including
         # utility statements, CTE records and dynamic commands. Nested branches
@@ -603,22 +645,61 @@ class Analyzer:
         line = body_line + value.get('lineno', 1) - 1
         expr = lambda field: value.get(field, {}).get('PLpgSQL_expr', {}).get('query', '')
         if kind == 'PLpgSQL_stmt_block':
+            initializers_start = len(self.items)
+            for datum in self.block_initializers.get(id(value), []):
+                expression = datum['default_val']['PLpgSQL_expr']['query']
+                query = 'SELECT ' + expression
+                item = self.analyze_query(parse_sql(query)[0].stmt, query,
+                                          body_line + datum['lineno'] - 1,
+                                          'ASSIGN', branch=branch, guard=guard)
+                item['details'].update(initializer=True, assignment_target=datum['refname'],
+                                       assignments=[dict(target=datum['refname'], expression=expression)])
+            initializers = [dict(i['anchor']) for i in self.items[initializers_start:]]
             exceptions = value.get('exceptions') or {}
             block = exceptions.get('PLpgSQL_exception_block', exceptions)
+            region = None
             if block.get('exc_list'):
-                self.note(line, 'Exception handlers are inventoried as branch ops; runtime failure point is not analysed')
-            for entry in value.get('body', []):
-                self.plpgsql(entry, body_line, branch, guard, datums)
-            for handler in (block.get('exc_list') or []):
+                region = self.item('EXCEPTION_BLOCK', line, analysis='postgres_ast')
+                flow = dict(
+                    version=1, parent=self.exception_scopes[-1] if self.exception_scopes else None,
+                    initializers=initializers, body=[], handlers=[], selection='first_matching_condition_in_source_order',
+                    failure_point='runtime_dependent_any_expression_in_protected_body',
+                    no_error='continue_after_block_unless_control_transfer',
+                    handled_error='skip_remaining_body_then_handler_then_continue_unless_control_transfer',
+                    unmatched_error='propagate_to_parent_or_caller',
+                    handler_error='propagate_to_parent_or_caller_not_same_handler_list',
+                    initialization_error='propagate_to_parent_or_caller_before_protected_body',
+                    rollback='transactional_database_changes_within_protected_block',
+                    variables='values_at_failure_are_retained',
+                    external_effects='not_assumed_transactional',
+                    others_excludes=['query_canceled', 'assert_failure'])
+                region['details']['exception_flow'] = flow
+                self.exception_scopes.append(dict(region['anchor']))
+            body_start = len(self.items)
+            try:
+                for entry in value.get('body', []):
+                    self.plpgsql(entry, body_line, branch, guard, datums)
+            finally:
+                if region:
+                    self.exception_scopes.pop()
+            if region:
+                flow['body'] = [dict(i['anchor']) for i in self.items[body_start:]]
+            for ordinal, handler in enumerate(block.get('exc_list') or [], 1):
                 entry = handler.get('PLpgSQL_exception', handler)
                 conditions = []
                 for condition in entry.get('conditions') or []:
                     condition = condition.get('PLpgSQL_condition', condition)
                     conditions.append(condition.get('condname') or str(condition.get('sqlerrcode', 'unknown')))
+                if not conditions or 'unknown' in conditions:
+                    self.note(line, 'Unresolved EXCEPTION handler condition')
                 label = ('exception:' + ','.join(conditions)) if conditions else 'exception:others'
                 handler_branch = (branch + '/' if branch else '') + label
+                action_start = len(self.items)
                 for action in entry.get('action') or []:
                     self.plpgsql(action, body_line, handler_branch, guard, datums)
+                if region:
+                    flow['handlers'].append(dict(ordinal=ordinal, conditions=conditions,
+                                                 body=[dict(i['anchor']) for i in self.items[action_start:]]))
         elif kind in ('PLpgSQL_stmt_execsql', 'PLpgSQL_stmt_perform', 'PLpgSQL_stmt_call'):
             query = expr('sqlstmt' if kind.endswith('execsql') else 'expr')
             for raw in parse_sql(query):
@@ -843,6 +924,7 @@ def analyze(text, path, sha, dialect='postgres', version='unknown', documented_s
             try:
                 if language == 'plpgsql':
                     function = parse_plpgsql(masked_snippet)[0]['PLpgSQL_function']
+                    engine.bind_initializers(function, body_line)
                     engine.plpgsql(function['action'], body_line, datums=function.get('datums'))
                 elif language == 'sql':
                     for statement in parse_sql(body):

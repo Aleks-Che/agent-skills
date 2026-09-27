@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import re
+from bisect import bisect_left
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
@@ -75,6 +76,12 @@ class MarkdownDocument:
         self.sections, self.fragments, self.duplicates, self.errors = {}, {}, [], []
         self.content, self.links = [], []
         tokens = MarkdownIt('commonmark').enable(['table', 'strikethrough']).parse(text)
+        lines = text.splitlines(True)
+        # Blank intervals are queried for every fragment in a large page.
+        # Prefix counts preserve the old whitespace-only adjacency rule.
+        nonblank = [0]
+        for line in lines:
+            nonblank.append(nonblank[-1] + bool(line.strip()))
         headings, markers, blocks = [], [], []
         implicit_counts = {}
         for i, token in enumerate(tokens):
@@ -92,7 +99,7 @@ class MarkdownDocument:
                     implicit_counts[slug] = n + 1
                     sid = slug + (f'-{n}' if n else '')
                 headings.append(dict(id=sid, start=token.map[0], body=token.map[1],
-                                     end=len(text.splitlines()), level=int(token.tag[1:])))
+                                     end=len(lines), level=int(token.tag[1:])))
             elif token.type == 'inline':
                 anchor = ANCHOR.fullmatch(token.content)
                 if anchor and token.map:
@@ -123,9 +130,15 @@ class MarkdownDocument:
                     self.errors.append(f'raw HTML block at line {token.map[0] + 1} requires conversion to Markdown')
         # A section marker is immediately followed by a heading; an anchor before a
         # heading is equivalent. Fragment markers attach to one following block.
+        heading_starts = [h['start'] for h in headings]
+        block_ends = {}
+        for a, b in blocks:
+            block_ends[a] = max(b, block_ends.get(a, b))
+        block_starts = sorted(block_ends)
         for kind, sid, start, end in markers:
-            following = [h for h in headings if h['start'] >= end and
-                         not ''.join(text.splitlines(True)[end:h['start']]).strip()]
+            position = bisect_left(heading_starts, end)
+            following = (headings[position:position + 1] if position < len(headings) and
+                         nonblank[heading_starts[position]] == nonblank[end] else [])
             if kind == 'section' or (kind == 'anchor' and following):
                 if not following:
                     self.errors.append(f'section marker {sid!r} has no adjacent heading')
@@ -135,13 +148,12 @@ class MarkdownDocument:
                         self.errors.append(f'multiple section markers before line {h["start"] + 1}')
                     h['id'], h['marked'] = sid, True
             else:
-                candidates = [(a, b) for a, b in blocks if a >= end and
-                              not ''.join(text.splitlines(True)[end:a]).strip()]
-                if not candidates:
+                position = bisect_left(block_starts, end)
+                if position == len(block_starts) or nonblank[block_starts[position]] != nonblank[end]:
                     self.errors.append(f'fragment {sid!r} has no adjacent content block')
                 else:
-                    a = min(x[0] for x in candidates)
-                    b = max(x[1] for x in candidates if x[0] == a)
+                    a = block_starts[position]
+                    b = block_ends[a]
                     self._add(self.fragments, sid, dict(start=a, body=a, end=b))
         for i, h in enumerate(headings):
             h['end'] = next((n['start'] for n in headings[i + 1:] if n['level'] <= h['level']), h['end'])
@@ -149,6 +161,8 @@ class MarkdownDocument:
         for sid in self.sections.keys() & self.fragments.keys():
             self.duplicates.append(sid)
         self.errors.extend(f'Duplicate section/fragment ID {sid!r}' for sid in sorted(set(self.duplicates)))
+        self._content_spans = sorted((a, b) for a, b, _ in self.content)
+        self._content_starts = [a for a, _ in self._content_spans]
 
     def _add(self, target, sid, value):
         if sid in target:
@@ -157,7 +171,14 @@ class MarkdownDocument:
             target[sid] = value
 
     def nonempty(self, span):
-        return any(a >= span['body'] and b <= span['end'] for a, b, _ in self.content)
+        position = bisect_left(self._content_starts, span['body'])
+        for i in range(position, len(self._content_spans)):
+            a, b = self._content_spans[i]
+            if a > span['end']:
+                break
+            if b <= span['end']:
+                return True
+        return False
 
     def target(self, sid):
         return self.sections.get(sid) or self.fragments.get(sid)

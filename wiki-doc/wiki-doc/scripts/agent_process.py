@@ -6,12 +6,13 @@ import subprocess
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from atomic_files import atomic_replace
 
 
 def _write_status(path, record):
     temporary = path.with_suffix(path.suffix + '.tmp')
     temporary.write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-    temporary.replace(path)
+    atomic_replace(temporary, path)
 
 
 def _stop_tree(process):

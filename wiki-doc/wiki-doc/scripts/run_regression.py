@@ -82,7 +82,8 @@ def check_run(run,project,expected_dir,subject,profile=None):
         raise ValueError('Expected gate errors must be a list of strings')
     if required_decision=='ready' and expected_errors:
         raise ValueError('Expected ready cannot include gate errors')
-    gate=evaluate_bundle(run,roots={'project':project},profile_path=profile)
+    wiki_root=Path(run).resolve().parent.parent/'wiki'/Path(run).name
+    gate=evaluate_bundle(run,roots={'project':project,'wiki':wiki_root},profile_path=profile)
     if gate['decision']!=required_decision:
         errors.append(f"gate decision {gate['decision']} differs from expected {required_decision}")
     if gate.get('publication_authorized') is not (required_decision=='ready'):

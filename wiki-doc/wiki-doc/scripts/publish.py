@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 
 from artifact_schema import read_json, ArtifactInputError
+from atomic_files import atomic_replace
 from bundle import save_bundle
 from validation_gate import evaluate_bundle
 from wiki_store import (WikiConflict, inside, digest, read_bytes, hash_file, atomic_bytes,
@@ -102,13 +103,17 @@ def _recover_locked(root):
         for entry in reversed(journal['files']):
             target=inside(root,entry['path'])
             if hash_file(target)==entry['old_sha256']: continue
+            def still_published():
+                if hash_file(target)!=entry['new_sha256']:
+                    raise WikiConflict('Recovery target changed before replacement')
             if entry['old_sha256'] is None:
+                still_published()
                 if target.exists(): target.unlink()
             else:
                 backup=inside(root,entry['backup'])
                 data=backup.read_bytes()
                 if digest(data)!=entry['old_sha256']: raise WikiConflict('Recovery backup checksum mismatch')
-                atomic_bytes(target,data)
+                atomic_bytes(target,data,before_replace=still_published)
         journal['state']='rolled_back'
         atomic_json(journal_path,journal)
         results.append(dict(run_id=journal['run_id'],state='rolled_back'))
@@ -287,9 +292,11 @@ def _commit_files(root,run_id,entries,*,kind='publication',fault=None):
             label=(('machine_index','lineage') if kind=='catalogue' else ('page','index','metadata','machine_index','lineage'))[i]
             hit('before_'+label)
             target=inside(root,entry['path'])
-            if hash_file(target)!=entry['old_sha256']: raise WikiConflict(f'{label} changed immediately before replacement')
+            def unchanged():
+                if hash_file(target)!=entry['old_sha256']:
+                    raise WikiConflict(f'{label} changed immediately before replacement')
             target.parent.mkdir(parents=True,exist_ok=True)
-            os.replace(inside(root,entry['staged']),target)
+            atomic_replace(inside(root,entry['staged']),target,before_replace=unchanged)
             hit('after_'+label)
             journal['state']=label+'_replaced'
             atomic_json(journal_path,journal)

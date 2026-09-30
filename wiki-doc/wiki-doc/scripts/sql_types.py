@@ -355,7 +355,12 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
             # DROP/ADD changes in the supplied migration manifest.
             column_names = ([col.name for col in node.cols] if node.cols else
                             [col['name'] for col in tables.get(target, {}).get('columns', [])])
-            expanded = expand_star_outputs(node.selectStmt, tables)
+            # VALUES is a sequence of explicit row expressions, not an empty
+            # SELECT target list. Keep every row's variant for the column gate.
+            outputs = ([[(None, sql(value)) for value in row]
+                        for row in node.selectStmt.valuesLists]
+                       if node.selectStmt.valuesLists else
+                       [expand_star_outputs(node.selectStmt, tables)])
             # Positional mapping is proven only when the select output width
             # equals the target width (explicit column list or established DDL
             # order). A known mismatch is a source finding, not an analysis
@@ -363,10 +368,15 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
             # defect belongs to the SQL versus the established DDL state. It
             # is listed on the page and never zip-truncated into a plausible
             # mapping.
-            if expanded is not None and column_names and len(expanded) == len(column_names):
-                for name,(_source_name,value) in zip(column_names,expanded):
-                    mappings.append(dict(table=target,name=name,expression=value,source_ref=ref))
-            elif expanded and column_names and len(expanded) != len(column_names):
+            matching = all(expanded is not None and len(expanded) == len(column_names)
+                           for expanded in outputs)
+            if column_names and matching:
+                for expanded in outputs:
+                    for name,(_source_name,value) in zip(column_names,expanded):
+                        mappings.append(dict(table=target,name=name,expression=value,source_ref=ref))
+            mismatched = next((expanded for expanded in outputs
+                               if expanded and column_names and len(expanded) != len(column_names)), None)
+            if mismatched is not None:
                 query = sql(node)
                 owner = next((item for item in inventory.get('items', [])
                               if item.get('kind') == 'INSERT'
@@ -375,8 +385,9 @@ def column_catalog(inventory,sql_files,context_files,root,migration_manifest=Non
                                source_ref=owner['source_ref'] if owner else ref,
                                source_schema=target.rsplit('.', 1)[0] if '.' in target else None,
                                target=target, operation='INSERT', status='unmapped',
-                               reason=POSITIONAL_INSERT_NOTE,
-                               target_width=len(column_names), select_width=len(expanded))
+                               reason=(POSITIONAL_INSERT_NOTE if not node.selectStmt.valuesLists else
+                                       'Positional INSERT mapping is unresolved: VALUES output width differs from target width'),
+                               target_width=len(column_names), select_width=len(mismatched))
                 findings = inventory.setdefault('source_findings', [])
                 if finding not in findings:
                     findings.append(finding)

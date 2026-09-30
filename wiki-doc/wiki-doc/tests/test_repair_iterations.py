@@ -51,11 +51,15 @@ class RepairRoundTests(unittest.TestCase):
                 "    text = target.read_text(encoding='utf-8')\n"
                 "    target.write_text(text.replace(marker, 'Example: `wrong.f(1)`\\n' + marker), encoding='utf-8')\n")
         self.stub.write_text(
-            'import sys\n'
+            'import json, sys\n'
             'from pathlib import Path\n'
             f'run = Path({str(self.output / "0")!r})\n'
             'message = sys.argv[-1]\n'
             "if 'validation-review.md' in message:\n"
+            "    target = run / 'validation.json'\n"
+            "    report = json.loads(target.read_text(encoding='utf-8'))\n"
+            "    for item in report['checks']: item['status'] = 'ok'\n"
+            "    target.write_text(json.dumps(report), encoding='utf-8')\n"
             "    review = run / 'validation-review.md'\n"
             "    review.write_text((review.read_text(encoding='utf-8') if review.is_file() else '') + 'checked\\n', encoding='utf-8')\n"
             "elif 'writer-repair' in message:\n"
@@ -152,7 +156,7 @@ class RepairRoundTests(unittest.TestCase):
         self.assertEqual((run / 'facts.json').read_bytes(), (run / 'facts.backup').read_bytes())
         self.assertEqual(read_json(run / 'decision.json')['decision'], 'revise')
 
-    def test_malformed_repair_is_rolled_back_after_seal_failure(self):
+    def test_malformed_repair_is_rejected_at_binding_and_rolled_back(self):
         self.write_stub(
             "    page = run / 'page.draft.md'\n"
             "    page.write_text(page.read_text(encoding='utf-8') + '\\nchanged', encoding='utf-8')\n"
@@ -161,7 +165,10 @@ class RepairRoundTests(unittest.TestCase):
         self.assertEqual(self.run_adapter(1), 0)
         run = self.output / '0'
         self.assertEqual((run / 'facts.json').read_bytes(), (run / 'facts.backup').read_bytes())
-        self.assertEqual(self.record()['repair_history'][0]['outcome'], 'seal_failed')
+        self.assertEqual(self.record()['repair_history'][0]['outcome'], 'writer_failed')
+        failure = read_json(self.root / 'agent-logs/0-binding-failure.json')
+        self.assertIn('artifacts.facts: sha256 mismatch', failure['error'])
+        self.assertFalse(failure['publication_authorized'])
         self.assertEqual(read_json(run / 'decision.json')['decision'], 'revise')
 
     def test_adapter_rejects_invalid_repair_limits_before_creating_a_run(self):

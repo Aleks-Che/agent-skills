@@ -7,6 +7,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from urllib.parse import unquote, urlsplit
 
 from artifact_schema import read_json
+from atomic_files import atomic_replace
 from coverage_gate import MarkdownDocument
 
 
@@ -49,7 +50,7 @@ def read_bytes(path): return Path(path).read_bytes() if Path(path).exists() else
 def hash_file(path): return digest(read_bytes(path))
 
 
-def atomic_bytes(path, data):
+def atomic_bytes(path, data, *, before_replace=None):
     path=Path(path)
     path.parent.mkdir(parents=True,exist_ok=True)
     temporary=path.with_name(path.name+'.new')
@@ -57,7 +58,7 @@ def atomic_bytes(path, data):
         stream.write(data)
         stream.flush()
         os.fsync(stream.fileno())
-    os.replace(temporary,path)
+    atomic_replace(temporary,path,before_replace=before_replace)
 
 
 def json_bytes(data): return (json.dumps(data,ensure_ascii=True,sort_keys=True,indent=2)+'\n').encode()

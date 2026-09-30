@@ -49,7 +49,7 @@ SQL в СУБД не выполнялся. Прохождение разбора
 | SELECT | Поднабор | 01, 03, 09, 10; A `test_all_examples_parse_without_hidden_gaps` | reads, выражения, фильтры |
 | PERFORM | Поднабор | 04, 11; A `test_two_performs_and_merge_using` | Отдельные вхождения и calls |
 | CALL | Поднабор | D `test_procedure_and_call` | Имя вызываемой процедуры и обязательство операции |
-| INSERT | Поднабор | 01; D `test_all_examples_parse_cleanly` | Цель и колонки |
+| INSERT | Поднабор | 01; D `test_all_examples_parse_cleanly`; `test_insert_values.py` | Цель, колонки, SELECT и все строки VALUES; неверная ширина — видимое замечание источника |
 | UPDATE FROM | Поднабор | 04; A `test_update_from_and_delete_using` | Цель отдельно от источника |
 | DELETE USING | Поднабор | A `test_update_from_and_delete_using` | USING-источник не становится целью записи |
 | MERGE | Поднабор, версия >= 15 | 04; D `MergeVersionGatingTests`, `GateDialectTests` | USING, условие и ветви; 15/16/17 разрешены, 12/13/14/unknown блокируют анализ; EXECUTE также проверяет версию |

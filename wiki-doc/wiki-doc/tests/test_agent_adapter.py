@@ -51,6 +51,7 @@ class AgentAdapterTests(unittest.TestCase):
             "if 'validator-агент' in sys.argv[-1]:\n"
             "    target = run / 'validation.json'\n"
             "    data = json.loads(target.read_text(encoding='utf-8'))\n"
+            "    for item in data['checks']: item['status'] = 'ok'\n"
             "    data['checks'][0]['reason'] = 'Stub validator reviewed the draft.'\n"
             "    target.write_text(json.dumps(data), encoding='utf-8')\n"
             'else:\n'
@@ -86,6 +87,145 @@ class AgentAdapterTests(unittest.TestCase):
         self.assertEqual(len(record['validator']['validation_sha256']), 64)
         for seat in ('0-writer.log', '0-validator.log'):
             self.assertTrue((self.root / 'agent-logs' / seat).is_file(), seat)
+
+    def test_windows_bom_request_and_validator_json_seal_with_original_identity(self):
+        request = self.request()
+        request.write_text(request.read_text(encoding='utf-8'), encoding='utf-8-sig')
+        args = self.argv()
+        script = self.stub.read_text(encoding='utf-8').replace(
+            "target.write_text(json.dumps(data), encoding='utf-8')",
+            "target.write_text(json.dumps(data), encoding='utf-8-sig')")
+        self.stub.write_text(script, encoding='utf-8')
+        self.assertEqual(agent_adapter.main([str(request), *args]), 0)
+        run = self.output / '0'
+        binding = read_json(self.root / 'agent-logs/0-binding.json')
+        manifest = read_json(run / 'manifest.json')
+        self.assertEqual(manifest['run_id'], binding['manifest']['run_id'])
+        self.assertEqual(read_json(run / 'decision.json')['decision'], 'ready')
+        self.assertEqual(manifest['artifacts']['validation']['sha256'],
+                         agent_adapter.sha256_bytes((run / 'validation.json').read_bytes()))
+
+    def test_independent_validator_routes_initial_and_repair_seats(self):
+        args = self.argv()
+        trace = self.root/'seat-routing.jsonl'
+        source = self.stub.read_text(encoding='utf-8')
+        source = source.replace('from pathlib import Path\n',
+            'from pathlib import Path\n'
+            f'trace = Path({str(trace)!r})\n'
+            'with trace.open("a", encoding="utf-8") as out:\n'
+            '    out.write(json.dumps(sys.argv[1:3]) + "\\n")\n')
+        source = source.replace("    target.write_text(json.dumps(data), encoding='utf-8')",
+            "    if len(trace.read_text(encoding='utf-8').splitlines()) == 2:\n"
+            "        data['checks'][0].update(status='defect', reason='First review requires correction.')\n"
+            "    target.write_text(json.dumps(data), encoding='utf-8')")
+        self.stub.write_text(source, encoding='utf-8')
+        writer = [sys.executable, '-B', str(self.stub), 'writer', '{model}', '{message}']
+        validator = [sys.executable, '-B', str(self.stub), 'validator', '{model}', '{message}']
+        self.assertEqual(agent_adapter.main([str(self.request()), *args,
+            '--writer-agent', json.dumps(writer), '--validator-agent', json.dumps(validator),
+            '--validator-model', 'independent-test-model', '--repair-rounds', '1']), 0)
+        calls = [json.loads(line) for line in trace.read_text(encoding='utf-8').splitlines()]
+        self.assertEqual(calls, [['writer', 'stub-model'], ['validator', 'independent-test-model']]*2)
+        record = read_json(self.root/'agent-logs/0-adapter.json')
+        self.assertEqual(record['models'], {'writer': 'stub-model', 'validator': 'independent-test-model'})
+        self.assertEqual(record['initial_decision'], 'revise')
+        self.assertEqual(record['repair_rounds'], 1)
+        self.assertEqual(record['gate']['decision'], 'ready')
+
+    def test_duplicate_validation_keys_are_not_normalized_away_during_rebind(self):
+        args = self.argv()
+        script = self.stub.read_text(encoding='utf-8').replace(
+            "target.write_text(json.dumps(data), encoding='utf-8')",
+            "target.write_text(json.dumps(data)[:-1] + ',\\\"checks\\\": []}', encoding='utf-8-sig')")
+        self.stub.write_text(script, encoding='utf-8')
+        self.assertEqual(agent_adapter.main([str(self.request()), *args]), 1)
+        self.assertFalse((self.output / '0/decision.json').exists())
+        self.assertEqual(read_json(self.output / 'runs.json')['runs'], [])
+
+    def test_review_note_without_explicit_check_results_cannot_inherit_ready(self):
+        args = self.argv()
+        script = self.stub.read_text(encoding='utf-8').replace(
+            "    for item in data['checks']: item['status'] = 'ok'\n", '')
+        self.stub.write_text(script, encoding='utf-8')
+        self.assertEqual(agent_adapter.main([str(self.request()), *args]), 0)
+        record = read_json(self.root / 'agent-logs/0-adapter.json')
+        self.assertEqual(record['gate']['decision'], 'blocked')
+        self.assertFalse(record['gate']['publication_authorized'])
+        self.assertTrue(all(item['status'] == 'inconclusive'
+                            for item in read_json(self.output/'0/validation.json')['checks']))
+
+    def test_partial_review_leaves_unreviewed_obligations_blocking(self):
+        args = self.argv()
+        script = self.stub.read_text(encoding='utf-8').replace(
+            "    for item in data['checks']: item['status'] = 'ok'\n",
+            "    data['checks'][0]['status'] = 'ok'\n")
+        self.stub.write_text(script, encoding='utf-8')
+        self.assertEqual(agent_adapter.main([str(self.request()), *args]), 0)
+        self.assertEqual(read_json(self.root/'agent-logs/0-adapter.json')['gate']['decision'], 'blocked')
+
+    def test_extra_prose_defect_blocks_otherwise_complete_review(self):
+        args = self.argv()
+        script = self.stub.read_text(encoding='utf-8').replace(
+            "    target.write_text(json.dumps(data), encoding='utf-8')",
+            "    data['checks'].append(dict(id='review:1', category='technical', blocking=True, "
+            "status='defect', defect_code='unsupported_claim', fact_ids=['obj_1'], "
+            "reason='Prose recommends CALL for a function; SQL declares CREATE FUNCTION.', "
+            "evidence=data['checks'][0]['evidence']))\n"
+            "    target.write_text(json.dumps(data), encoding='utf-8')")
+        self.stub.write_text(script, encoding='utf-8')
+        self.assertEqual(agent_adapter.main([str(self.request()), *args]), 0)
+        gate = read_json(self.root/'agent-logs/0-adapter.json')['gate']
+        self.assertEqual(gate['decision'], 'revise', gate)
+        self.assertFalse(gate['publication_authorized'])
+
+    def test_prose_projection_omits_only_matching_claims_and_preserves_line_numbers(self):
+        request = read_json(self.request())
+        run = self.output/'projection'
+        agent_adapter.build_substrate(request, SUBJECT, run)
+        draft = ('## Plain heading\n'
+                 '<!-- wiki-doc:fragment obj_1 -->\n'
+                 '| Fact | Property | SQL value |\n'
+                 '| --- | --- | --- |\n'
+                 '| obj_1 | kind | "function" |\n\n'
+                 'A visible unsupported guarantee.\n'
+                 '| Fact | Property | SQL value |\n'
+                 '| --- | --- | --- |\n'
+                 '| ordinary | assertion | "unverified" |\n\n'
+                 '```sql\nCALL demo.f();\n```\n'
+                 '<!-- wiki-doc:fragment fake --> visible trailing text\n')
+        (run/'page.draft.md').write_text(draft, encoding='utf-8')
+        agent_adapter.prepare_semantic_review(run)
+        projection = (run/'page.prose.txt').read_text(encoding='utf-8')
+        self.assertNotIn('| obj_1 | kind |', projection)
+        for number in (1, 7, 8, 9, 10, 12, 13, 14, 15):
+            self.assertIn(f'L{number:06d} | {draft.splitlines()[number-1]}', projection)
+        self.assertEqual((run/'page.draft.md').read_text(encoding='utf-8'), draft)
+        self.assertTrue(all(item['status'] == 'inconclusive'
+                            for item in read_json(run/'validation.json')['checks']))
+        report = read_json(run/'validation.json')
+        for item in report['checks']:
+            item['status'] = 'ok'
+        (run/'validation.json').write_text(json.dumps(report), encoding='utf-8')
+        (run/'page.draft.md').write_text(draft+'New assertion after repair.\n', encoding='utf-8')
+        agent_adapter.prepare_semantic_review(run)
+        self.assertTrue(all(item['status'] == 'inconclusive'
+                            for item in read_json(run/'validation.json')['checks']))
+        self.assertIn('New assertion after repair.', (run/'page.prose.txt').read_text(encoding='utf-8'))
+
+    def test_prose_projection_preserves_semantics_inside_formatted_claim_cells(self):
+        request = read_json(self.request())
+        run = self.output/'formatted-projection'
+        agent_adapter.build_substrate(request, SUBJECT, run)
+        for value in ('"function" ![Unsupported guarantee](#entities)',
+                      '["function"](#entities "Unsupported guarantee")',
+                      '~~"function"~~',
+                      '<span title="Unsupported guarantee">"function"</span>'):
+            with self.subTest(value=value):
+                draft = ('| Fact | Property | SQL value |\n| --- | --- | --- |\n'
+                         f'| obj_1 | kind | {value} |\n')
+                (run/'page.draft.md').write_text(draft, encoding='utf-8')
+                agent_adapter.prepare_semantic_review(run)
+                self.assertIn(value, (run/'page.prose.txt').read_text(encoding='utf-8'))
 
     def test_rebinding_preserves_current_precise_and_invalid_ranges_for_gate_review(self):
         run = self.output / 'ranges'
@@ -184,6 +324,7 @@ class AgentAdapterTests(unittest.TestCase):
             "    target = run / 'validation.json'\n"
             "    data = json.loads(target.read_text(encoding='utf-8'))\n"
             "    for item in data['checks']:\n"
+            "        item['status'] = 'ok'\n"
             "        item['evidence'] = ['source.sql:1 - stub string evidence']\n"
             "    target.write_text(json.dumps(data), encoding='utf-8')\n"
             'else:\n'

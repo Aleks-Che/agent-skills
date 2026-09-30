@@ -8,6 +8,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Explicit writer and validator command/model selection in the adapter, with
+  role metadata and the same routing for repairs. Existing shared-agent defaults
+  remain available; selecting a provider still follows user authorization.
+- Writer explanations use SQL/DDL and language semantics beyond registry IDs;
+  validator also checks whether stated uncertainties are actually unresolved.
+- Semantic validator checks start as inconclusive on every draft revision;
+  extra technical findings are admitted independently of plan rows. A line-mapped
+  prose projection separates author explanations from verified claim tables
+  without replacing original-page evidence or the full SQL/DDL review.
+- Isolated adapter/runner gates use the final `workspace/wiki/<run>` page base;
+  writer and validator receive the correct relative SQL link. Valid source links
+  remain links through sealing and publication; broken links still refuse readiness.
+- Adapter reads JSON through the shared strict artifact reader, including UTF-8
+  BOM files written by Windows PowerShell; temporary helper files stay within
+  the isolated agent workspace.
+- Bounded atomic replacement retries for transient Windows sharing conflicts;
+  permanent errors preserve the destination and publication rechecks its input
+  hash before every retry.
+- Adapter identity binding across analysis, writer, validator, repair and reseal:
+  changed runtime, SQL/DDL, UUID or protected facts/inventory/plan are refused.
+- INSERT VALUES column mappings preserve every row and explicit or DDL target
+  order; missing expressions cannot masquerade as not applicable. Distinct
+  variants retain the full query and a checked unknown summary.
 - Conditional EXCEPTION flow: protected body and initializer anchors, ordered
   handlers, nested propagation, rollback and runtime-dependent failure points.
   DECLARE defaults retain executable expressions and calls; ambiguous AST block

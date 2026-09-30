@@ -5,9 +5,9 @@
   "acceptance_complete": false,
   "local_checks_valid": true,
   "runtime": {
-    "scripts_sha256": "9e8ef5b843df55bdc6ca3124e0ce6915d73c194d9c10f5d145b637e0f8c962c5",
-    "skill_md_sha256": "575622362f42247afc2f9acb402d952debe7dbd60084f18bf03cf61e5639e961",
-    "template_sha256": "21836646828f802a82adb030225a6807f44fe76cb2bf84217ec2f311cbc74290",
+    "scripts_sha256": "254e6d7365df35b5355dd4907f8779a5446f455eea83dd65c319152060ff9f9c",
+    "skill_md_sha256": "9de8e44ef760f262b117b543609514da85be8e13eff5ce3bb5a1e488d8584c80",
+    "template_sha256": "2edc4a51fceee0b3a25649055b3900abd0324702319c1e115763b7a3c7860d5e",
     "policy_sha256": "d4e96c1627385f17f9b35fee818d292858423a8c0874367beeb53e5cefb2b89b"
   },
   "status": {
@@ -15,7 +15,7 @@
     "Q-02": "done",
     "Q-03": "done",
     "Q-04": "done",
-    "Q-05": "in_progress",
+    "Q-05": "done",
     "Q-06": "in_progress",
     "Q-07": "in_progress",
     "Q-08": "in_progress",
@@ -23,11 +23,12 @@
   },
   "user_acceptance": "Complete static conditional EXCEPTION model is sufficient; concrete failure remains runtime-dependent",
   "tests": {
-    "total": 1192,
-    "passed": 1191,
+    "candidate": "candidate-12",
+    "total": 1237,
+    "passed": 1236,
     "skipped": 1,
     "failed": 0,
-    "report": ".runtime/stage-2026-09-27/candidate-4/unit-report-final.json"
+    "report": ".runtime/stage-2026-09-27/candidate-12/unit-report.json"
   },
   "suites": {
     "q": {
@@ -44,9 +45,9 @@
         "false_ready": 0,
         "valid": true
       },
-      "reference_report": ".runtime/stage-2026-09-27/candidate-4/reference-q/reference-report.json",
-      "saved_report": ".runtime/stage-2026-09-27/candidate-4/reference-q/regression-report.json",
-      "mutation_report": ".runtime/stage-2026-09-27/candidate-4/mutations-q-escalated/mutation-report.json"
+      "reference_report": ".runtime/stage-2026-09-27/candidate-12/reference-q/reference-report.json",
+      "saved_report": ".runtime/stage-2026-09-27/candidate-12/reference-q/regression-report.json",
+      "mutation_report": ".runtime/stage-2026-09-27/candidate-12/mutations-q/mutation-report.json"
     },
     "historical": {
       "reference_results": 45,
@@ -62,9 +63,9 @@
         "false_ready": 0,
         "valid": true
       },
-      "reference_report": ".runtime/stage-2026-09-27/candidate-4/reference-historical/reference-report.json",
-      "saved_report": ".runtime/stage-2026-09-27/candidate-4/reference-historical/regression-report.json",
-      "mutation_report": ".runtime/stage-2026-09-27/candidate-4/mutations-historical/mutation-report.json"
+      "reference_report": ".runtime/stage-2026-09-27/candidate-12/reference-historical/reference-report.json",
+      "saved_report": ".runtime/stage-2026-09-27/candidate-12/reference-historical/regression-report.json",
+      "mutation_report": ".runtime/stage-2026-09-27/candidate-12/mutations-historical/mutation-report.json"
     }
   },
   "large_static": {
@@ -94,11 +95,13 @@
         "sha256": "168dc68069a244fa957931d092b93c44a8f01a0b0b3bd3538a6de507cb4941c3"
       }
     ],
-    "summary": ".runtime/stage-2026-09-27/candidate-4/large-local/summary.json"
+    "summary": ".runtime/stage-2026-09-27/candidate-4/large-local/summary.json",
+    "candidate": "candidate-4"
   },
   "reference_publication": {
     "valid": true,
-    "report": ".runtime/stage-2026-09-27/candidate-4/reference-q/run-01/q01/publication-acceptance.json"
+    "report": ".runtime/stage-2026-09-27/candidate-4/reference-q/run-01/q01/publication-acceptance.json",
+    "candidate": "candidate-4"
   },
   "semantic_pilot": {
     "valid": true,
@@ -116,7 +119,7 @@
   "external_runs": {
     "provider": "MiniMax via OpenCode",
     "model": "minimax-coding-plan/MiniMax-M3",
-    "authorization": "pending_user_answer_after_auto_review_rejection",
+    "authorization": "approved_by_user_2026-09-27",
     "valid_final_runtime_llm_cycles": 0,
     "real_repair_accepted": false,
     "synthetic_repeats_per_suite_required": 3,
@@ -127,7 +130,9 @@
       "three large LLM runs",
       "independent D01-D12 and Mermaid acceptance",
       "publish/lint/provenance for accepted LLM pages"
-    ]
+    ],
+    "state": "running_continuation",
+    "real_repair_runtime": null
   },
   "excluded": [
     "qset-r1",
@@ -138,5 +143,2303 @@
     "candidate-2 large-local",
     "candidate-3 large-local"
   ],
-  "artifact_storage": "Full local artifacts under ignored .runtime/stage-2026-09-27; not part of the tracked repository"
+  "artifact_storage": "Full local artifacts under ignored .runtime/stage-2026-09-27; not part of the tracked repository",
+  "versioned_llm_pilots": {
+    "candidate": "candidate-4",
+    "smoke_valid": true,
+    "smoke_jobs": 3,
+    "real_repair_valid": true,
+    "initial_decision": "revise",
+    "repair_rounds": 1,
+    "published_pages": 4,
+    "final_runtime_acceptance": false,
+    "reports": [
+      ".runtime/stage-2026-09-27/candidate-4/llm-smoke.json",
+      ".runtime/stage-2026-09-27/candidate-4/real-repair/summary.json",
+      ".runtime/stage-2026-09-27/candidate-4/real-repair/workspace/publication-acceptance.json",
+      ".runtime/stage-2026-09-27/candidate-4/llm/q/repeat-01/q01/run-01/q01/publication-acceptance.json",
+      ".runtime/stage-2026-09-27/candidate-4/llm/q/repeat-01/q04/run-01/q04/publication-acceptance.json",
+      ".runtime/stage-2026-09-27/candidate-4/llm/historical/repeat-01/03/run-01/03/publication-acceptance.json"
+    ]
+  },
+  "latest_candidate": "candidate-12",
+  "latest_candidate_local_checks_complete": true,
+  "binding_review": {
+    "valid": true,
+    "new_tests": 10,
+    "scenarios": 45,
+    "report": ".runtime/stage-2026-09-27/exception-review/q05-binding-recheck.md"
+  },
+  "windows_replace_review": {
+    "valid": true,
+    "tests": 13,
+    "report": ".runtime/stage-2026-09-27/exception-review/windows-replace-review.md"
+  },
+  "integration_findings": [
+    "UTF-8 BOM accepted by schema reader but rejected by adapter: fixed",
+    "OpenCode temporary helper outside workspace: workspace instruction added",
+    "Final wiki root missing from adapter/runner gates: fixed; complete publish/provenance and 8 negative checks passed"
+  ],
+  "latest_local_tests": {
+    "candidate": "candidate-8",
+    "total": 1231,
+    "passed": 1230,
+    "skipped": 1,
+    "failed": 0,
+    "report": ".runtime/stage-2026-09-27/candidate-8/unit-report.json"
+  },
+  "adapter_links_review": {
+    "valid": true,
+    "tests": 9,
+    "report": ".runtime/stage-2026-09-27/exception-review/adapter-links-review.md"
+  },
+  "q05_scope": {
+    "original_plan_acceptance": "done",
+    "proofs": [
+      "exception-review/q05-current-review.md",
+      "exception-review/q05-binding-recheck.md",
+      "exception-review/adapter-links-review.md"
+    ],
+    "limitations": [
+      "CLI resume does not automatically invoke missing writer/validator seats",
+      "Incomplete preparation before its first committed checkpoint is not resumed"
+    ],
+    "basis": "Independent review distinguished original Q-05 requirements from later expanded status checkboxes."
+  },
+  "semantic_matrix": {
+    "candidate": "candidate-8",
+    "valid": true,
+    "cases": 30,
+    "accepted": 15,
+    "rejected": 15,
+    "false_ready_after_semantic_review": 0,
+    "initial_mechanical_false_ready": 13,
+    "preserved_obligations": 670,
+    "evidence_references": 1481,
+    "comparison": {
+      "compared_at": "2026-09-27T10:59:58.478842+00:00",
+      "order": "independent full-page semantic decisions frozen, then reseal/full gate completed, then expectations opened",
+      "frozen_review_sha256": "e1f4c50f5b6546aa31838f33cedee4d24fb468d4e80eeba0df3fa09afbff8b5f",
+      "agreement_count": 30,
+      "mismatch_cases": [],
+      "accept": 15,
+      "revise": 15,
+      "gate_counts": {
+        "ready": 15,
+        "revise": 15
+      },
+      "concrete_defect_counts": {
+        "unsupported_claim": 6,
+        "dependency_mismatch": 3,
+        "type_mismatch": 1,
+        "formula_mismatch": 2,
+        "signature_mismatch": 2,
+        "date_boundary_mismatch": 1
+      },
+      "expected_reject_initially_mechanically_ready": [
+        "case-06",
+        "case-07",
+        "case-08",
+        "case-09",
+        "case-12",
+        "case-17",
+        "case-18",
+        "case-19",
+        "case-20",
+        "case-21",
+        "case-26",
+        "case-28",
+        "case-29"
+      ],
+      "decisions_changed_after_labels": false,
+      "results": [
+        {
+          "case_id": "case-01",
+          "dimension": "D11",
+          "expected_label": "ready",
+          "frozen_semantic_outcome": "accept",
+          "gate_decision": "ready",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": null
+        },
+        {
+          "case_id": "case-02",
+          "dimension": "D10",
+          "expected_label": "ready",
+          "frozen_semantic_outcome": "accept",
+          "gate_decision": "ready",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": null
+        },
+        {
+          "case_id": "case-03",
+          "dimension": "D12 call",
+          "expected_label": "ready",
+          "frozen_semantic_outcome": "accept",
+          "gate_decision": "ready",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": null
+        },
+        {
+          "case_id": "case-04",
+          "dimension": "D12 version",
+          "expected_label": "ready",
+          "frozen_semantic_outcome": "accept",
+          "gate_decision": "ready",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": null
+        },
+        {
+          "case_id": "case-05",
+          "dimension": "D04",
+          "expected_label": "ready",
+          "frozen_semantic_outcome": "accept",
+          "gate_decision": "ready",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": null
+        },
+        {
+          "case_id": "case-06",
+          "dimension": "D01",
+          "expected_label": "reject",
+          "frozen_semantic_outcome": "revise",
+          "gate_decision": "revise",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": "unsupported_claim"
+        },
+        {
+          "case_id": "case-07",
+          "dimension": "D07",
+          "expected_label": "reject",
+          "frozen_semantic_outcome": "revise",
+          "gate_decision": "revise",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": "unsupported_claim"
+        },
+        {
+          "case_id": "case-08",
+          "dimension": "D11",
+          "expected_label": "reject",
+          "frozen_semantic_outcome": "revise",
+          "gate_decision": "revise",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": "dependency_mismatch"
+        },
+        {
+          "case_id": "case-09",
+          "dimension": "D10",
+          "expected_label": "reject",
+          "frozen_semantic_outcome": "revise",
+          "gate_decision": "revise",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": "type_mismatch"
+        },
+        {
+          "case_id": "case-10",
+          "dimension": "D05",
+          "expected_label": "ready",
+          "frozen_semantic_outcome": "accept",
+          "gate_decision": "ready",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": null
+        },
+        {
+          "case_id": "case-11",
+          "dimension": "D09",
+          "expected_label": "ready",
+          "frozen_semantic_outcome": "accept",
+          "gate_decision": "ready",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": null
+        },
+        {
+          "case_id": "case-12",
+          "dimension": "D09",
+          "expected_label": "reject",
+          "frozen_semantic_outcome": "revise",
+          "gate_decision": "revise",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": "dependency_mismatch"
+        },
+        {
+          "case_id": "case-13",
+          "dimension": "D01",
+          "expected_label": "ready",
+          "frozen_semantic_outcome": "accept",
+          "gate_decision": "ready",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": null
+        },
+        {
+          "case_id": "case-14",
+          "dimension": "D12",
+          "expected_label": "ready",
+          "frozen_semantic_outcome": "accept",
+          "gate_decision": "ready",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": null
+        },
+        {
+          "case_id": "case-15",
+          "dimension": "D03",
+          "expected_label": "ready",
+          "frozen_semantic_outcome": "accept",
+          "gate_decision": "ready",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": null
+        },
+        {
+          "case_id": "case-16",
+          "dimension": "D08",
+          "expected_label": "ready",
+          "frozen_semantic_outcome": "accept",
+          "gate_decision": "ready",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": null
+        },
+        {
+          "case_id": "case-17",
+          "dimension": "D03",
+          "expected_label": "reject",
+          "frozen_semantic_outcome": "revise",
+          "gate_decision": "revise",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": "formula_mismatch"
+        },
+        {
+          "case_id": "case-18",
+          "dimension": "D12",
+          "expected_label": "reject",
+          "frozen_semantic_outcome": "revise",
+          "gate_decision": "revise",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": "unsupported_claim"
+        },
+        {
+          "case_id": "case-19",
+          "dimension": "D05",
+          "expected_label": "reject",
+          "frozen_semantic_outcome": "revise",
+          "gate_decision": "revise",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": "signature_mismatch"
+        },
+        {
+          "case_id": "case-20",
+          "dimension": "D11 graph",
+          "expected_label": "reject",
+          "frozen_semantic_outcome": "revise",
+          "gate_decision": "revise",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": "dependency_mismatch"
+        },
+        {
+          "case_id": "case-21",
+          "dimension": "D06",
+          "expected_label": "reject",
+          "frozen_semantic_outcome": "revise",
+          "gate_decision": "revise",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": "unsupported_claim"
+        },
+        {
+          "case_id": "case-22",
+          "dimension": "D07",
+          "expected_label": "ready",
+          "frozen_semantic_outcome": "accept",
+          "gate_decision": "ready",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": null
+        },
+        {
+          "case_id": "case-23",
+          "dimension": "D12 call",
+          "expected_label": "reject",
+          "frozen_semantic_outcome": "revise",
+          "gate_decision": "revise",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "revise",
+          "independent_defect_code": "signature_mismatch"
+        },
+        {
+          "case_id": "case-24",
+          "dimension": "D11 graph",
+          "expected_label": "ready",
+          "frozen_semantic_outcome": "accept",
+          "gate_decision": "ready",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": null
+        },
+        {
+          "case_id": "case-25",
+          "dimension": "D02",
+          "expected_label": "ready",
+          "frozen_semantic_outcome": "accept",
+          "gate_decision": "ready",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": null
+        },
+        {
+          "case_id": "case-26",
+          "dimension": "D02",
+          "expected_label": "reject",
+          "frozen_semantic_outcome": "revise",
+          "gate_decision": "revise",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": "formula_mismatch"
+        },
+        {
+          "case_id": "case-27",
+          "dimension": "D06",
+          "expected_label": "ready",
+          "frozen_semantic_outcome": "accept",
+          "gate_decision": "ready",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": null
+        },
+        {
+          "case_id": "case-28",
+          "dimension": "D08",
+          "expected_label": "reject",
+          "frozen_semantic_outcome": "revise",
+          "gate_decision": "revise",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": "unsupported_claim"
+        },
+        {
+          "case_id": "case-29",
+          "dimension": "D04",
+          "expected_label": "reject",
+          "frozen_semantic_outcome": "revise",
+          "gate_decision": "revise",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "ready",
+          "independent_defect_code": "date_boundary_mismatch"
+        },
+        {
+          "case_id": "case-30",
+          "dimension": "D12 version",
+          "expected_label": "reject",
+          "frozen_semantic_outcome": "revise",
+          "gate_decision": "revise",
+          "matches_label": true,
+          "initial_mechanical_decision_from_expectations": "revise",
+          "independent_defect_code": "unsupported_claim"
+        }
+      ]
+    },
+    "review": ".runtime/stage-2026-09-27/candidate-8/semantic-matrix/independent-review.json",
+    "gate": ".runtime/stage-2026-09-27/candidate-8/semantic-matrix/gate-results.json",
+    "limitation": "Independent semantic validator plus full gate; mechanical checks alone do not understand arbitrary prose. New large LLM pages still require separate content acceptance."
+  },
+  "candidate8_content_review": {
+    "mechanical_smoke_valid": true,
+    "published_pages": 4,
+    "semantic_accept": 1,
+    "semantic_revise": 3,
+    "technical_findings": 7,
+    "false_ready": 3,
+    "accepted_for_final_series": false,
+    "review": ".runtime/stage-2026-09-27/exception-review/candidate-8-published-review.json",
+    "controlled_repair": {
+      "valid": false,
+      "rounds": 2,
+      "final_decision": "revise",
+      "report": ".runtime/stage-2026-09-27/candidate-8/real-repair/summary.json"
+    }
+  },
+  "semantic_review_correction": {
+    "changes": [
+      "All semantic statuses start inconclusive for each draft revision",
+      "Extra technical findings are allowed independently of plan rows",
+      "Line-mapped prose projection omits only simple claims matching facts"
+    ],
+    "targeted_tests": {
+      "total": 45,
+      "passed": 45,
+      "additional_projection_cases_passed": 4
+    },
+    "independent_review": ".runtime/stage-2026-09-27/exception-review/semantic-review-projection-review.md",
+    "forward_probe": ".runtime/stage-2026-09-27/candidate-9/validator-forward-probe-v2/summary.json",
+    "forward_probe_state": "completed_with_one_false_ready"
+  },
+  "candidate9_validator_probe": {
+    "complete": true,
+    "limitation": "Expected decisions checked outside all validator inputs; concrete findings still need independent review.",
+    "requested_model": "minimax-coding-plan/MiniMax-M3",
+    "results": [
+      {
+        "case": "q01",
+        "code": 0,
+        "decision": "revise",
+        "report": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-9\\validator-forward-probe-v2\\q-q01\\probe-result.json",
+        "seconds": 359.641,
+        "suite": "q",
+        "valid": true
+      },
+      {
+        "case": "03",
+        "code": 0,
+        "decision": "revise",
+        "report": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-9\\validator-forward-probe-v2\\historical-03\\probe-result.json",
+        "seconds": 410.125,
+        "suite": "historical",
+        "valid": true
+      },
+      {
+        "case": "q04",
+        "code": 0,
+        "decision": "ready",
+        "report": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-9\\validator-forward-probe-v2\\q-q04\\probe-result.json",
+        "seconds": 448.281,
+        "suite": "q",
+        "valid": true
+      },
+      {
+        "case": "q02",
+        "code": 0,
+        "decision": "ready",
+        "report": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-9\\validator-forward-probe-v2\\q-q02\\probe-result.json",
+        "seconds": 474.625,
+        "suite": "q",
+        "valid": false
+      }
+    ],
+    "valid": false,
+    "false_ready": 1,
+    "finding": "CALL recommendation for a function was incorrectly accepted as incomplete prose notation"
+  },
+  "candidate10_changes": {
+    "call_form_rule": "Every recommended alternative is checked, including partial invocation notation and parentheticals",
+    "writer_rule": "Extra result/error/transaction/optimizer guarantees require evidence and precise scope",
+    "projection_performance": {
+      "seconds": 10.014,
+      "draft_bytes": 10162185,
+      "projection_bytes": 279368
+    },
+    "validation": "Local tests, both reference/saved suites, 84 mutations and paired actual MiniMax validator controls passed; fresh content acceptance pending",
+    "call_reference": "https://www.postgresql.org/docs/15/sql-call.html"
+  },
+  "candidate10_paired_validator_control": {
+    "negative": {
+      "complete": true,
+      "limitation": "Expected decisions checked outside all validator inputs; concrete findings still need independent review.",
+      "requested_model": "minimax-coding-plan/MiniMax-M3",
+      "results": [
+        {
+          "case": "q02",
+          "code": 0,
+          "decision": "revise",
+          "report": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\validator-forward-probe\\q-q02\\probe-result.json",
+          "seconds": 118.86,
+          "suite": "q",
+          "valid": true
+        }
+      ],
+      "valid": true
+    },
+    "corrected_counterpart": {
+      "complete": true,
+      "limitation": "Expected decisions checked outside all validator inputs; concrete findings still need independent review.",
+      "requested_model": "minimax-coding-plan/MiniMax-M3",
+      "results": [
+        {
+          "case": "q02",
+          "code": 0,
+          "decision": "ready",
+          "report": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\validator-counterpart-01\\q-q02\\probe-result.json",
+          "seconds": 167.672,
+          "suite": "q",
+          "valid": true
+        }
+      ],
+      "valid": true
+    }
+  },
+  "candidate10_local_checks": {
+    "tests": {
+      "candidate": "candidate-10",
+      "total": 1236,
+      "passed": 1235,
+      "skipped": 1,
+      "failed": 0,
+      "report": ".runtime/stage-2026-09-27/candidate-10/unit-report.json"
+    },
+    "suites": {
+      "q": {
+        "reference_results": 33,
+        "saved_results": 33,
+        "repeats": 3,
+        "reference_valid": true,
+        "saved_valid": true,
+        "full_agent_cycle_completed": false,
+        "mutations": {
+          "mutations": 40,
+          "detected": 40,
+          "untested": 0,
+          "false_ready": 0,
+          "valid": true
+        },
+        "reference_report": ".runtime/stage-2026-09-27/candidate-10/reference-q/reference-report.json",
+        "saved_report": ".runtime/stage-2026-09-27/candidate-10/reference-q/regression-report.json",
+        "mutation_report": ".runtime/stage-2026-09-27/candidate-10/mutations-q/mutation-report.json"
+      },
+      "historical": {
+        "reference_results": 45,
+        "saved_results": 45,
+        "repeats": 3,
+        "reference_valid": true,
+        "saved_valid": true,
+        "full_agent_cycle_completed": false,
+        "mutations": {
+          "mutations": 44,
+          "detected": 44,
+          "untested": 0,
+          "false_ready": 0,
+          "valid": true
+        },
+        "reference_report": ".runtime/stage-2026-09-27/candidate-10/reference-historical/reference-report.json",
+        "saved_report": ".runtime/stage-2026-09-27/candidate-10/reference-historical/regression-report.json",
+        "mutation_report": ".runtime/stage-2026-09-27/candidate-10/mutations-historical/mutation-report.json"
+      }
+    }
+  },
+  "candidate11_changes": {
+    "cause": "Writer prompt limited all values to registry despite raw SQL availability, producing false unknowns about directly derivable behavior",
+    "writer": "Use raw SQL/DDL and language semantics for derivations; registry absence alone is not uncertainty",
+    "validator": "Verify claimed unknowns and distinguish PL/pgSQL blocks from transaction commands",
+    "state": "Four fresh generations, two saved negative validator probes, full local suites running",
+    "previous_runtime_acceptance": "candidate-10 fresh q01 and q02 content rejected by independent review; full campaign not started"
+  },
+  "candidate11_local_checks": {
+    "valid": true,
+    "reference_summary": ".runtime/stage-2026-09-27/candidate-11/reference-summary.json"
+  },
+  "candidate12_changes": {
+    "role_selection": "Optional --writer-agent, --validator-agent and --validator-model; separate model metadata; repair retains selected roles",
+    "targeted_tests": "15 adapter tests passed, including initial and repair routing with distinct models",
+    "external_state": "69 cases finished, 0 passed; all 78 writer seats refused by provider quota; no validator or repair calls",
+    "local_checks": "1237 tests total, 1236 passed, 1 skipped; reference/saved Q 33/33 and historical 45/45; all 84 mutations detected",
+    "handoff_tests": "3 local transport controls passed: delivery, duplicate-claim prevention, protected-page mutation rejection and prompt-file handoff",
+    "links": "9 changed skill documents passed local-link validation; quick skill validation passed; working runtime matches pinned candidate-12",
+    "model_selection": "User continued OpenCode with existing MiniMax-M3 for both roles; model change is not a prerequisite"
+  },
+  "independent_content_reviews": {
+    "candidate-10": {
+      "report": ".runtime\\stage-2026-09-27\\exception-review\\candidate-10-published-review.json",
+      "summary": {
+        "review": "Independent fresh candidate-10 published-page review",
+        "reviewed_at": "2026-09-27T17:13:32.726283+05:00",
+        "overall": "rejected_candidate",
+        "method": [
+          "Read current skill and applicable templates, then fresh raw SQL/DDL, facts and all visible prose, ordinary tables, examples and Mermaid.",
+          "Publication-acceptance was read to locate the published pages. Its ready/valid status was not semantic evidence.",
+          "No candidate-8 page or earlier validator conclusions were used as fresh-generation inputs.",
+          "Direct claims and coverage checks used published bytes; no full gate consuming a previous validator result was run.",
+          "No SQL, external LLM, browser render or original-page/production mutation was performed."
+        ],
+        "cases": {
+          "q01": {
+            "workspace": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q01\\run-01\\q01",
+            "page": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q01\\run-01\\q01\\wiki\\0\\function-q-hist-apply-retro-boolean--ea8c8317eae3.md",
+            "run": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q01\\run-01\\q01\\output\\0",
+            "page_sha256": "27dcf4bb4c12e0166bb45bd10529cf5704d6f248510804ef81492cf8ce67b321",
+            "facts_sha256": "316bc62f2e009cb2287961c30d7f4662beb57c17c8b5c2400d074ce39111170c",
+            "run_id": "bf44bc00-9bbf-4461-9686-e981120620f5",
+            "claim_count": 168,
+            "claim_errors": [],
+            "coverage_errors": [],
+            "coverage_warning_count": 12,
+            "published_equals_draft": true,
+            "inputs": [
+              {
+                "path": "fixtures/q01_retro_param_local.sql",
+                "sha256": "275fc3fd60185ec8597badb2e6bc518469af1e9ce9847874b637aede196954c9",
+                "actual_sha256": "275fc3fd60185ec8597badb2e6bc518469af1e9ce9847874b637aede196954c9"
+              },
+              {
+                "path": "fixtures/q_context.sql",
+                "sha256": "80c1850ea9c458bc2f13889c7ecd425d8ac5466ef77d14e41dc992d7fa85c0b4",
+                "actual_sha256": "80c1850ea9c458bc2f13889c7ecd425d8ac5466ef77d14e41dc992d7fa85c0b4"
+              }
+            ],
+            "links": [
+              "../../input/fixtures/q01_retro_param_local.sql",
+              "../../input/fixtures/q_context.sql",
+              "../../input/fixtures/q01_retro_param_local.sql",
+              "#formulas_dependencies",
+              "../../input/fixtures/q_context.sql",
+              "../../input/fixtures/q01_retro_param_local.sql",
+              "../../input/fixtures/q_context.sql"
+            ],
+            "nontrivial_table_content": [],
+            "index_links": [
+              {
+                "href": "function-q-hist-apply-retro-boolean--ea8c8317eae3.md",
+                "exists": true
+              }
+            ],
+            "line_count": 459,
+            "decision": "revise",
+            "reviewed_page_lines": [
+              1,
+              459
+            ],
+            "blocking_findings": [
+              "q01-block-transaction-confusion",
+              "q01-null-false-unknown"
+            ],
+            "semantic_passes": [
+              {
+                "topic": "Identity/signature",
+                "page_lines": [
+                  2,
+                  10,
+                  39,
+                  49
+                ],
+                "conclusion": "The boolean input, bigint return, required argument, implicit IN mode and VOLATILE default agree with source."
+              },
+              {
+                "topic": "Reachability and control",
+                "page_lines": [
+                  15,
+                  34,
+                  47,
+                  54
+                ],
+                "conclusion": "p_retro initializes v_retro before IF. TRUE gates DELETE/INSERT/ROW_COUNT; ELSE sets 0. The nested SELECT is correctly explained as part of INSERT."
+              },
+              {
+                "topic": "Date and count",
+                "page_lines": [
+                  217,
+                  218,
+                  413,
+                  415,
+                  423,
+                  424
+                ],
+                "conclusion": "Both strict fact_start_date<DATE2026-01-01 filters and the fixed boundary are correct. ROW_COUNT is the INSERT count, not DELETE+INSERT total."
+              },
+              {
+                "topic": "DDL and effects",
+                "page_lines": [
+                  104,
+                  227,
+                  239
+                ],
+                "conclusion": "Target bigint/date columns map from k.kpi_id/k.fact_start_date. The source has its six declared columns. No invented norm_value, PK, NOT NULL, default, CTE, dynamic SQL or external call."
+              },
+              {
+                "topic": "Examples",
+                "page_lines": [
+                  429,
+                  441
+                ],
+                "conclusion": "SELECT TRUE/FALSE examples match the real function signature. The NULL call is legal; its incorrect uncertainty classification is recorded separately."
+              },
+              {
+                "topic": "Graph",
+                "page_lines": [
+                  379,
+                  406
+                ],
+                "conclusion": "Reads point from kpi_facts to INSERT/SELECT; writes point from DELETE/INSERT to retro_pairs. Then/else membership is explicit. Fan-out encodes branch membership; sequential order is correctly stated in prose."
+              }
+            ]
+          },
+          "q02": {
+            "workspace": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q02\\run-01\\q02",
+            "page": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q02\\run-01\\q02\\wiki\\0\\function-q-out-count-phoned-clients--1594d6a00796.md",
+            "run": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q02\\run-01\\q02\\output\\0",
+            "page_sha256": "b5728c41883b93bc536109714d6acfbe67249a915175723596418033ddbe00b7",
+            "facts_sha256": "889f7d1a6061f1fb71ceef3516bab9eda1cc6d50acc0837018729ade7cdb7fbd",
+            "run_id": "a906ea72-e133-4261-aabd-14d8c7e9e489",
+            "claim_count": 69,
+            "claim_errors": [],
+            "coverage_errors": [],
+            "coverage_warning_count": 6,
+            "published_equals_draft": true,
+            "inputs": [
+              {
+                "path": "fixtures/q02_null_check_sign.sql",
+                "sha256": "1bf6384ff59121b96e0749bda3a9ac47823a9976f10f60972ea77e829fbba3a8",
+                "actual_sha256": "1bf6384ff59121b96e0749bda3a9ac47823a9976f10f60972ea77e829fbba3a8"
+              },
+              {
+                "path": "fixtures/q_context.sql",
+                "sha256": "80c1850ea9c458bc2f13889c7ecd425d8ac5466ef77d14e41dc992d7fa85c0b4",
+                "actual_sha256": "80c1850ea9c458bc2f13889c7ecd425d8ac5466ef77d14e41dc992d7fa85c0b4"
+              }
+            ],
+            "links": [
+              "../../input/fixtures/q02_null_check_sign.sql",
+              "../../input/fixtures/q_context.sql"
+            ],
+            "nontrivial_table_content": [],
+            "index_links": [
+              {
+                "href": "function-q-out-count-phoned-clients--1594d6a00796.md",
+                "exists": true
+              }
+            ],
+            "line_count": 213,
+            "decision": "revise",
+            "reviewed_page_lines": [
+              1,
+              213
+            ],
+            "blocking_findings": [
+              "q02-block-transaction-confusion"
+            ],
+            "semantic_passes": [
+              {
+                "topic": "Identity/signature",
+                "page_lines": [
+                  4,
+                  43,
+                  45
+                ],
+                "conclusion": "No parameters, bigint return, local n bigint and SQL SELECT INTO/RETURN agree. No CALL recommendation remains."
+              },
+              {
+                "topic": "Predicate and NULL",
+                "page_lines": [
+                  4,
+                  100,
+                  101,
+                  150,
+                  161,
+                  208
+                ],
+                "conclusion": "Non-null phone is required. FALSE or NULL is_phoned qualifies; TRUE does not. NULL phone is excluded. The exact conjunction is preserved."
+              },
+              {
+                "topic": "Aggregation and return",
+                "page_lines": [
+                  146,
+                  175
+                ],
+                "conclusion": "count(*) without grouping returns one bigint count into n; RETURN returns n. No grouping, DISTINCT, JOIN, LIMIT or hidden DML is invented."
+              },
+              {
+                "topic": "DDL and dataflow",
+                "page_lines": [
+                  97,
+                  104,
+                  183,
+                  200
+                ],
+                "conclusion": "Declared bigint/text/boolean/timestamp types, nullability, missing defaults and missing PK match DDL. The only physical source is clients and its read edge has the right direction. RETURN is disconnected in the optional graph but correctly explained in adjacent prose."
+              }
+            ]
+          },
+          "q04": {
+            "workspace": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q04\\run-01\\q04",
+            "page": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q04\\run-01\\q04\\wiki\\0\\function-q-out-calc-norm-bigint-date--1ea38e0fb33a.md",
+            "run": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q04\\run-01\\q04\\output\\0",
+            "page_sha256": "0de4f67c8d9c4dddb82f725b8310dd5e47342813844c934e0b0b973789f467d8",
+            "facts_sha256": "57bff59825306aee9aa0583fa5d9f869bfc5a8a699366d5fe41eb83fcb764344",
+            "run_id": "888401e0-2f3c-47d6-907f-9deeada07d05",
+            "claim_count": 95,
+            "claim_errors": [],
+            "coverage_errors": [],
+            "coverage_warning_count": 6,
+            "published_equals_draft": true,
+            "inputs": [
+              {
+                "path": "fixtures/q04_date_branch.sql",
+                "sha256": "8c48a647a6d1fda20c6850c1160e6cdfdb282da6ca13c421d176deb4f15d5c08",
+                "actual_sha256": "8c48a647a6d1fda20c6850c1160e6cdfdb282da6ca13c421d176deb4f15d5c08"
+              },
+              {
+                "path": "fixtures/q_context.sql",
+                "sha256": "80c1850ea9c458bc2f13889c7ecd425d8ac5466ef77d14e41dc992d7fa85c0b4",
+                "actual_sha256": "80c1850ea9c458bc2f13889c7ecd425d8ac5466ef77d14e41dc992d7fa85c0b4"
+              }
+            ],
+            "links": [
+              "../../input/fixtures/q04_date_branch.sql",
+              "../../input/fixtures/q_context.sql",
+              "../../input/fixtures/q04_date_branch.sql",
+              "../../input/fixtures/q_context.sql"
+            ],
+            "nontrivial_table_content": [],
+            "index_links": [
+              {
+                "href": "function-q-out-calc-norm-bigint-date--1ea38e0fb33a.md",
+                "exists": true
+              }
+            ],
+            "line_count": 266,
+            "decision": "revise",
+            "reviewed_page_lines": [
+              1,
+              266
+            ],
+            "blocking_findings": [
+              "q04-nonstrict-select-into"
+            ],
+            "semantic_passes": [
+              {
+                "topic": "Identity and types",
+                "page_lines": [
+                  4,
+                  10,
+                  45,
+                  52
+                ],
+                "conclusion": "The ordered bigint,date inputs, required IN arguments, numeric return and four source-column types match SQL/DDL. create_date is correctly marked unused."
+              },
+              {
+                "topic": "Both branches",
+                "page_lines": [
+                  104,
+                  108,
+                  222,
+                  232,
+                  234
+                ],
+                "conclusion": "p_date>=DATE2026-01-01 selects hours/8.0; the ELSE branch uses hours/7.2. Both WHERE clauses match user_id=p_uid and on_date=p_date. The switch is not rebound to create_date."
+              },
+              {
+                "topic": "Empty/NULL result",
+                "page_lines": [
+                  6,
+                  233,
+                  235
+                ],
+                "conclusion": "No matching row leaves the initially NULL local variable NULL, then COALESCE returns numeric 0. The ELSE IS NOT TRUE guard preserves the NULL branch. Multiple-row handling is the separate blocking finding."
+              },
+              {
+                "topic": "Calls/effects/examples",
+                "page_lines": [
+                  106,
+                  226,
+                  239,
+                  241,
+                  255
+                ],
+                "conclusion": "There are no external writes, calls, CTEs, temporary tables or dynamic SQL. Errors have no local handler. Both SELECT invocation examples supply the two real arguments."
+              },
+              {
+                "topic": "Graph and provenance",
+                "page_lines": [
+                  200,
+                  214,
+                  259,
+                  265
+                ],
+                "conclusion": "Both physical source-to-SELECT read edges are correct. Adjacent prose explicitly states that only one SELECT executes. The simplified graph omits control links; source SHA-256 values and canonical identity are preserved."
+              }
+            ]
+          }
+        },
+        "findings": [
+          {
+            "id": "q01-block-transaction-confusion",
+            "case": "q01",
+            "blocking": true,
+            "category": "technical",
+            "severity": "precision defect, not a wrong DML result",
+            "title": "BEGIN is denied without distinguishing a PL/pgSQL block from transaction control",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q01\\run-01\\q01\\wiki\\0\\function-q-hist-apply-retro-boolean--ea8c8317eae3.md",
+                "start_line": 448,
+                "end_line": 448,
+                "sha256": "27dcf4bb4c12e0166bb45bd10529cf5704d6f248510804ef81492cf8ce67b321",
+                "quote": "| Транзакционная атомарность пары `DELETE`+`INSERT` | В `CREATE FUNCTION` нет `BEGIN`/`COMMIT`/`ROLLBACK`, обработчиков `EXCEPTION` нет; внешний вызов может быть в транзакции, но это не выводится из SQL | Атомарность не утверждается |"
+              }
+            ],
+            "source_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q01\\run-01\\q01\\input\\fixtures\\q01_retro_param_local.sql",
+                "start_line": 7,
+                "end_line": 25,
+                "sha256": "275fc3fd60185ec8597badb2e6bc518469af1e9ce9847874b637aede196954c9",
+                "quote": "DECLARE\n    v_retro boolean := p_retro;\n    n       bigint;\nBEGIN\n    IF v_retro THEN\n        DELETE FROM q_hist.retro_pairs AS r\n        WHERE r.fact_start_date < DATE '2026-01-01';\n\n        INSERT INTO q_hist.retro_pairs (kpi_id, fact_start_date)\n        SELECT k.kpi_id, k.fact_start_date\n        FROM q_src.kpi_facts AS k\n        WHERE k.fact_start_date < DATE '2026-01-01';\n\n        GET DIAGNOSTICS n = ROW_COUNT;\n    ELSE\n        n := 0;\n    END IF;\n    RETURN n;\nEND;"
+              }
+            ],
+            "explanation": "The uncertainty table literally says there is no BEGIN/COMMIT/ROLLBACK in CREATE FUNCTION. The supplied body has BEGIN at line10 and END at line25. There are no transaction-control commands, but that is different from absence of the BEGIN block. This finding does not claim that BEGIN starts an independent transaction.",
+            "counterexample": "SQL line10 contains BEGIN. It opens the PL/pgSQL block, not a separate transaction.",
+            "minimal_fix": "State that BEGIN/END delimit the PL/pgSQL body and do not manage a transaction; COMMIT/ROLLBACK and local EXCEPTION handlers are absent."
+          },
+          {
+            "id": "q01-null-false-unknown",
+            "case": "q01",
+            "blocking": true,
+            "category": "technical",
+            "severity": "incorrect classification of established parameter behavior",
+            "title": "Established NULL-input behavior is incorrectly classified as unknown",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q01\\run-01\\q01\\wiki\\0\\function-q-hist-apply-retro-boolean--ea8c8317eae3.md",
+                "start_line": 441,
+                "end_line": 441,
+                "sha256": "27dcf4bb4c12e0166bb45bd10529cf5704d6f248510804ef81492cf8ce67b321",
+                "quote": "Вызов с `NULL` (`SELECT q_hist.apply_retro(NULL)`) формально попадает в ветку `else` через guard `op_7` `\"(v_retro) IS NOT TRUE\"`, но эта эквивалентность опирается на семантику PL/pgSQL и не подтверждена отдельным фактом реестра — см. «Неопределённости»."
+              },
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q01\\run-01\\q01\\wiki\\0\\function-q-hist-apply-retro-boolean--ea8c8317eae3.md",
+                "start_line": 446,
+                "end_line": 446,
+                "sha256": "27dcf4bb4c12e0166bb45bd10529cf5704d6f248510804ef81492cf8ce67b321",
+                "quote": "| Реальное поведение `apply_retro(NULL)` | В реестре нет факта о явной проверке `p_retro IS NULL`; условие `IF v_retro` в PL/pgSQL трактует `NULL` как «не TRUE», что подтверждается только guard `op_7` | Документация указывает guard `op_7` как косвенное свидетельство; отдельный fact-проверки `p_retro IS NULL` нет |"
+              }
+            ],
+            "source_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q01\\run-01\\q01\\input\\fixtures\\q01_retro_param_local.sql",
+                "start_line": 5,
+                "end_line": 24,
+                "sha256": "275fc3fd60185ec8597badb2e6bc518469af1e9ce9847874b637aede196954c9",
+                "quote": "CREATE OR REPLACE FUNCTION q_hist.apply_retro(p_retro boolean)\nRETURNS bigint LANGUAGE plpgsql AS $$\nDECLARE\n    v_retro boolean := p_retro;\n    n       bigint;\nBEGIN\n    IF v_retro THEN\n        DELETE FROM q_hist.retro_pairs AS r\n        WHERE r.fact_start_date < DATE '2026-01-01';\n\n        INSERT INTO q_hist.retro_pairs (kpi_id, fact_start_date)\n        SELECT k.kpi_id, k.fact_start_date\n        FROM q_src.kpi_facts AS k\n        WHERE k.fact_start_date < DATE '2026-01-01';\n\n        GET DIAGNOSTICS n = ROW_COUNT;\n    ELSE\n        n := 0;\n    END IF;\n    RETURN n;"
+              }
+            ],
+            "facts": [
+              "op_1 assigns p_retro to v_retro",
+              "op_2 is IF v_retro",
+              "op_7 assigns 0 in else_body, guarded by (v_retro) IS NOT TRUE",
+              "op_8 returns n"
+            ],
+            "explanation": "The page calls the real behavior of apply_retro(NULL) unknown because the registry lacks a separate p_retro IS NULL test. Such a test is unnecessary: source SQL, PL/pgSQL IF semantics and the recorded ELSE guard establish the result. This contradicts the correct earlier explanation and substitutes registry shape for independent SQL reasoning.",
+            "counterexample": "For a permitted invocation with p_retro=NULL, v_retro becomes NULL; IF is not TRUE; ELSE assigns n=0; RETURN yields 0. No table operation executes. The declaration is not STRICT, so NULL does not suppress function execution.",
+            "minimal_fix": "State NULL -> ELSE -> return 0 as established behavior and remove it from the uncertainty table. Separate deployment privileges and other genuine external unknowns."
+          },
+          {
+            "id": "q02-block-transaction-confusion",
+            "case": "q02",
+            "blocking": true,
+            "category": "technical",
+            "severity": "precision defect, not a wrong count or NULL predicate",
+            "title": "The page says the body has no BEGIN although the source contains one",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q02\\run-01\\q02\\wiki\\0\\function-q-out-count-phoned-clients--1594d6a00796.md",
+                "start_line": 205,
+                "end_line": 205,
+                "sha256": "b5728c41883b93bc536109714d6acfbe67249a915175723596418033ddbe00b7",
+                "quote": "- **Транзакционный контекст**: в теле нет явных `BEGIN` / `COMMIT` / `ROLLBACK`. Любое поведение в части транзакций наследуется от вызывающего кода; из самого SQL оно не устанавливается."
+              }
+            ],
+            "source_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q02\\run-01\\q02\\input\\fixtures\\q02_null_check_sign.sql",
+                "start_line": 6,
+                "end_line": 14,
+                "sha256": "1bf6384ff59121b96e0749bda3a9ac47823a9976f10f60972ea77e829fbba3a8",
+                "quote": "DECLARE\n    n bigint;\nBEGIN\n    SELECT count(*) INTO n\n    FROM q_src.clients AS c\n    WHERE c.phone IS NOT NULL\n      AND c.is_phoned IS NOT TRUE;\n    RETURN n;\nEND;"
+              }
+            ],
+            "explanation": "The sentence says the body has no explicit BEGIN/COMMIT/ROLLBACK, but line8 contains BEGIN. The intended statement about absence of transaction-control commands can be correct; it must explicitly distinguish that from PL/pgSQL block syntax.",
+            "counterexample": "SQL line8 contains BEGIN and line14 contains END. Neither is a transaction-control command in this body.",
+            "minimal_fix": "Say that BEGIN/END delimit the PL/pgSQL body; there are no explicit transaction-control commands such as COMMIT or ROLLBACK."
+          },
+          {
+            "id": "q04-nonstrict-select-into",
+            "case": "q04",
+            "blocking": true,
+            "category": "technical",
+            "severity": "substantive error in duplicate-match runtime behavior",
+            "title": "Non-STRICT SELECT INTO is assigned too-many-rows behavior",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q04\\run-01\\q04\\wiki\\0\\function-q-out-calc-norm-bigint-date--1ea38e0fb33a.md",
+                "start_line": 6,
+                "end_line": 6,
+                "sha256": "0de4f67c8d9c4dddb82f725b8310dd5e47342813844c934e0b0b973789f467d8",
+                "quote": "The function executes a `SELECT ... INTO v_norm` against `q_src.hours` filtered by the pair `(p_uid, p_date)` and returns `hours` divided by a divisor that depends on whether `p_date` falls on or after the fixed literal date `2026-01-01`. Neither `SELECT` carries `LIMIT` or aggregation, so the body itself does not enforce row cardinality: zero matching rows leave `v_norm` NULL, which is then resolved by `COALESCE(v_norm, 0)` to the literal numeric `0`; the runtime behaviour for more than one matching row is left as an open question (see Unknowns). The two KPI structures are the post-boundary divisor `8.0` and the pre-boundary divisor `7.2`; the branch boundary is bound to the parameter `p_date` (which is matched against `h.on_date`), not to the row column `h.create_date`."
+              },
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q04\\run-01\\q04\\wiki\\0\\function-q-out-calc-norm-bigint-date--1ea38e0fb33a.md",
+                "start_line": 250,
+                "end_line": 250,
+                "sha256": "0de4f67c8d9c4dddb82f725b8310dd5e47342813844c934e0b0b973789f467d8",
+                "quote": "| Whether `q_src.hours` can contain more than one row for the same `(user_id, on_date)` pair | the function uses `SELECT ... INTO` without `LIMIT 1` or aggregation; nothing in the DDL forbids duplicates | runtime behaviour on duplicate matches is governed by the standard PL/pgSQL \"too many rows\" semantics, not by a documented project rule |"
+              }
+            ],
+            "source_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q04\\run-01\\q04\\input\\fixtures\\q04_date_branch.sql",
+                "start_line": 11,
+                "end_line": 20,
+                "sha256": "8c48a647a6d1fda20c6850c1160e6cdfdb282da6ca13c421d176deb4f15d5c08",
+                "quote": "    IF p_date >= DATE '2026-01-01' THEN\n        SELECT h.hours / 8.0 INTO v_norm\n        FROM q_src.hours AS h\n        WHERE h.user_id = p_uid AND h.on_date = p_date;\n    ELSE\n        SELECT h.hours / 7.2 INTO v_norm\n        FROM q_src.hours AS h\n        WHERE h.user_id = p_uid AND h.on_date = p_date;\n    END IF;\n    RETURN coalesce(v_norm, 0);"
+              },
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q04\\run-01\\q04\\input\\fixtures\\q_context.sql",
+                "start_line": 28,
+                "end_line": 33,
+                "sha256": "80c1850ea9c458bc2f13889c7ecd425d8ac5466ef77d14e41dc992d7fa85c0b4",
+                "quote": "CREATE TABLE q_src.hours (\n    user_id     bigint,\n    on_date     date,\n    hours       numeric,\n    create_date date\n);"
+              }
+            ],
+            "facts": [
+              "op_2 and op_3 have SELECT INTO v_norm with no STRICT",
+              "Both WHERE predicates match user_id and on_date; no ORDER BY is present",
+              "Target table DDL has no uniqueness constraint on the pair"
+            ],
+            "explanation": "The page leaves duplicate-match behavior open and then invokes standard PL/pgSQL \"too many rows\" semantics. The shown SELECT INTO statements are not STRICT. Standard non-STRICT SELECT INTO assigns the first returned row and discards the rest; without ORDER BY, which row is first is not defined. A mandatory TOO_MANY_ROWS failure is not the standard behavior of this source.",
+            "counterexample": "Use user_id=42 and on_date=DATE2026-01-01 for two source rows with hours=8 and hours=16. Under standard non-STRICT behavior, the function returns 1 or 2 depending on row order, rather than requiring a TOO_MANY_ROWS error. This is a static counterexample, not a database execution.",
+            "minimal_fix": "Describe first-row assignment, discarded remaining rows and unspecified row choice without ORDER BY. Distinguish the known non-STRICT rule from genuinely unknown source data and deployment settings."
+          }
+        ],
+        "nonblocking_notes": [
+          {
+            "id": "q01-scope-wording",
+            "case": "q01",
+            "blocking": false,
+            "title": "Clarify deletion scope and branch terminology",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q01\\run-01\\q01\\wiki\\0\\function-q-hist-apply-retro-boolean--ea8c8317eae3.md",
+                "start_line": 220,
+                "end_line": 220,
+                "sha256": "27dcf4bb4c12e0166bb45bd10529cf5704d6f248510804ef81492cf8ce67b321",
+                "quote": "Граничный литерал `'2026-01-01'` одинаков в `cond_2` и `cond_3`, но применяется к разным ролям (целевая таблица и источник) и разным ветвям реестра — это разные факты."
+              },
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q01\\run-01\\q01\\wiki\\0\\function-q-hist-apply-retro-boolean--ea8c8317eae3.md",
+                "start_line": 232,
+                "end_line": 232,
+                "sha256": "27dcf4bb4c12e0166bb45bd10529cf5704d6f248510804ef81492cf8ce67b321",
+                "quote": "| `q_hist.retro_pairs` (`obj_2`) | `op_3` DELETE | удаление строк по `kpi_id`, `fact_start_date` | `r.fact_start_date < DATE '2026-01-01'` (`cond_2`); выполняется только в ветке `then` (`v_retro = TRUE`) |"
+              }
+            ],
+            "explanation": "Both operations use the same then branch. They are distinct operations/roles, not different control branches. The deletion summary names kpi_id and fact_start_date, while the adjacent exact predicate correctly uses only the date. Treat this as a wording clarification, not proof that the page asserts a second deletion predicate."
+          },
+          {
+            "id": "q01-repeat-wording",
+            "case": "q01",
+            "blocking": false,
+            "title": "Separate source duplicates from repeated execution",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q01\\run-01\\q01\\wiki\\0\\function-q-hist-apply-retro-boolean--ea8c8317eae3.md",
+                "start_line": 426,
+                "end_line": 426,
+                "sha256": "27dcf4bb4c12e0166bb45bd10529cf5704d6f248510804ef81492cf8ce67b321",
+                "quote": "Наличие пары `DELETE`+`INSERT` не является доказательством идемпотентности: ограничения уникальности на пару `(kpi_id, fact_start_date)` в `q_hist.retro_pairs` не зафиксированы как `PRIMARY KEY`/`UNIQUE` (см. `obj_2`/`col_1`/`col_2` — `primary_key: false`). При повторном вызове с `p_retro = TRUE` и наличии подходящих строк в источнике возможны дубликаты, если внешние ограничения не запрещают их."
+              },
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q01\\run-01\\q01\\wiki\\0\\function-q-hist-apply-retro-boolean--ea8c8317eae3.md",
+                "start_line": 447,
+                "end_line": 447,
+                "sha256": "27dcf4bb4c12e0166bb45bd10529cf5704d6f248510804ef81492cf8ce67b321",
+                "quote": "| Идемпотентность повторного вызова с `TRUE` | `q_hist.retro_pairs` в `q_context.sql` объявлена без `PRIMARY KEY`/`UNIQUE` (см. `col_1`, `col_2`); ограничения на `q_src.kpi_facts` для той же пары колонок не отражены в реестре как уникальность | Идемпотентность не утверждается |"
+              }
+            ],
+            "explanation": "With unchanged source data, the shown DML deletes and reloads the same matching partition. Source duplicates may be copied even on the first call. The page does not explicitly claim duplicates accumulate, so no such false claim is attributed to it."
+          },
+          {
+            "id": "q02-column-introduction",
+            "case": "q02",
+            "blocking": false,
+            "title": "Say four declared columns, not four referenced columns",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q02\\run-01\\q02\\wiki\\0\\function-q-out-count-phoned-clients--1594d6a00796.md",
+                "start_line": 97,
+                "end_line": 102,
+                "sha256": "b5728c41883b93bc536109714d6acfbe67249a915175723596418033ddbe00b7",
+                "quote": "Функция обращается к четырём колонкам таблицы `q_src.clients`, объявленным в `fixtures/q_context.sql` (строки 11–16):\n\n- `id bigint` (`col_1`) — присутствует в таблице, но не упоминается ни в предикате, ни в проекции.\n- `phone text` (`col_2`) — используется в `c.phone IS NOT NULL` (`cond_1`); в DDL колонка допускает NULL.\n- `is_phoned boolean` (`col_3`) — используется в `c.is_phoned IS NOT TRUE` (`cond_1`); в DDL допускает NULL, поэтому `IS NOT TRUE` истинно как для `FALSE`, так и для `NULL`.\n- `created_at timestamp` (`col_4`) — присутствует в таблице, но не упоминается функцией."
+              }
+            ],
+            "explanation": "The introduction says the function accesses four columns; the detailed bullets correctly say id and created_at are unused. Clarify the introductory wording without treating the correct detailed dependencies as wrong."
+          },
+          {
+            "id": "q02-visible-provenance",
+            "case": "q02",
+            "blocking": false,
+            "title": "Page-visible source hashes are omitted",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q02\\run-01\\q02\\wiki\\0\\function-q-out-count-phoned-clients--1594d6a00796.md",
+                "start_line": 202,
+                "end_line": 213,
+                "sha256": "b5728c41883b93bc536109714d6acfbe67249a915175723596418033ddbe00b7",
+                "quote": "## Limitations and source observations {#misc}\n\n- **Волатильность**: функция объявлена `volatile` (`obj_1.volatility`); результат может меняться между вызовами в зависимости от текущего состояния `q_src.clients`. Статический анализ не подтверждает, что вызывающая сторона получает согласованный снимок.\n- **Транзакционный контекст**: в теле нет явных `BEGIN` / `COMMIT` / `ROLLBACK`. Любое поведение в части транзакций наследуется от вызывающего кода; из самого SQL оно не устанавливается.\n- **Обработка ошибок**: блок `EXCEPTION` отсутствует. Любая ошибка, поднятая внутри SELECT, пробрасывается вызывающему.\n- **Бизнес-смысл «phoned»**: ни в исходном SQL, ни в DDL-контексте не определено, что именно означает флаг `is_phoned` (например, признак успешного звонка). Статический анализ фиксирует только предикат `c.is_phoned IS NOT TRUE` (`cond_1`); интерпретация бизнес-семантики оставлена как неопределённая.\n- **NULL-семантика**: `IS NOT TRUE` для `is_phoned` включает NULL-строки, поэтому подсчёт зависит не только от наличия/отсутствия `phone`, но и от соглашения о трактовке NULL в `is_phoned`. Это видно из `cond_1.expression`; иные правила NULL-обработки в DDL не зафиксированы.\n- **Оптимизатор и производительность**: статистика, индексы и план выполнения не извлекаются статическим анализом. Стоимость агрегата по `q_src.clients` в реальной среде не устанавливается.\n- **Динамический SQL**: не используется (`op_1.dynamic = false`, `op_2.dynamic = false`).\n- **Миграции и порядок применения**: отдельный список миграций для проекта не задан (`migration_order` отсутствует в реестре); считается, что декларация функции и таблицы присутствуют в исходных файлах, по которым собран реестр.\n- **Профиль**: активный профиль отсутствует (`profile: null`), поэтому профильные правила и наблюдения за доступом к реестру не добавляются.\n<!-- wiki-doc:managed end -->"
+              }
+            ],
+            "explanation": "The page has source links and canonical identity, but no visible source SHA-256/run provenance block as requested by the current template. External publication metadata is separate; this is a visible-format omission, not a claim that provenance was lost."
+          },
+          {
+            "id": "q04-example-precondition",
+            "case": "q04",
+            "blocking": false,
+            "title": "Clarify why an example would need a matching row",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\q\\repeat-01\\q04\\run-01\\q04\\wiki\\0\\function-q-out-calc-norm-bigint-date--1ea38e0fb33a.md",
+                "start_line": 239,
+                "end_line": 243,
+                "sha256": "0de4f67c8d9c4dddb82f725b8310dd5e47342813844c934e0b0b973789f467d8",
+                "quote": "Example: `SELECT q_out.calc_norm(42, DATE '2025-12-31')` exercises the pre-boundary branch (divisor `7.2`).\n\nExample: `SELECT q_out.calc_norm(42, DATE '2026-01-01')` exercises the post-boundary branch (divisor `8.0`).\n\nThese examples describe the call shape; running them requires a separate request against a database that contains a row with `(user_id, on_date) = (42, …)` in `q_src.hours`."
+              }
+            ],
+            "explanation": "The examples say execution requires a database containing a matching row. The call can execute with no matching row and return 0, as the page correctly explains elsewhere. If a matching row is only required to observe a nonzero division result, say so. No broader claim of guaranteed failure on an empty source is attributed to this sentence."
+          }
+        ],
+        "pending": {},
+        "limitations": [
+          "Mermaid semantics were reviewed from source; no new renderer execution was performed.",
+          "This is historical evidence of a rejected candidate, not authorization for the full 69-case series."
+        ],
+        "not_published": {
+          "03": {
+            "workspace": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\historical\\repeat-01\\03\\run-01\\03",
+            "decision": "not_published",
+            "content_review": "not_performed_no_published_page",
+            "publication_acceptance_exists": false,
+            "published_pages": [],
+            "repair_count": 2,
+            "repair_summary": [
+              {
+                "round": 1,
+                "outcome": "sealed",
+                "decision": "blocked",
+                "error_count": 1,
+                "sample_errors": [
+                  "validation: checks.29.defect_code: None is not of type 'string'"
+                ]
+              },
+              {
+                "round": 2,
+                "outcome": "sealed",
+                "decision": "blocked",
+                "error_count": 62,
+                "sample_errors": [
+                  "validation.checks.0.evidence.0: File not found: C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\historical\\repeat-01\\03\\run-01\\03\\input\\input\\03_cte_temp.sql",
+                  "validation.checks.0.evidence.1: File not found: C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\historical\\repeat-01\\03\\run-01\\03\\output\\0\\output\\0\\page.draft.md"
+                ]
+              }
+            ],
+            "adapter_log": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\historical\\repeat-01\\03\\run-01\\03\\agent-logs\\0-adapter.json",
+            "adapter_log_sha256": "9d0565d62498c018ca7dfb37d559695d12d429a35635a21055788ad2a0c51c5c",
+            "explanation": "After two repairs the run remained blocked by JSON-schema and evidence-path failures. This is a publication/integration failure, not an independent content verdict on an unpublished draft.",
+            "evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\historical\\repeat-01\\03\\run-01\\03\\agent-logs\\0-adapter.json",
+                "start_line": 180,
+                "end_line": 180,
+                "sha256": "9d0565d62498c018ca7dfb37d559695d12d429a35635a21055788ad2a0c51c5c",
+                "quote": "        \"validation: checks.29.defect_code: None is not of type 'string'\""
+              },
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\historical\\repeat-01\\03\\run-01\\03\\agent-logs\\0-adapter.json",
+                "start_line": 188,
+                "end_line": 188,
+                "sha256": "9d0565d62498c018ca7dfb37d559695d12d429a35635a21055788ad2a0c51c5c",
+                "quote": "        \"validation.checks.0.evidence.0: File not found: C:\\\\Users\\\\Aleks\\\\.codex\\\\worktrees\\\\eb9c\\\\agent-skills\\\\wiki-doc\\\\.runtime\\\\stage-2026-09-27\\\\candidate-10\\\\llm\\\\historical\\\\repeat-01\\\\03\\\\run-01\\\\03\\\\input\\\\input\\\\03_cte_temp.sql\","
+              },
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-10\\llm\\historical\\repeat-01\\03\\run-01\\03\\agent-logs\\0-adapter.json",
+                "start_line": 189,
+                "end_line": 189,
+                "sha256": "9d0565d62498c018ca7dfb37d559695d12d429a35635a21055788ad2a0c51c5c",
+                "quote": "        \"validation.checks.0.evidence.1: File not found: C:\\\\Users\\\\Aleks\\\\.codex\\\\worktrees\\\\eb9c\\\\agent-skills\\\\wiki-doc\\\\.runtime\\\\stage-2026-09-27\\\\candidate-10\\\\llm\\\\historical\\\\repeat-01\\\\03\\\\run-01\\\\03\\\\output\\\\0\\\\output\\\\0\\\\page.draft.md\","
+              }
+            ]
+          }
+        },
+        "review_complete": true,
+        "summary": {
+          "published_pages_reviewed": 3,
+          "accepted": [],
+          "revise": [
+            "q01",
+            "q02",
+            "q04"
+          ],
+          "not_published": [
+            "03"
+          ],
+          "blocking_finding_count": 4,
+          "scope": "Three published-page content reviews plus a separate not-published disposition after two failed repairs."
+        }
+      }
+    },
+    "candidate-11": {
+      "report": ".runtime\\stage-2026-09-27\\exception-review\\candidate-11-published-review.json",
+      "summary": {
+        "review": "Independent fresh candidate-11 published-page review",
+        "reviewed_at": "2026-09-27T17:13:32.726283+05:00",
+        "overall": "revise",
+        "method": [
+          "Read the fresh candidate11 raw SQL/DDL, facts and complete visible page independently; no old findings were copied into the conclusion.",
+          "Current SKILL/doc-writer/doc-validator and applicable template instructions were used as the review contract.",
+          "Publication-acceptance identified the exact final wiki path; its validity status was not treated as proof.",
+          "The prior direct automated claims/coverage checks for q01 and historical03 passed (421 controlled claims). The fresh q02 and q04 pages were read completely against raw SQL/DDL and facts, including ordinary tables, examples and Mermaid. No new automated pass is claimed for the final aggregation.",
+          "No expected fixture, old validator conclusion, external LLM, database execution, renderer or original-file mutation was used."
+        ],
+        "cases": {
+          "q01": {
+            "workspace": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q01\\run-01\\q01",
+            "page": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q01\\run-01\\q01\\wiki\\0\\function-q-hist-apply-retro-boolean--ea8c8317eae3.md",
+            "run": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q01\\run-01\\q01\\output\\0",
+            "page_sha256": "674c88e7fa5dab0370b6dc404eb4bf66d0add17f792a8f12627d1a81210d5258",
+            "facts_sha256": "1e2b4e0b5ba046a7703751522cca6f05c59ff0048456844a9a5cb5c9fb603fd7",
+            "run_id": "b35eb967-795f-4570-9180-2d0d02f36e6a",
+            "claim_count": 168,
+            "claim_errors": [],
+            "coverage_errors": [],
+            "coverage_warning_count": 12,
+            "published_equals_draft": true,
+            "inputs": [
+              {
+                "path": "fixtures/q01_retro_param_local.sql",
+                "sha256": "275fc3fd60185ec8597badb2e6bc518469af1e9ce9847874b637aede196954c9",
+                "actual_sha256": "275fc3fd60185ec8597badb2e6bc518469af1e9ce9847874b637aede196954c9"
+              },
+              {
+                "path": "fixtures/q_context.sql",
+                "sha256": "80c1850ea9c458bc2f13889c7ecd425d8ac5466ef77d14e41dc992d7fa85c0b4",
+                "actual_sha256": "80c1850ea9c458bc2f13889c7ecd425d8ac5466ef77d14e41dc992d7fa85c0b4"
+              }
+            ],
+            "links": [
+              "../../input/fixtures/q01_retro_param_local.sql",
+              "../../input/fixtures/q_context.sql",
+              "../../input/fixtures/q_context.sql",
+              "../../input/fixtures/q_context.sql"
+            ],
+            "nontrivial_table_content": [],
+            "index_links": [
+              {
+                "href": "function-q-hist-apply-retro-boolean--ea8c8317eae3.md",
+                "exists": true
+              }
+            ],
+            "line_count": 419,
+            "decision": "revise",
+            "reviewed_page_lines": [
+              1,
+              419
+            ],
+            "blocking_findings": [
+              "q01-target-duplicates-false-unknown"
+            ],
+            "semantic_passes": [
+              {
+                "topic": "Identity, signature and DDL",
+                "page_lines": [
+                  4,
+                  19,
+                  70,
+                  82,
+                  182,
+                  184
+                ],
+                "conclusion": "The function identity, required boolean input, bigint return, default IN/VOLATILE, target bigint/date mapping and six source columns match fresh SQL/DDL. No extra source column or uniqueness constraint is invented."
+              },
+              {
+                "topic": "Reachability, NULL and counts",
+                "page_lines": [
+                  188,
+                  198,
+                  388,
+                  409
+                ],
+                "conclusion": "p_retro initializes v_retro. TRUE performs DELETE then INSERT then GET DIAGNOSTICS; FALSE/NULL assigns0 and returns0 without modifying tables. The count is INSERT-only. TRUE/FALSE/NULL examples use the real function signature."
+              },
+              {
+                "topic": "Date boundary and effects",
+                "page_lines": [
+                  334,
+                  347,
+                  380,
+                  395
+                ],
+                "conclusion": "Both strict upper-date filters use fact_start_date<DATE2026-01-01. The range is fixed, not based on call period or now(). External calls, CTEs, temporary tables and dynamic SQL are absent as stated."
+              },
+              {
+                "topic": "Block and transaction distinction",
+                "page_lines": [
+                  397,
+                  399
+                ],
+                "conclusion": "BEGIN/END is explicitly identified as a PL/pgSQL block, separate from COMMIT/ROLLBACK and caller transaction context. The earlier type of BEGIN denial is not present in this fresh text."
+              },
+              {
+                "topic": "Physical graph",
+                "page_lines": [
+                  355,
+                  376
+                ],
+                "conclusion": "kpi_facts reads point to INSERT/SELECT and DELETE/INSERT writes point to retro_pairs. Missing control detail is an optional diagram improvement, not a wrong physical dependency."
+              }
+            ]
+          },
+          "03": {
+            "workspace": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\historical\\repeat-01\\03\\run-01\\03",
+            "page": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\historical\\repeat-01\\03\\run-01\\03\\wiki\\0\\function-demo-fn-with-cte-date--841efff072cb.md",
+            "run": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\historical\\repeat-01\\03\\run-01\\03\\output\\0",
+            "page_sha256": "1de4957ba4529b43f23a5ff91ddac5e7ff43352e4a3489b9d91eca7b801e66f5",
+            "facts_sha256": "b9b918e3c52a8f997daa42a127e952c845499fa9294a81192019b04ac1c19987",
+            "run_id": "0fa85bf4-4a2e-41d1-924e-611aabafbc03",
+            "claim_count": 253,
+            "claim_errors": [],
+            "coverage_errors": [],
+            "coverage_warning_count": 28,
+            "published_equals_draft": true,
+            "inputs": [
+              {
+                "path": "03_cte_temp.sql",
+                "sha256": "674806da3ab16f2b4ceadec0cecf2063176f469399469ec14a1ecd6f1a0ff45d",
+                "actual_sha256": "674806da3ab16f2b4ceadec0cecf2063176f469399469ec14a1ecd6f1a0ff45d"
+              },
+              {
+                "path": "context.sql",
+                "sha256": "76200926945d5b917868abd65f4f6f4afe96878048769390750bdd783498e61e",
+                "actual_sha256": "76200926945d5b917868abd65f4f6f4afe96878048769390750bdd783498e61e"
+              }
+            ],
+            "links": [
+              "../../input/03_cte_temp.sql"
+            ],
+            "nontrivial_table_content": [],
+            "index_links": [
+              {
+                "href": "function-demo-fn-with-cte-date--841efff072cb.md",
+                "exists": true
+              }
+            ],
+            "line_count": 554,
+            "decision": "revise",
+            "reviewed_page_lines": [
+              1,
+              554
+            ],
+            "blocking_findings": [
+              "03-open-ended-date-range"
+            ],
+            "semantic_passes": [
+              {
+                "topic": "Identity and block/transaction distinction",
+                "page_lines": [
+                  4,
+                  12,
+                  29,
+                  35
+                ],
+                "conclusion": "The selected object is demo.fn_with_cte(date), one required input, RETURNS void and default VOLATILE. The page explicitly acknowledges its BEGIN/END block and separately says COMMIT/ROLLBACK and EXCEPTION handlers are absent."
+              },
+              {
+                "topic": "Sources, formulas and mappings",
+                "page_lines": [
+                  329,
+                  349
+                ],
+                "conclusion": "The source users/events tables, active-user predicate, GROUP BY user_id, max(event_date), INNER JOIN r.user_id=u.id and final id/full_name-to-temp-id/name mapping agree with raw SQL. The lower-bound expression is preserved exactly in facts and the operations explanation."
+              },
+              {
+                "topic": "Temporary target and types",
+                "page_lines": [
+                  135,
+                  145,
+                  329
+                ],
+                "conclusion": "The target declares bigint/text and ON COMMIT DROP. Persistent tables are only read. Registry expression-type gaps are explicitly identified as static-layer limits, not a claim that the SQL has no semantics."
+              },
+              {
+                "topic": "Effects and graph",
+                "page_lines": [
+                  343,
+                  346,
+                  467,
+                  496
+                ],
+                "conclusion": "No invented external routine call, dynamic SQL or persistent write appears. Graph physical reads and writes have correct directions. CTE result edges are logical, with no guaranteed materialization claim."
+              },
+              {
+                "topic": "Limits of claims made",
+                "page_lines": [
+                  498,
+                  554
+                ],
+                "conclusion": "The page does not require a nonempty JOIN for successful execution and does not promise a private transaction or full caller-transaction rollback. No executable invocation example is presented."
+              }
+            ]
+          },
+          "q02": {
+            "workspace": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q02\\run-01\\q02",
+            "page": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q02\\run-01\\q02\\wiki\\0\\function-q-out-count-phoned-clients--1594d6a00796.md",
+            "run": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q02\\run-01\\q02\\output\\0",
+            "page_sha256": "547132c2eed016d8efd236b2d68426838904c186be9529c17a73a36a003d362e",
+            "facts_sha256": "6b58b204a1857aaa261232234a102a9407780f0faf87eb73731555bf3a917f6c",
+            "run_id": "8f6c8007-c8b9-4cd6-8f29-d18c0f399317",
+            "claim_count": 69,
+            "inputs": [
+              {
+                "path": "fixtures/q02_null_check_sign.sql",
+                "sha256": "1bf6384ff59121b96e0749bda3a9ac47823a9976f10f60972ea77e829fbba3a8",
+                "actual_sha256": "1bf6384ff59121b96e0749bda3a9ac47823a9976f10f60972ea77e829fbba3a8"
+              },
+              {
+                "path": "fixtures/q_context.sql",
+                "sha256": "80c1850ea9c458bc2f13889c7ecd425d8ac5466ef77d14e41dc992d7fa85c0b4",
+                "actual_sha256": "80c1850ea9c458bc2f13889c7ecd425d8ac5466ef77d14e41dc992d7fa85c0b4"
+              }
+            ],
+            "links": [
+              {
+                "href": "../../input/fixtures/q02_null_check_sign.sql",
+                "resolved": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q02\\run-01\\q02\\input\\fixtures\\q02_null_check_sign.sql",
+                "exists": true,
+                "within_input_root": true
+              },
+              {
+                "href": "../../input/fixtures/q_context.sql",
+                "resolved": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q02\\run-01\\q02\\input\\fixtures\\q_context.sql",
+                "exists": true,
+                "within_input_root": true
+              },
+              {
+                "href": "#schema_signature",
+                "kind": "fragment"
+              },
+              {
+                "href": "../../input/fixtures/q02_null_check_sign.sql",
+                "resolved": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q02\\run-01\\q02\\input\\fixtures\\q02_null_check_sign.sql",
+                "exists": true,
+                "within_input_root": true
+              },
+              {
+                "href": "#formulas_dependencies",
+                "kind": "fragment"
+              },
+              {
+                "href": "#misc",
+                "kind": "fragment"
+              },
+              {
+                "href": "../../input/fixtures/q_context.sql",
+                "resolved": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q02\\run-01\\q02\\input\\fixtures\\q_context.sql",
+                "exists": true,
+                "within_input_root": true
+              },
+              {
+                "href": "../../input/fixtures/q02_null_check_sign.sql",
+                "resolved": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q02\\run-01\\q02\\input\\fixtures\\q02_null_check_sign.sql",
+                "exists": true,
+                "within_input_root": true
+              },
+              {
+                "href": "../../input/fixtures/q02_null_check_sign.sql",
+                "resolved": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q02\\run-01\\q02\\input\\fixtures\\q02_null_check_sign.sql",
+                "exists": true,
+                "within_input_root": true
+              }
+            ],
+            "line_count": 230,
+            "decision": "accept",
+            "reviewed_page_lines": [
+              1,
+              230
+            ],
+            "blocking_findings": [],
+            "semantic_passes": [
+              {
+                "topic": "Identity and signature",
+                "page_lines": [
+                  2,
+                  12,
+                  29,
+                  39
+                ],
+                "conclusion": "The no-argument function returns bigint; declaration and implicit VOLATILE behavior match SQL. BEGIN/END is correctly distinguished from transaction control."
+              },
+              {
+                "topic": "DDL and ordinary table",
+                "page_lines": [
+                  66,
+                  73
+                ],
+                "conclusion": "The clients table has id bigint, phone text, is_phoned boolean and created_at timestamp; missing NOT NULL, PK and defaults are not invented."
+              },
+              {
+                "topic": "Aggregation and local dataflow",
+                "page_lines": [
+                  125,
+                  139
+                ],
+                "conclusion": "SELECT count(*) INTO n counts qualifying rows and RETURN n returns that bigint; n starts NULL before SELECT. No JOIN, GROUP BY, writes or external calls are invented."
+              },
+              {
+                "topic": "Predicate and NULL",
+                "page_lines": [
+                  145,
+                  147
+                ],
+                "conclusion": "The exact conjunction requires non-NULL phone and is_phoned IS NOT TRUE. FALSE and NULL qualify, while TRUE does not."
+              },
+              {
+                "topic": "Graph",
+                "page_lines": [
+                  191,
+                  198
+                ],
+                "conclusion": "The clients-to-SELECT read edge and SELECT-to-n-to-RETURN dataflow match the SQL. No extra physical dependency is introduced."
+              },
+              {
+                "topic": "Errors and uncertainty",
+                "page_lines": [
+                  216,
+                  230
+                ],
+                "conclusion": "No local exception handler or transaction-control command exists. The actual count depends on table contents. No incorrect CALL example is given."
+              }
+            ],
+            "direct_check_status": "Content, tables, examples, graph and source links independently inspected. No additional automated gate/test run was used for this final aggregation.",
+            "acceptance_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q02\\run-01\\q02\\wiki\\0\\function-q-out-count-phoned-clients--1594d6a00796.md",
+                "start_line": 37,
+                "end_line": 39,
+                "sha256": "547132c2eed016d8efd236b2d68426838904c186be9529c17a73a36a003d362e",
+                "quote": "- Нет аргументов; `RETURNS bigint`, `LANGUAGE plpgsql`.\n- `volatility = volatile` выведен по правилу postgres при отсутствии явного указания в объявлении.\n- Тело — блок PL/pgSQL (`BEGIN ... END`); ни явного `COMMIT`, ни `ROLLBACK` функция не выполняет, поэтому отдельные утверждения о собственной транзакции или атомарности здесь не делаются."
+              },
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q02\\run-01\\q02\\wiki\\0\\function-q-out-count-phoned-clients--1594d6a00796.md",
+                "start_line": 125,
+                "end_line": 147,
+                "sha256": "547132c2eed016d8efd236b2d68426838904c186be9529c17a73a36a003d362e",
+                "quote": "Тело функции состоит из двух операций: `SELECT count(*) INTO n FROM q_src.clients WHERE ...` (фрагмент `op_1`, order 1) и `RETURN n` (фрагмент `op_2`, order 2). Локальная переменная `n` объявлена в `DECLARE` со стартовым значением, эквивалентным `NULL` для типа `bigint`; её содержимое устанавливается первой операцией и затем возвращается второй.\n\n### Чтение и запись (reads → operation → writes, отдельно calls)\n\n- **reads**: `q_src.clients` (фрагмент `obj_2`) через `op_1`. Чтение выполняется через `FROM q_src.clients AS c` в SELECT (`op_1`); JOIN отсутствует, обращение к одной таблице с алиасом `c`.\n- **writes**: пусто. Никаких INSERT/UPDATE/DELETE/MERGE/CTAS/DDL-изменений в теле функции нет.\n- **calls**: пусто. PERFORM/CALL/SELECT-вызовы других функций и процедур в теле не используются.\n\n### Расчётные формулы\n\n| ID формулы | Выражение | Источник SQL | Места применения | Связанные условия |\n|------------|-----------|--------------|------------------|-------------------|\n| formula_1 | `count(*)` | [q02_null_check_sign.sql](../../input/fixtures/q02_null_check_sign.sql), строки 9–11 | `op_1`: `SELECT count(*) INTO n` | `cond_1` |\n\n`count(*)` подсчитывает количество строк, удовлетворяющих `cond_1`, и присваивает результат в локальную переменную `n`. Точный текст выражения взят из SQL и зафиксирован в реестре (см. таблицу-фрагмент `formula_1` ниже).\n\n### Условия\n\n| ID условия | Выражение | Источник SQL | Применение |\n|------------|-----------|--------------|------------|\n| cond_1 | `c.phone IS NOT NULL AND c.is_phoned IS NOT TRUE` | [q02_null_check_sign.sql](../../input/fixtures/q02_null_check_sign.sql), строки 11–12 | `op_1` (WHERE) |\n\nСемантика `IS NOT TRUE` в PostgreSQL: TRUE для значений `FALSE` и `NULL`, FALSE только для `TRUE`. Это означает, что строка с `is_phoned = NULL` отбирается наравне со строкой `is_phoned = FALSE` — следствие из SQL и правил языка, а не пробел реестра. Замена знака `IS NOT NULL` на `IS NULL` (как в `cond_1`, так и в `facts.json`) меняет результат и отклоняется условиями Q-01 / D02 исходного файла."
+              },
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q02\\run-01\\q02\\wiki\\0\\function-q-out-count-phoned-clients--1594d6a00796.md",
+                "start_line": 191,
+                "end_line": 198,
+                "sha256": "547132c2eed016d8efd236b2d68426838904c186be9529c17a73a36a003d362e",
+                "quote": "```mermaid\nflowchart LR\n  obj_2[\"q_src.clients\"] -->|reads| op_1[\"1: SELECT count(*) INTO n FROM q_src.clients AS c WHERE c.phone IS NOT NULL AND c.is_phoned IS NOT TRUE\"]\n  op_1 --> n((\"n bigint\"))\n  n --> op_2[\"2: RETURN n\"]\n```\n\nСвязи reads/writes/calls взяты из реестра: `op_1` читает `q_src.clients` через `FROM q_src.clients AS c`; writes и calls у обеих операций пусты. Промежуточные staging-объекты, временные таблицы, CTE и параллельные вызовы не используются и в схему не включаются. Узел `n` отражает присваивание, зафиксированное в `op_1.structure.assignments`, и передачу значения в `RETURN` через `op_2.structure.return_expression`."
+              },
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q02\\run-01\\q02\\wiki\\0\\function-q-out-count-phoned-clients--1594d6a00796.md",
+                "start_line": 216,
+                "end_line": 224,
+                "sha256": "547132c2eed016d8efd236b2d68426838904c186be9529c17a73a36a003d362e",
+                "quote": "* Параметр `volatility = volatile` зафиксирован в реестре; основание — правило postgres при отсутствии явного указания в исходном SQL (`VOLATILE`/`STABLE`/`IMMUTABLE`).\n* Тело не содержит обработчиков ошибок, динамического SQL, RAISE, EXCEPTION или GET DIAGNOSTICS — отдельных операций и формул для них нет.\n* `BEGIN/END` в PL/pgSQL обозначают блок, а не границы транзакции. Функция не вызывает `COMMIT`/`ROLLBACK`; это не отменяет общих правил транзакционного контекста вызова, но и не вводит отдельной атомарности, которую можно было бы подтвердить по коду.\n* Реальное числовое значение результата зависит от данных `q_src.clients` и не вычисляется статическим анализом.\n* Иных источников (миграций, seed-данных, бизнес-требований) в этой странице не используется; `validation_plan.json` подтверждает полноту блокирующих проверок для данного объекта.\n\n### Неопределённости, не разрешаемые из SQL/DDL\n\nВ реестре `unknowns: []`, и по тексту SQL/DDL дополнительных пробелов, которые нельзя было бы заполнить правилами языка, не выявлено (см. таблицу ниже)."
+              }
+            ]
+          },
+          "q04": {
+            "workspace": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q04\\run-01\\q04",
+            "page": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q04\\run-01\\q04\\wiki\\0\\function-q-out-calc-norm-bigint-date--1ea38e0fb33a.md",
+            "run": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q04\\run-01\\q04\\output\\0",
+            "page_sha256": "1473a85673832f00b5e755d10e09d29a69348e4dc959e670f3b2d0364b69c798",
+            "facts_sha256": "19aa5e365c042ad6f55c34ab4eea9815ee245e377d77f44790f3c9afa99fd549",
+            "run_id": "be32914a-e313-4966-81f8-e8aa09770ef2",
+            "claim_count": 95,
+            "inputs": [
+              {
+                "path": "fixtures/q04_date_branch.sql",
+                "sha256": "8c48a647a6d1fda20c6850c1160e6cdfdb282da6ca13c421d176deb4f15d5c08",
+                "actual_sha256": "8c48a647a6d1fda20c6850c1160e6cdfdb282da6ca13c421d176deb4f15d5c08"
+              },
+              {
+                "path": "fixtures/q_context.sql",
+                "sha256": "80c1850ea9c458bc2f13889c7ecd425d8ac5466ef77d14e41dc992d7fa85c0b4",
+                "actual_sha256": "80c1850ea9c458bc2f13889c7ecd425d8ac5466ef77d14e41dc992d7fa85c0b4"
+              }
+            ],
+            "links": [
+              {
+                "href": "../../input/fixtures/q04_date_branch.sql",
+                "resolved": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q04\\run-01\\q04\\input\\fixtures\\q04_date_branch.sql",
+                "exists": true,
+                "within_input_root": true
+              },
+              {
+                "href": "../../input/fixtures/q_context.sql",
+                "resolved": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q04\\run-01\\q04\\input\\fixtures\\q_context.sql",
+                "exists": true,
+                "within_input_root": true
+              }
+            ],
+            "line_count": 324,
+            "decision": "revise",
+            "reviewed_page_lines": [
+              1,
+              324
+            ],
+            "blocking_findings": [
+              "q04-nonstrict-select-into"
+            ],
+            "semantic_passes": [
+              {
+                "topic": "Identity and signature",
+                "page_lines": [
+                  4,
+                  32
+                ],
+                "conclusion": "Ordered bigint/date IN arguments are required; numeric return and default volatility match the function. BEGIN/END is correctly described as a PL/pgSQL block."
+              },
+              {
+                "topic": "DDL and ordinary table",
+                "page_lines": [
+                  67,
+                  80
+                ],
+                "conclusion": "The four source columns and their nullable types match DDL. No unique constraint, PK or index is declared; create_date does not control the branch."
+              },
+              {
+                "topic": "Branches and formulas",
+                "page_lines": [
+                  132,
+                  149,
+                  269,
+                  275
+                ],
+                "conclusion": "TRUE at the inclusive DATE2026-01-01 boundary selects hours/8.0; FALSE or NULL selects hours/7.2. Both filters match user_id=p_uid and on_date=p_date. RETURN uses COALESCE(v_norm,0)."
+              },
+              {
+                "topic": "Graph",
+                "page_lines": [
+                  247,
+                  262
+                ],
+                "conclusion": "Both physical read edges and the mutually exclusive TRUE versus FALSE-or-NULL branches lead to the correct RETURN. Divisors and date are preserved."
+              },
+              {
+                "topic": "Invocation examples",
+                "page_lines": [
+                  280,
+                  291
+                ],
+                "conclusion": "All three SELECT calls supply the real bigint/date signature. Date examples enter the stated branches; NULL date uses ELSE. Missing parameters have no defaults."
+              },
+              {
+                "topic": "Scope and transactions",
+                "page_lines": [
+                  301,
+                  316
+                ],
+                "conclusion": "No private transaction, local EXCEPTION handler, dynamic SQL or external write/call is invented. Planning/index claims remain conditional."
+              }
+            ],
+            "direct_check_status": "Content, tables, examples, graph and source links independently inspected. No additional automated gate/test run was used for this final aggregation."
+          }
+        },
+        "findings": [
+          {
+            "id": "03-open-ended-date-range",
+            "case": "03",
+            "blocking": true,
+            "category": "technical",
+            "severity": "substantive narrowing of the described result set",
+            "title": "The purpose incorrectly limits qualifying events to the last 30 days relative to p_date",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\historical\\repeat-01\\03\\run-01\\03\\wiki\\0\\function-demo-fn-with-cte-date--841efff072cb.md",
+                "start_line": 14,
+                "end_line": 18,
+                "sha256": "1de4957ba4529b43f23a5ff91ddac5e7ff43352e4a3489b9d91eca7b801e66f5",
+                "quote": "Назначение — собрать в `tmp_filtered` список активных пользователей\n(`demo_src.users.is_active = TRUE`), у которых за последние 30 дней относительно\nпереданного `p_date` есть хотя бы одно событие в `demo_src.events`. Дальнейшая\nобработка собранных строк (фильтрация, агрегация, выгрузка) в исходном SQL\nотсутствует: после `INSERT` тело функции завершается."
+              }
+            ],
+            "source_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\historical\\repeat-01\\03\\run-01\\03\\input\\03_cte_temp.sql",
+                "start_line": 6,
+                "end_line": 16,
+                "sha256": "674806da3ab16f2b4ceadec0cecf2063176f469399469ec14a1ecd6f1a0ff45d",
+                "quote": "    WITH active_users AS (\n        SELECT id, full_name FROM demo_src.users WHERE is_active = true\n    ), recent_events AS (\n        SELECT user_id, max(event_date) AS last_event\n        FROM demo_src.events\n        WHERE event_date >= p_date - INTERVAL '30 days'\n        GROUP BY user_id\n    )\n    SELECT u.id, u.full_name\n    FROM active_users AS u\n    JOIN recent_events AS r ON r.user_id = u.id;"
+              },
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\historical\\repeat-01\\03\\run-01\\03\\input\\context.sql",
+                "start_line": 10,
+                "end_line": 14,
+                "sha256": "76200926945d5b917868abd65f4f6f4afe96878048769390750bdd783498e61e",
+                "quote": "CREATE TABLE demo_src.events (\n    id bigint, user_id bigint, name text, value double precision,\n    payload text, event_date date\n);\nCREATE TABLE demo_src.users (id bigint, full_name text, is_active boolean);"
+              }
+            ],
+            "facts": [
+              "cond_2 = event_date >= (p_date - CAST(30 days AS interval))",
+              "def_2 and op_2.structure.query contain no upper date bound"
+            ],
+            "explanation": "The purpose describes events in the last 30 days relative to the supplied p_date. The actual predicate is only an inclusive lower bound. Events later than p_date also qualify. The exact formula in the later registry/operations section does not remove the false bounded-period interpretation in the purpose.",
+            "counterexample": "Let p_date=DATE2026-01-01, users contain (id=1,is_active=TRUE), and events contain (user_id=1,event_date=DATE2027-01-01). The event is later than p_date but satisfies event_date>=DATE2025-12-02, so the user reaches tmp_filtered. No SQL was executed.",
+            "minimal_fix": "Describe events on or after p_date minus30days and explicitly state that no upper bound is present. Do not call this a bounded last-30-days interval."
+          },
+          {
+            "id": "q01-target-duplicates-false-unknown",
+            "case": "q01",
+            "blocking": true,
+            "category": "technical",
+            "severity": "incorrect classification of established DELETE/INSERT behavior",
+            "title": "Behavior with duplicate target rows is incorrectly classified as unknown",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q01\\run-01\\q01\\wiki\\0\\function-q-hist-apply-retro-boolean--ea8c8317eae3.md",
+                "start_line": 415,
+                "end_line": 418,
+                "sha256": "674c88e7fa5dab0370b6dc404eb4bf66d0add17f792a8f12627d1a81210d5258",
+                "quote": "Неизвестности: реестр `unknowns: []`; не подтверждено статическим анализом\nповедение при наличии в `q_hist.retro_pairs` строк с одинаковой парой\n`(kpi_id, fact_start_date)` в диапазоне `< '2026-01-01'` — текст SQL\nне описывает дедупликацию/upsert и не объявляет уникальных ограничений."
+              }
+            ],
+            "source_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q01\\run-01\\q01\\input\\fixtures\\q01_retro_param_local.sql",
+                "start_line": 11,
+                "end_line": 24,
+                "sha256": "275fc3fd60185ec8597badb2e6bc518469af1e9ce9847874b637aede196954c9",
+                "quote": "    IF v_retro THEN\n        DELETE FROM q_hist.retro_pairs AS r\n        WHERE r.fact_start_date < DATE '2026-01-01';\n\n        INSERT INTO q_hist.retro_pairs (kpi_id, fact_start_date)\n        SELECT k.kpi_id, k.fact_start_date\n        FROM q_src.kpi_facts AS k\n        WHERE k.fact_start_date < DATE '2026-01-01';\n\n        GET DIAGNOSTICS n = ROW_COUNT;\n    ELSE\n        n := 0;\n    END IF;\n    RETURN n;"
+              },
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q01\\run-01\\q01\\input\\fixtures\\q_context.sql",
+                "start_line": 90,
+                "end_line": 93,
+                "sha256": "80c1850ea9c458bc2f13889c7ecd425d8ac5466ef77d14e41dc992d7fa85c0b4",
+                "quote": "CREATE TABLE q_hist.retro_pairs (\n    kpi_id          bigint,\n    fact_start_date date\n);"
+              }
+            ],
+            "facts": [
+              "op_3 deletes target rows solely by fact_start_date<DATE2026-01-01",
+              "op_4 inserts matching source rows without deduplication",
+              "op_6 returns the INSERT row count; op_7 is the FALSE/NULL alternative"
+            ],
+            "explanation": "The page calls target-duplicate behavior unestablished because there is no dedup/upsert or UNIQUE constraint. The shown SQL determines the behavior: every matching target row is deleted, including duplicates, and then all qualifying source rows are copied. A uniqueness constraint is not required to know the effect of a DELETE predicate. This is a new statement in this page; its corrected NULL handling is not being rejected again.",
+            "counterexample": "Let retro_pairs contain two identical rows (kpi_id=1,fact_start_date=DATE2025-01-01), and let kpi_facts contain one matching row. With TRUE, DELETE removes both target rows, INSERT adds one source row, and the function returns1. With FALSE or NULL, the two target rows remain and the function returns0. The example was not executed.",
+            "minimal_fix": "Describe the known set/multiset effect of the predicate. Separate unknown actual data or external triggers/concurrency from the deterministic behavior shown in the supplied SQL and DDL."
+          },
+          {
+            "id": "q04-nonstrict-select-into",
+            "case": "q04",
+            "blocking": true,
+            "category": "technical",
+            "severity": "substantive false runtime-error guarantee",
+            "title": "The final page promises TOO_MANY_ROWS for SELECT INTO without STRICT",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q04\\run-01\\q04\\wiki\\0\\function-q-out-calc-norm-bigint-date--1ea38e0fb33a.md",
+                "start_line": 293,
+                "end_line": 299,
+                "sha256": "1473a85673832f00b5e755d10e09d29a69348e4dc959e670f3b2d0364b69c798",
+                "quote": "**Семантика операций.** Обе `SELECT ... INTO v_norm` ожидают, что фильтр\nвернёт не более одной строки. При отсутствии строк `v_norm` остаётся `NULL`\nи обрабатывается `COALESCE` в `RETURN` (`formula_3`). При наличии нескольких\nстрок, удовлетворяющих `cond_2`/`cond_3`, PL/pgSQL возбудит исключение\n`TOO_MANY_ROWS` — это правило языка, а не отдельный факт исходника; статически\nпо SQL наличие или отсутствие дубликатов в `q_src.hours` для конкретной пары\n`user_id`/`on_date` не устанавливается."
+              }
+            ],
+            "source_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q04\\run-01\\q04\\input\\fixtures\\q04_date_branch.sql",
+                "start_line": 11,
+                "end_line": 20,
+                "sha256": "8c48a647a6d1fda20c6850c1160e6cdfdb282da6ca13c421d176deb4f15d5c08",
+                "quote": "    IF p_date >= DATE '2026-01-01' THEN\n        SELECT h.hours / 8.0 INTO v_norm\n        FROM q_src.hours AS h\n        WHERE h.user_id = p_uid AND h.on_date = p_date;\n    ELSE\n        SELECT h.hours / 7.2 INTO v_norm\n        FROM q_src.hours AS h\n        WHERE h.user_id = p_uid AND h.on_date = p_date;\n    END IF;\n    RETURN coalesce(v_norm, 0);"
+              },
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q04\\run-01\\q04\\input\\fixtures\\q_context.sql",
+                "start_line": 28,
+                "end_line": 33,
+                "sha256": "80c1850ea9c458bc2f13889c7ecd425d8ac5466ef77d14e41dc992d7fa85c0b4",
+                "quote": "CREATE TABLE q_src.hours (\n    user_id     bigint,\n    on_date     date,\n    hours       numeric,\n    create_date date\n);"
+              }
+            ],
+            "facts": [
+              "op_2 and op_3 preserve the two SELECT statements without STRICT",
+              "formula_1 uses hours/8.0, formula_2 uses hours/7.2, and formula_3 returns COALESCE(v_norm,0)"
+            ],
+            "explanation": "Both supplied SELECT INTO statements omit STRICT. Standard non-STRICT PL/pgSQL assigns the first returned row and discards later rows; without ORDER BY the chosen row is unspecified. Multiple matches do not by themselves imply the promised TOO_MANY_ROWS exception. The source DDL permits multiple rows for the same user/date. A separately configured too_many_rows extra check could change behavior, but no such setting is established by the supplied SQL/DDL and the page states an unconditional language rule.",
+            "counterexample": "For p_uid=123 and p_date=DATE2026-05-10, let hours contain matching rows with hours=8 and hours=16. Under ordinary non-STRICT behavior the function returns numeric1 or numeric2, depending on the selected row, rather than necessarily raising TOO_MANY_ROWS. This is a static counterexample; no SQL was executed.",
+            "minimal_fix": "State that non-STRICT INTO takes one unspecified matching row when no ORDER BY is present; no row sets the target NULL and COALESCE returns0. Do not promise TOO_MANY_ROWS without STRICT or an explicitly established extra-check setting."
+          }
+        ],
+        "nonblocking_notes": [
+          {
+            "id": "03-ir-order-wording",
+            "case": "03",
+            "blocking": false,
+            "title": "Separate registry order from separate executable statements",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\historical\\repeat-01\\03\\run-01\\03\\wiki\\0\\function-demo-fn-with-cte-date--841efff072cb.md",
+                "start_line": 327,
+                "end_line": 341,
+                "sha256": "1de4957ba4529b43f23a5ff91ddac5e7ff43352e4a3489b9d91eca7b801e66f5",
+                "quote": "Функция выполняет семь операций (по данным реестра) в порядке `order` 1…7:\n\n1. `op_1` (`CREATE`) — создаёт `tmp_filtered` с временем жизни `ON COMMIT DROP`;\n   пишет `obj_2`, чтений и вызовов нет.\n2. `op_2` (`INSERT`) — вставляет в `tmp_filtered (id, name)` результат\n   `INSERT … WITH active_users AS (…), recent_events AS (…) SELECT …`;\n   читает обе локальные CTE (`obj_3`, `obj_4`) и пишет `obj_2`.\n3. `op_3` (`CTE`) и `op_4` (`SELECT`) — формируют `active_users`: SELECT по\n   `demo_src.users` с условием `is_active = TRUE` (`cond_1`).\n4. `op_5` (`CTE`) и `op_6` (`SELECT`) — формируют `recent_events`: агрегация\n   `max(event_date)` (`formula_1`) с `GROUP BY user_id` и фильтром\n   `event_date >= (p_date - CAST('30 days' AS interval))` (`cond_2`).\n5. `op_7` (`SELECT`) — финальный SELECT, объединяющий обе CTE через\n   `INNER JOIN recent_events r ON r.user_id = u.id` (`cond_3`); читает\n   `obj_3` и `obj_4`."
+              }
+            ],
+            "explanation": "The list is explicitly qualified as registry order, but its introduction says the function executes seven operations in that order. CREATE and INSERT are the top-level statements; CTEs and SELECTs are nested within INSERT. Clarify this structure rather than implying a separate INSERT-then-CTE execution schedule. No guaranteed CTE materialization is asserted here."
+          },
+          {
+            "id": "03-scope-wording",
+            "case": "03",
+            "blocking": false,
+            "title": "Distinguish registry ownership from SQL lifetime",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\historical\\repeat-01\\03\\run-01\\03\\wiki\\0\\function-demo-fn-with-cte-date--841efff072cb.md",
+                "start_line": 329,
+                "end_line": 345,
+                "sha256": "1de4957ba4529b43f23a5ff91ddac5e7ff43352e4a3489b9d91eca7b801e66f5",
+                "quote": "1. `op_1` (`CREATE`) — создаёт `tmp_filtered` с временем жизни `ON COMMIT DROP`;\n   пишет `obj_2`, чтений и вызовов нет.\n2. `op_2` (`INSERT`) — вставляет в `tmp_filtered (id, name)` результат\n   `INSERT … WITH active_users AS (…), recent_events AS (…) SELECT …`;\n   читает обе локальные CTE (`obj_3`, `obj_4`) и пишет `obj_2`.\n3. `op_3` (`CTE`) и `op_4` (`SELECT`) — формируют `active_users`: SELECT по\n   `demo_src.users` с условием `is_active = TRUE` (`cond_1`).\n4. `op_5` (`CTE`) и `op_6` (`SELECT`) — формируют `recent_events`: агрегация\n   `max(event_date)` (`formula_1`) с `GROUP BY user_id` и фильтром\n   `event_date >= (p_date - CAST('30 days' AS interval))` (`cond_2`).\n5. `op_7` (`SELECT`) — финальный SELECT, объединяющий обе CTE через\n   `INNER JOIN recent_events r ON r.user_id = u.id` (`cond_3`); читает\n   `obj_3` и `obj_4`.\n\nФизические зависимости: `demo_src.users` (`obj_5`) и `demo_src.events` (`obj_6`)\n— единственные внешние источники; прочитанные CTE (`obj_3`, `obj_4`) и временная\nтаблица (`obj_2`) имеют область действия функции (`scope: obj_1`). Вызовов других"
+              }
+            ],
+            "explanation": "scope:obj_1 correctly associates facts with the function, and ON COMMIT DROP is stated. Clarify that CTEs are statement-scoped while the temporary table survives until transaction end; registry ownership is not a function-call lifetime claim."
+          },
+          {
+            "id": "03-void-wording",
+            "case": "03",
+            "blocking": false,
+            "title": "Correct the introductory phrase about void",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\historical\\repeat-01\\03\\run-01\\03\\wiki\\0\\function-demo-fn-with-cte-date--841efff072cb.md",
+                "start_line": 7,
+                "end_line": 12,
+                "sha256": "1de4957ba4529b43f23a5ff91ddac5e7ff43352e4a3489b9d91eca7b801e66f5",
+                "quote": "Функция не принимает возвращаемого значения (`RETURNS void`) и помечена как `volatile`\nпо умолчанию (объявление не задаёт `STABLE`/`IMMUTABLE`, см. `obj_1` ниже). Тело\nпредставляет собой единый PL/pgSQL-блок `BEGIN … END;` и последовательно выполняет\nтри действия: создаёт временную таблицу `tmp_filtered`, заполняет её результатом\nзапроса с двумя CTE (`active_users`, `recent_events`) и завершается без `RETURN`,\nпоэтому вызов ничего не возвращает вызывающей стороне."
+              }
+            ],
+            "explanation": "The Russian phrase literally says the function does not accept a returned value. Use does not return a meaningful value / RETURNS void. The surrounding declaration and completion behavior are otherwise correct."
+          },
+          {
+            "id": "q01-registry-order-wording",
+            "case": "q01",
+            "blocking": false,
+            "title": "Clarify that the nested SELECT is a registry item within INSERT",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q01\\run-01\\q01\\wiki\\0\\function-q-hist-apply-retro-boolean--ea8c8317eae3.md",
+                "start_line": 188,
+                "end_line": 196,
+                "sha256": "674c88e7fa5dab0370b6dc404eb4bf66d0add17f792a8f12627d1a81210d5258",
+                "quote": "Тело функции содержит 8 операций (`op_1`…`op_8`) в порядке выполнения. Параметр\n`p_retro` сначала копируется в локальную `v_retro` через DECLARE-инициализатор\n(`op_1`, `formula_1`). Затем условие `IF v_retro THEN` (`op_2`, `cond_1`)\nразделяет поток: в THEN-ветке при `TRUE` выполняется удаление исторических пар\n(`op_3`, `cond_2`), вставка из источника `q_src.kpi_facts` (`op_4`) и\n`GET DIAGNOSTICS n = ROW_COUNT` (`op_6`); в ELSE-ветке при `FALSE`/`NULL`\nпеременная `n` получает литерал `0` (`op_7`, `formula_2`). Возврат —\n`RETURN n` (`op_8`). Источник SELECT в `op_4` — это `op_5` с `cond_3`,\nотдельный от INSERT, но использующий тот же фильтр `fact_start_date < '2026-01-01'`."
+              }
+            ],
+            "explanation": "The text correctly identifies op_5 as the source SELECT of op_4, but also calls it separate from INSERT and lists eight operations in execution order. Clarify the distinction between separate fact IDs and separate SQL statements. The explicit branching description is correct."
+          },
+          {
+            "id": "q01-graph-detail",
+            "case": "q01",
+            "blocking": false,
+            "title": "The graph omits control edges while adjacent prose supplies them",
+            "page_evidence": [
+              {
+                "path": "C:\\Users\\Aleks\\.codex\\worktrees\\eb9c\\agent-skills\\wiki-doc\\.runtime\\stage-2026-09-27\\candidate-11\\llm\\q\\repeat-01\\q01\\run-01\\q01\\wiki\\0\\function-q-hist-apply-retro-boolean--ea8c8317eae3.md",
+                "start_line": 351,
+                "end_line": 375,
+                "sha256": "674c88e7fa5dab0370b6dc404eb4bf66d0add17f792a8f12627d1a81210d5258",
+                "quote": "Функция читает `q_src.kpi_facts` и пишет `q_hist.retro_pairs`. Условный поток:\n`ASSIGN` (параметр → локальная `v_retro`) → `IF` → в THEN-ветке\n`DELETE`+`INSERT`+`GET DIAGNOSTICS`, в ELSE — `ASSIGN 0` → `RETURN n`.\n\n```mermaid\nflowchart LR\n  obj_1[\"q_hist.apply_retro\"]\n  obj_2[\"q_hist.retro_pairs\"]\n  obj_3[\"q_src.kpi_facts\"]\n  op_1[\"1: ASSIGN\"]\n  op_2[\"2: IF\"]\n  op_3[\"3: DELETE\"]\n  op_3 -->|writes| obj_2\n  op_4[\"4: INSERT\"]\n  obj_3 -->|reads| op_4\n  op_4 -->|writes| obj_2\n  op_5[\"5: SELECT\"]\n  obj_3 -->|reads| op_5\n  op_6[\"6: ASSIGN\"]\n  op_7[\"7: ASSIGN\"]\n  op_8[\"8: RETURN\"]\n```\n\nСтрелки `reads`/`writes` отражают `reads` и `writes` реестра:\n`op_4` и `op_5` читают `obj_3`; `op_3` и `op_4` пишут `obj_2`."
+              }
+            ],
+            "explanation": "Physical reads/writes arrows are correct. The graph leaves IF/ASSIGN/RETURN disconnected; adjacent prose correctly gives THEN versus ELSE. Add guards/control edges for a standalone diagram, without treating the existing physical edges as reversed."
+          }
+        ],
+        "pending": {},
+        "limitations": [
+          "Mermaid semantics were reviewed, but no new rendering was performed.",
+          "No SQL/database or external LLM was used; examples and counterexamples are static reasoning.",
+          "All four published-page content reviews are complete. This rejects this smoke set for content and is not acceptance of candidate11 runtime or the full69 suite."
+        ],
+        "review_complete": true,
+        "summary": {
+          "published_pages_reviewed": 4,
+          "accepted": [
+            "q02"
+          ],
+          "revise": [
+            "q01",
+            "q04",
+            "03"
+          ],
+          "not_published": [],
+          "blocking_finding_count": 3,
+          "scope": "Independent content acceptance of these four exact published pages; not acceptance of the runtime or full69 suite."
+        }
+      }
+    }
+  },
+  "semantic_matrix_candidate10": {
+    "report": ".runtime/stage-2026-09-27/candidate-10/semantic-matrix/label-comparison.json",
+    "cases": 30,
+    "ready": 14,
+    "revise": 16,
+    "negative_cases_rejected": 15,
+    "false_ready": 0,
+    "label_matches": 29,
+    "mismatch": "case-15 positive fixture said highest priority while DESC ranks nullable priority NULL first",
+    "resolution": "Corrected positive-fixture prose to explicit DESC NULLS FIRST / ASC NULLS LAST; original outcomes preserved"
+  },
+  "semantic_matrix_candidate12": {
+    "candidate": "candidate-12",
+    "reviewer": "Independent Codex subagent; no external MiniMax calls",
+    "gate_summary": {
+      "cases": 30,
+      "final_full_gate_processes": 30,
+      "final_repeat_gate_processes": 30,
+      "final_reseal_processes": 30,
+      "decisions": {
+        "ready": 15,
+        "revise": 15
+      },
+      "required_checks": 670,
+      "required_status_counts": {
+        "ok": 602,
+        "defect": 68
+      },
+      "separate_processes": true,
+      "own_skill_and_workspace": true,
+      "wiki_root": "<workspace>/wiki/0",
+      "all_immutable_inputs_unchanged": true,
+      "all_final_validation_bytes_unchanged": true,
+      "final_contract_errors": 0,
+      "expectations_read": false
+    },
+    "label_summary": {
+      "cases": 30,
+      "matches": 30,
+      "mismatches": 0,
+      "false_ready": 0,
+      "false_reject": 0,
+      "expected_ready": 15,
+      "expected_reject": 15,
+      "provided_initial_mechanical_false_ready": 13
+    },
+    "evidence_reports_unchanged_after_labels": true,
+    "initial_case09_contract_failure": "Extra migration-manifest evidence was outside checked input bundle; removed only that reference, preserved initial refusal and semantic decision, resealed and rechecked",
+    "report": ".runtime\\stage-2026-09-27\\candidate-12\\semantic-matrix\\label-comparison.json",
+    "limitation": "Blinded content procedure on 30 authored controls; does not replace three complete fresh-generation series or large-object acceptance"
+  },
+  "candidate10_final_smoke": {
+    "mechanical_passed": 3,
+    "cases": 4,
+    "independent_content_accepted": 0,
+    "final_historical03": "Not published: after two repairs, invalid validator JSON/evidence paths",
+    "report": ".runtime/stage-2026-09-27/candidate-10/llm-smoke.json"
+  },
+  "candidate11_final_smoke": {
+    "mechanical_passed": 4,
+    "cases": 4,
+    "independent_content_accepted": 1,
+    "false_ready": 3,
+    "accepted_case": "q02",
+    "operator_writer_recovery": true,
+    "actual_repair_rounds": 2,
+    "report": ".runtime/stage-2026-09-27/candidate-11/llm-smoke-resolution.json",
+    "metrics": ".runtime/stage-2026-09-27/candidate-11/llm-metrics.json"
+  },
+  "last_updated_at": "2026-09-28T16:02:24.465830+00:00",
+  "candidate12_full_series": {
+    "recorded_at": "2026-09-27T19:04:16.291321+00:00",
+    "candidate": "candidate-12",
+    "reason": "minimax_token_plan_exhausted",
+    "status_code": 429,
+    "provider_code": 2067,
+    "message": "The Token Plan usage limit has been reached. To avoid interruption, please upgrade your plan or buy credits and turn on auto consumption. (2067)",
+    "requested_model": "minimax-coding-plan/MiniMax-M3",
+    "jobs_finished": 69,
+    "jobs_passed": 0,
+    "writer_seats_failed": 78,
+    "validator_seats": 0,
+    "repair_rounds": 0,
+    "generated_model_pages": 0,
+    "first_started_at": "2026-09-27T14:36:39.395420+00:00",
+    "last_finished_at": "2026-09-27T14:55:45.681183+00:00",
+    "campaign_seconds": 1149.687,
+    "campaign_sha256": "38a8a6eb30488b6277302a41571053691bbdb6ff14e43fca58814db77b2e7e4c",
+    "campaign_preserved": true,
+    "non_json_log_lines": 78,
+    "controller_issue": "collect-all continued independent jobs after the first quota refusal",
+    "controller_fix": "HTTP 401/403/429 stop issuing new jobs even with collect-all; active work is retained",
+    "offline_guard_tests": {
+      "tests": 5,
+      "passed": 5,
+      "external_calls": 0
+    },
+    "retry_performed": false,
+    "acceptance_complete": false,
+    "report": ".runtime/stage-2026-09-27/candidate-12/llm-campaign.json",
+    "diagnosis_report": ".runtime/stage-2026-09-27/candidate-12/provider-failure.json"
+  },
+  "active_llm_attempt": {
+    "id": "candidate-12-retry-01",
+    "runtime": "candidate-12",
+    "started_at": "2026-09-28T04:21:00+00:00",
+    "updated_at": "2026-09-28T16:02:24.465830+00:00",
+    "state": "running_continuation",
+    "model": "minimax-coding-plan/MiniMax-M3",
+    "roles": {
+      "writer": "minimax",
+      "validator": "minimax"
+    },
+    "jobs_planned": 69,
+    "workers": 3,
+    "serial_first": true,
+    "provider_responding": true,
+    "acceptance_complete": false,
+    "unified_exec_session_id": 82090,
+    "prior_results_preserved": true,
+    "report": ".runtime/stage-2026-09-27/candidate-12-retry-01/llm-campaign.json",
+    "offline_guard_tests": 7,
+    "progress": {
+      "updated_at": "2026-09-28T15:53:30.972351+00:00",
+      "attempt": "candidate-12-retry-01",
+      "state": "interrupted",
+      "planned": 69,
+      "finished": 56,
+      "passed": 35,
+      "failed": 21,
+      "passed_after_repair": 20,
+      "interrupted_jobs": [
+        {
+          "suite": "q",
+          "case": "q08",
+          "repeat": 3
+        },
+        {
+          "suite": "historical",
+          "case": "01",
+          "repeat": 3
+        },
+        {
+          "suite": "historical",
+          "case": "02",
+          "repeat": 3
+        }
+      ],
+      "not_started": 10,
+      "running_recorded_processes": 0,
+      "process_observation": "process-observation.json",
+      "interruption_cause": "not established",
+      "failures": [
+        {
+          "suite": "q",
+          "case": "q04",
+          "repeat": 1,
+          "categories": [
+            "missing_writer_output"
+          ]
+        },
+        {
+          "suite": "q",
+          "case": "q07",
+          "repeat": 1,
+          "categories": [
+            "missing_writer_output"
+          ]
+        },
+        {
+          "suite": "q",
+          "case": "q06",
+          "repeat": 1,
+          "categories": [
+            "evidence_range"
+          ]
+        },
+        {
+          "suite": "historical",
+          "case": "07",
+          "repeat": 1,
+          "categories": [
+            "rendered_claim",
+            "missing_or_different_claim"
+          ]
+        },
+        {
+          "suite": "historical",
+          "case": "06",
+          "repeat": 1,
+          "categories": [
+            "evidence_path"
+          ]
+        },
+        {
+          "suite": "historical",
+          "case": "08",
+          "repeat": 1,
+          "categories": [
+            "evidence_path"
+          ]
+        },
+        {
+          "suite": "historical",
+          "case": "12",
+          "repeat": 1,
+          "categories": [
+            "other_gate_refusal"
+          ]
+        },
+        {
+          "suite": "historical",
+          "case": "11",
+          "repeat": 1,
+          "categories": [
+            "other_gate_refusal"
+          ]
+        },
+        {
+          "suite": "q",
+          "case": "q07",
+          "repeat": 2,
+          "categories": [
+            "evidence_path",
+            "missing_or_different_claim"
+          ]
+        },
+        {
+          "suite": "q",
+          "case": "q06",
+          "repeat": 2,
+          "categories": [
+            "other_gate_refusal"
+          ]
+        },
+        {
+          "suite": "q",
+          "case": "q10",
+          "repeat": 2,
+          "categories": [
+            "other_gate_refusal"
+          ]
+        },
+        {
+          "suite": "historical",
+          "case": "04",
+          "repeat": 2,
+          "categories": [
+            "evidence_path"
+          ]
+        },
+        {
+          "suite": "historical",
+          "case": "08",
+          "repeat": 2,
+          "categories": [
+            "evidence_path"
+          ]
+        },
+        {
+          "suite": "historical",
+          "case": "10",
+          "repeat": 2,
+          "categories": [
+            "other_gate_refusal"
+          ]
+        },
+        {
+          "suite": "historical",
+          "case": "09",
+          "repeat": 2,
+          "categories": [
+            "evidence_path"
+          ]
+        },
+        {
+          "suite": "historical",
+          "case": "11",
+          "repeat": 2,
+          "categories": [
+            "other_gate_refusal"
+          ]
+        },
+        {
+          "suite": "q",
+          "case": "q01",
+          "repeat": 3,
+          "categories": [
+            "evidence_path"
+          ]
+        },
+        {
+          "suite": "q",
+          "case": "q05",
+          "repeat": 3,
+          "categories": [
+            "validation_schema"
+          ]
+        },
+        {
+          "suite": "q",
+          "case": "q04",
+          "repeat": 3,
+          "categories": [
+            "evidence_path"
+          ]
+        },
+        {
+          "suite": "q",
+          "case": "q07",
+          "repeat": 3,
+          "categories": [
+            "missing_or_different_claim"
+          ]
+        },
+        {
+          "suite": "q",
+          "case": "q11",
+          "repeat": 3,
+          "categories": [
+            "missing_validator_output"
+          ]
+        }
+      ],
+      "failure_categories_nonexclusive": {
+        "missing_writer_output": 2,
+        "evidence_range": 1,
+        "rendered_claim": 1,
+        "missing_or_different_claim": 3,
+        "evidence_path": 8,
+        "other_gate_refusal": 6,
+        "validation_schema": 1,
+        "missing_validator_output": 1
+      },
+      "independent_content_acceptance": "pending",
+      "acceptance_complete": false,
+      "campaign_report_sha256": "a0002a3831b3855212637645a4a34e1492098320f55a3144d2fa3d3536245fea"
+    },
+    "continuation": {
+      "active": [
+        {
+          "case": "q08",
+          "repeat": 3,
+          "suite": "q"
+        },
+        {
+          "case": "01",
+          "repeat": 3,
+          "suite": "historical"
+        },
+        {
+          "case": "02",
+          "repeat": 3,
+          "suite": "historical"
+        }
+      ],
+      "finished": 56,
+      "passed": 35,
+      "pid": 80876,
+      "state": "running",
+      "updated_at": "2026-09-28T16:02:20.344469+00:00"
+    },
+    "controller_pid": 80876
+  }
 }
